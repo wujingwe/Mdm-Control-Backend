@@ -1,0 +1,32 @@
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+testpaths = ["tests"]
+
+[tool.mypy]
+python_version = "3.12"
+plugins = "sqlalchemy.ext.mypy.plugin"
+strict = false
+warn_unused_configs = true
+ignore_missing_imports = true
+namespace_packages = true
+explicit_package_bases = true
+disallow_untyped_defs = true
+disallow_any_unimported = false
+check_untyped_defs = true
+warn_return_any = true
+warn_unreachable = true
+
+[[tool.mypy.overrides]]
+module = ["app.*"]
+disallow_untyped_defs = true
+
+[tool.ruff.lint]
+ignore = [
+    "ANN",   # missing annotations — mypy handles this
+    "D",     # docstrings — not this project's convention
+    "INP001", # PEP 420 namespace packages — intentional
+    "S101",  # assert in tests — pytest convention
+]
+
+
