@@ -29,6 +29,9 @@ _lifecycle = Lifecycle()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
+    if settings.mock_db:
+        from app.mock.seed import seed_database
+        await seed_database()
     await _lifecycle.start()
     yield
     await _lifecycle.stop()

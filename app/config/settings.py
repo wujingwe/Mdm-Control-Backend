@@ -17,6 +17,8 @@ class Settings(BaseSettings):
 
     cors_origins: list[str] = ["*"]
 
+    mock_db: bool = False
+
     model_config = {"env_file": ".env"}
 
 
