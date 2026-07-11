@@ -11,6 +11,7 @@ from app.models.device import Device  # noqa: F401
 from app.models.device_policy import DevicePolicy  # noqa: F401
 from app.models.group import Group  # noqa: F401
 from app.models.group_policy import GroupPolicy  # noqa: F401
+from app.models.inventory_search import InventorySearch  # noqa: F401
 from app.models.policy import Policy  # noqa: F401
 from app.models.user import User  # noqa: F401
 

@@ -9,6 +9,7 @@ from app.models.base import Base
 from app.models.device import Device
 from app.models.device_policy import DevicePolicy
 from app.models.group import Group
+from app.models.inventory_search import InventorySearch
 from app.models.policy import Policy
 from app.models.user import User
 from app.schemas.device import NetworkInfo, WifiInfo
@@ -258,6 +259,26 @@ DEVICE_POLICIES = [
     (1, 5), (14, 5),
 ]
 
+INVENTORY_SEARCHES = [
+    InventorySearch(
+        name="Online Android 14 Devices",
+        description="Find all online devices running Android 14",
+        criteria=[
+            {"criteria": "connection_status", "operator": "is", "type": "string", "value": "Online", "left_parentheses": False, "right_parentheses": False},
+            {"criteria": "os_version", "operator": "is", "type": "string", "value": "Android 14", "left_parentheses": False, "right_parentheses": False},
+        ],
+        created_by=1,
+    ),
+    InventorySearch(
+        name="Low Battery Devices",
+        description="Devices with battery below 20%",
+        criteria=[
+            {"criteria": "battery_status", "operator": "lessThan", "type": "number", "value": "20", "left_parentheses": False, "right_parentheses": False},
+        ],
+        created_by=1,
+    ),
+]
+
 
 async def seed_database() -> None:
     async with engine.begin() as conn:
@@ -265,7 +286,8 @@ async def seed_database() -> None:
 
     async with async_session() as session:
         result = await session.execute(text("SELECT COUNT(*) FROM users"))
-        if result.scalar() and result.scalar() > 0:
+        user_count = result.scalar() or 0
+        if user_count > 0:
             logger.info("Mock database already seeded, skipping.")
             return
 
@@ -293,6 +315,8 @@ async def seed_database() -> None:
 
         for device_id, policy_id in DEVICE_POLICIES:
             session.add(DevicePolicy(device_id=device_id, policy_id=policy_id))
+
+        session.add_all(INVENTORY_SEARCHES)
         await session.commit()
 
-    logger.info("Mock database seeded with 3 users, 15 devices, 5 groups, 5 policies, 17 assignments")
+    logger.info("Mock database seeded with 3 users, 15 devices, 5 groups, 5 policies, 17 assignments, 2 inventory searches")
