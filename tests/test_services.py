@@ -3,6 +3,7 @@ import pytest
 from app.services.device import DeviceService
 from app.services.smart_group import SmartGroupService
 from app.services.policy import PolicyService
+from app.services.profile import ProfileService
 
 
 class TestDeviceService:
@@ -214,3 +215,131 @@ class TestSmartGroupService:
         repo.delete = AsyncMock(return_value=True)
         svc = SmartGroupService(repo)
         assert await svc.delete_group(1) is True
+
+
+class TestProfileService:
+    @pytest.fixture
+    def repo(self):
+        m = MagicMock()
+        m.list_all = AsyncMock(return_value=[])
+        m.get_by_id = AsyncMock(return_value=None)
+        m.create = AsyncMock()
+        m.update = AsyncMock()
+        m.delete = AsyncMock()
+        m.count = AsyncMock(return_value=0)
+        m.get_scope = AsyncMock(return_value=[])
+        m.set_scope = AsyncMock()
+        m.get_assignments = AsyncMock(return_value=[])
+        m.get_assignment = AsyncMock(return_value=None)
+        m.upsert_assignment = AsyncMock()
+        m.delete_non_direct_assignments = AsyncMock()
+        m.db = AsyncMock()
+        return m
+
+    async def test_list_profiles(self, repo):
+        svc = ProfileService(repo)
+        items, total = await svc.list_profiles()
+        assert items == []
+        assert total == 0
+        repo.list_all.assert_called_once_with(skip=0, limit=100)
+        repo.count.assert_called_once()
+
+    async def test_list_profiles_paginated(self, repo):
+        svc = ProfileService(repo)
+        await svc.list_profiles(skip=10, limit=20)
+        repo.list_all.assert_called_once_with(skip=10, limit=20)
+
+    async def test_get_profile_found(self, repo):
+        fake = MagicMock()
+        repo.get_by_id = AsyncMock(return_value=fake)
+        svc = ProfileService(repo)
+        result = await svc.get_profile(1)
+        assert result is fake
+        repo.get_by_id.assert_called_once_with(1)
+
+    async def test_get_profile_not_found(self, repo):
+        svc = ProfileService(repo)
+        result = await svc.get_profile(999)
+        assert result is None
+
+    async def test_create_profile(self, repo):
+        fake = MagicMock()
+        repo.create = AsyncMock(return_value=fake)
+        svc = ProfileService(repo)
+        result = await svc.create_profile({"name": "P"})
+        assert result is fake
+        repo.create.assert_called_once_with({"name": "P"})
+
+    async def test_update_profile(self, repo):
+        fake = MagicMock()
+        repo.update = AsyncMock(return_value=fake)
+        svc = ProfileService(repo)
+        result = await svc.update_profile(1, {"name": "P2"})
+        assert result is fake
+        repo.update.assert_called_once_with(1, {"name": "P2"})
+
+    async def test_delete_profile(self, repo):
+        repo.delete = AsyncMock(return_value=True)
+        svc = ProfileService(repo)
+        assert await svc.delete_profile(1) is True
+        repo.delete.assert_called_once_with(1)
+
+    async def test_get_scope(self, repo):
+        fake_scope = [MagicMock()]
+        repo.get_scope = AsyncMock(return_value=fake_scope)
+        svc = ProfileService(repo)
+        result = await svc.get_scope(1)
+        assert result == fake_scope
+        repo.get_scope.assert_called_once_with(1)
+
+    async def test_set_scope_triggers_recalculation(self, repo):
+        repo.get_by_id = AsyncMock(return_value=MagicMock(version=1))
+        repo.get_scope = AsyncMock(return_value=[])
+        svc = ProfileService(repo)
+        await svc.set_scope(1, [{"target_type": "ALL_DEVICES"}])
+        repo.set_scope.assert_called_once_with(1, [{"target_type": "ALL_DEVICES"}])
+        repo.delete_non_direct_assignments.assert_awaited_once_with(1)
+
+    async def test_get_assignments(self, repo):
+        fake_assignments = [MagicMock()]
+        repo.get_assignments = AsyncMock(return_value=fake_assignments)
+        svc = ProfileService(repo)
+        result = await svc.get_assignments(1)
+        assert result == fake_assignments
+
+    async def test_update_assignment_status_found(self, repo):
+        from datetime import datetime, timezone
+        assignment = MagicMock(
+            profile_id=1, device_id=10, source="DIRECT",
+            source_id=None, profile_version=1,
+        )
+        repo.get_assignment = AsyncMock(return_value=assignment)
+        updated = MagicMock()
+        repo.upsert_assignment = AsyncMock(return_value=updated)
+        svc = ProfileService(repo)
+        result = await svc.update_assignment_status(1, 10, "APPLIED")
+        assert result is updated
+        call_kwargs = repo.upsert_assignment.call_args[0][0]
+        assert call_kwargs["status"] == "APPLIED"
+        assert call_kwargs["applied_at"] is not None
+
+    async def test_update_assignment_status_revoked(self, repo):
+        assignment = MagicMock(
+            profile_id=1, device_id=10, source="SMART_GROUP",
+            source_id=5, profile_version=1,
+        )
+        repo.get_assignment = AsyncMock(return_value=assignment)
+        updated = MagicMock()
+        repo.upsert_assignment = AsyncMock(return_value=updated)
+        svc = ProfileService(repo)
+        result = await svc.update_assignment_status(1, 10, "REVOKED")
+        assert result is updated
+        call_kwargs = repo.upsert_assignment.call_args[0][0]
+        assert call_kwargs["status"] == "REVOKED"
+        assert call_kwargs["revoked_at"] is not None
+
+    async def test_update_assignment_status_not_found(self, repo):
+        repo.get_assignment = AsyncMock(return_value=None)
+        svc = ProfileService(repo)
+        result = await svc.update_assignment_status(1, 999, "APPLIED")
+        assert result is None
