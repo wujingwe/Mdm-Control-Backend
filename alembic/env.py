@@ -12,6 +12,9 @@ from app.models.device_policy import DevicePolicy  # noqa: F401
 from app.models.extension_attribute import ExtensionAttribute  # noqa: F401
 from app.models.inventory_search import InventorySearch  # noqa: F401
 from app.models.policy import Policy  # noqa: F401
+from app.models.profile import Profile  # noqa: F401
+from app.models.profile_assignment import ProfileAssignment  # noqa: F401
+from app.models.profile_scope import ProfileScope  # noqa: F401
 from app.models.smart_group import SmartGroup  # noqa: F401
 from app.models.smart_group_policy import SmartGroupPolicy  # noqa: F401
 from app.models.static_group import StaticGroup  # noqa: F401

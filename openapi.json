@@ -437,6 +437,436 @@
         }
       }
     },
+    "/api/v1/profiles": {
+      "get": {
+        "tags": [
+          "Profiles"
+        ],
+        "summary": "List Profiles",
+        "operationId": "list_profiles_api_v1_profiles_get",
+        "parameters": [
+          {
+            "name": "skip",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Skip"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 1000,
+              "minimum": 1,
+              "default": 100,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedResponse_ProfileResponse_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Profiles"
+        ],
+        "summary": "Create Profile",
+        "operationId": "create_profile_api_v1_profiles_post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProfileCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfileResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/profiles/{profile_id}": {
+      "get": {
+        "tags": [
+          "Profiles"
+        ],
+        "summary": "Get Profile",
+        "operationId": "get_profile_api_v1_profiles__profile_id__get",
+        "parameters": [
+          {
+            "name": "profile_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Profile Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfileResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Profiles"
+        ],
+        "summary": "Update Profile",
+        "operationId": "update_profile_api_v1_profiles__profile_id__put",
+        "parameters": [
+          {
+            "name": "profile_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Profile Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProfileUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfileResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Profiles"
+        ],
+        "summary": "Delete Profile",
+        "operationId": "delete_profile_api_v1_profiles__profile_id__delete",
+        "parameters": [
+          {
+            "name": "profile_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Profile Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/profiles/{profile_id}/scope": {
+      "get": {
+        "tags": [
+          "Profiles"
+        ],
+        "summary": "Get Profile Scope",
+        "operationId": "get_profile_scope_api_v1_profiles__profile_id__scope_get",
+        "parameters": [
+          {
+            "name": "profile_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Profile Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfileScopeResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Profiles"
+        ],
+        "summary": "Set Profile Scope",
+        "operationId": "set_profile_scope_api_v1_profiles__profile_id__scope_put",
+        "parameters": [
+          {
+            "name": "profile_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Profile Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ScopeTarget"
+                },
+                "title": "Scope"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfileScopeResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/profiles/{profile_id}/assignments": {
+      "get": {
+        "tags": [
+          "Profiles"
+        ],
+        "summary": "List Assignments",
+        "operationId": "list_assignments_api_v1_profiles__profile_id__assignments_get",
+        "parameters": [
+          {
+            "name": "profile_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Profile Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AssignmentResponse"
+                  },
+                  "title": "Response List Assignments Api V1 Profiles  Profile Id  Assignments Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/profiles/{profile_id}/assignments/{device_id}/status": {
+      "put": {
+        "tags": [
+          "Profiles"
+        ],
+        "summary": "Update Assignment Status",
+        "operationId": "update_assignment_status_api_v1_profiles__profile_id__assignments__device_id__status_put",
+        "parameters": [
+          {
+            "name": "profile_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Profile Id"
+            }
+          },
+          {
+            "name": "device_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Device Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StatusUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssignmentResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/smart-groups": {
       "get": {
         "tags": [
@@ -1659,7 +2089,96 @@
   },
   "components": {
     "schemas": {
-      "CellularInfo": {
+      "AssignmentResponse": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "profile_id": {
+            "type": "integer",
+            "title": "Profile Id"
+          },
+          "device_id": {
+            "type": "integer",
+            "title": "Device Id"
+          },
+          "source": {
+            "type": "string",
+            "title": "Source"
+          },
+          "source_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Id"
+          },
+          "status": {
+            "$ref": "#/components/schemas/AssignmentStatus"
+          },
+          "profile_version": {
+            "type": "integer",
+            "title": "Profile Version"
+          },
+          "assigned_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Assigned At"
+          },
+          "applied_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Applied At"
+          },
+          "revoked_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Revoked At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "profile_id",
+          "device_id",
+          "source",
+          "status",
+          "profile_version",
+          "assigned_at"
+        ],
+        "title": "AssignmentResponse"
+      },
+      "AssignmentStatus": {
+        "type": "string",
+        "enum": [
+          "PENDING",
+          "APPLIED",
+          "FAILED",
+          "REVOKED",
+          "REMOVED"
+        ],
+        "title": "AssignmentStatus"
+      },
+      "Cellular": {
         "properties": {
           "carrier": {
             "anyOf": [
@@ -1765,9 +2284,9 @@
           }
         },
         "type": "object",
-        "title": "CellularInfo"
+        "title": "Cellular"
       },
-      "CertificateInfo": {
+      "Certificate": {
         "properties": {
           "common_name": {
             "anyOf": [
@@ -1837,7 +2356,7 @@
           }
         },
         "type": "object",
-        "title": "CertificateInfo"
+        "title": "Certificate"
       },
       "CriteriaSchema": {
         "properties": {
@@ -1994,7 +2513,7 @@
           "network": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/NetworkInfo"
+                "$ref": "#/components/schemas/Network"
               },
               {
                 "type": "null"
@@ -2005,7 +2524,7 @@
             "anyOf": [
               {
                 "items": {
-                  "$ref": "#/components/schemas/CertificateInfo"
+                  "$ref": "#/components/schemas/Certificate"
                 },
                 "type": "array"
               },
@@ -2437,12 +2956,12 @@
         ],
         "title": "Message"
       },
-      "NetworkInfo": {
+      "Network": {
         "properties": {
           "wifi": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/WifiInfo"
+                "$ref": "#/components/schemas/Wifi"
               },
               {
                 "type": "null"
@@ -2452,7 +2971,7 @@
           "cellular": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/CellularInfo"
+                "$ref": "#/components/schemas/Cellular"
               },
               {
                 "type": "null"
@@ -2461,7 +2980,7 @@
           }
         },
         "type": "object",
-        "title": "NetworkInfo"
+        "title": "Network"
       },
       "PaginatedResponse_DeviceResponse_": {
         "properties": {
@@ -2586,6 +3105,37 @@
           "limit"
         ],
         "title": "PaginatedResponse[PolicyResponse]"
+      },
+      "PaginatedResponse_ProfileResponse_": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ProfileResponse"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "skip": {
+            "type": "integer",
+            "title": "Skip"
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "skip",
+          "limit"
+        ],
+        "title": "PaginatedResponse[ProfileResponse]"
       },
       "PaginatedResponse_SmartGroupResponse_": {
         "properties": {
@@ -2820,6 +3370,183 @@
         },
         "type": "object",
         "title": "PolicyUpdate"
+      },
+      "ProfileCreate": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "settings": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Settings",
+            "default": {}
+          },
+          "created_by": {
+            "type": "integer",
+            "title": "Created By",
+            "default": 1
+          }
+        },
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "ProfileCreate"
+      },
+      "ProfileResponse": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "settings": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Settings",
+            "default": {}
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "created_by": {
+            "type": "integer",
+            "title": "Created By"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "created_at",
+          "created_by"
+        ],
+        "title": "ProfileResponse"
+      },
+      "ProfileScopeResponse": {
+        "properties": {
+          "profile_id": {
+            "type": "integer",
+            "title": "Profile Id"
+          },
+          "scope": {
+            "items": {
+              "$ref": "#/components/schemas/ScopeTarget"
+            },
+            "type": "array",
+            "title": "Scope"
+          }
+        },
+        "type": "object",
+        "required": [
+          "profile_id",
+          "scope"
+        ],
+        "title": "ProfileScopeResponse"
+      },
+      "ProfileUpdate": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "settings": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Settings"
+          }
+        },
+        "type": "object",
+        "title": "ProfileUpdate"
+      },
+      "ScopeTarget": {
+        "properties": {
+          "target_type": {
+            "$ref": "#/components/schemas/TargetType"
+          },
+          "target_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "target_type"
+        ],
+        "title": "ScopeTarget"
       },
       "SmartGroupCreate": {
         "properties": {
@@ -3105,6 +3832,28 @@
         "type": "object",
         "title": "StaticGroupUpdate"
       },
+      "StatusUpdate": {
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/AssignmentStatus"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "StatusUpdate"
+      },
+      "TargetType": {
+        "type": "string",
+        "enum": [
+          "ALL_DEVICES",
+          "SMART_GROUP",
+          "STATIC_GROUP",
+          "DEVICE"
+        ],
+        "title": "TargetType"
+      },
       "UserResponse": {
         "properties": {
           "id": {
@@ -3195,7 +3944,7 @@
         ],
         "title": "ValidationError"
       },
-      "WifiInfo": {
+      "Wifi": {
         "properties": {
           "ssid": {
             "anyOf": [
@@ -3290,7 +4039,7 @@
           }
         },
         "type": "object",
-        "title": "WifiInfo"
+        "title": "Wifi"
       }
     }
   }

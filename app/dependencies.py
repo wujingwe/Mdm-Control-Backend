@@ -8,12 +8,14 @@ from app.repositories.device import DeviceRepository
 from app.repositories.extension_attribute import ExtensionAttributeRepository
 from app.repositories.inventory_search import InventorySearchRepository
 from app.repositories.policy import PolicyRepository
+from app.repositories.profile import ProfileRepository
 from app.repositories.smart_group import SmartGroupRepository
 from app.repositories.static_group import StaticGroupRepository
 from app.services.device import DeviceService
 from app.services.extension_attribute import ExtensionAttributeService
 from app.services.inventory_search import InventorySearchService
 from app.services.policy import PolicyService
+from app.services.profile import ProfileService
 from app.services.smart_group import SmartGroupService
 from app.services.static_group import StaticGroupService
 
@@ -45,3 +47,7 @@ def get_inventory_search_service(db: AsyncSession = Depends(get_db)) -> Inventor
 
 def get_extension_attribute_service(db: AsyncSession = Depends(get_db)) -> ExtensionAttributeService:
     return ExtensionAttributeService(ExtensionAttributeRepository(db))
+
+
+def get_profile_service(db: AsyncSession = Depends(get_db)) -> ProfileService:
+    return ProfileService(ProfileRepository(db))

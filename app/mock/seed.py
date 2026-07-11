@@ -11,13 +11,15 @@ from app.models.device_policy import DevicePolicy
 from app.models.extension_attribute import ExtensionAttribute
 from app.models.inventory_search import InventorySearch
 from app.models.policy import Policy
+from app.models.profile import Profile
+from app.models.profile_scope import ProfileScope
 from app.models.smart_group import SmartGroup
 from app.models.smart_group_policy import SmartGroupPolicy
 from app.models.static_group import StaticGroup
 from app.models.static_group_device import StaticGroupDevice
 from app.models.static_group_policy import StaticGroupPolicy
 from app.models.user import User
-from app.schemas.device import NetworkInfo, WifiInfo
+from app.schemas.device import Network, Wifi
 
 logger = logging.getLogger(__name__)
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -28,7 +30,7 @@ DEVICES = [
         os_version="Android 14", connection_status="Online", enrollment_status="Compliant",
         battery_status=85,
         total_storage=256, available_storage=180, total_memory=12, available_memory=6,
-        network=NetworkInfo(wifi=WifiInfo(ssid="Office")),
+        network=Network(wifi=Wifi(ssid="Office")),
     ),
     Device(
         name="SM-F936B-002", serial_number="R3CT90J0JH",
@@ -302,6 +304,36 @@ EXTENSION_ATTRIBUTES = [
     ),
 ]
 
+PROFILES = [
+    Profile(
+        name="Standard Compliance",
+        description="Standard compliance settings for all managed devices",
+        settings={
+            "passwordPolicy": {"minLength": 6, "requireAlphanumeric": True},
+            "encryptionRequired": True,
+            "allowAppInstallation": True,
+        },
+        created_by=1,
+    ),
+    Profile(
+        name="Executive Security",
+        description="Enhanced security profile for executive devices",
+        settings={
+            "passwordPolicy": {"minLength": 10, "requireComplexity": True},
+            "encryptionRequired": True,
+            "allowAppInstallation": False,
+            "allowScreenCapture": False,
+            "allowBluetooth": False,
+        },
+        created_by=1,
+    ),
+]
+
+PROFILE_SCOPES = [
+    {"profile_index": 0, "target_type": "ALL_DEVICES", "target_id": None},
+    {"profile_index": 1, "target_type": "SMART_GROUP", "target_id": None},
+]
+
 
 async def seed_database() -> None:
     async with engine.begin() as conn:
@@ -357,6 +389,15 @@ async def seed_database() -> None:
         session.add_all(INVENTORY_SEARCHES)
 
         session.add_all(EXTENSION_ATTRIBUTES)
+
+        session.add_all(PROFILES)
+        await session.flush()
+        profile_ids = [p.id for p in PROFILES]
+
+        if profile_ids and smart_group_ids:
+            session.add(ProfileScope(profile_id=profile_ids[0], target_type="ALL_DEVICES"))
+            session.add(ProfileScope(profile_id=profile_ids[1], target_type="SMART_GROUP", target_id=smart_group_ids[0]))
+
         await session.commit()
 
-    logger.info("Mock database seeded with 3 users, 15 devices, 3 smart groups, 2 static groups, 5 policies, 17 assignments, 2 inventory searches, 3 extension attributes")
+    logger.info("Mock database seeded with 3 users, 15 devices, 3 smart groups, 2 static groups, 5 policies, 17 assignments, 2 inventory searches, 3 extension attributes, 2 profiles")
