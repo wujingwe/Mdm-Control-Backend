@@ -475,7 +475,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PaginatedResponse_GroupResponse_"
+                  "$ref": "#/components/schemas/PaginatedResponse_SmartGroupResponse_"
                 }
               }
             }
@@ -503,7 +503,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/GroupCreate"
+                "$ref": "#/components/schemas/SmartGroupCreate"
               }
             }
           }
@@ -514,7 +514,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/GroupResponse"
+                  "$ref": "#/components/schemas/SmartGroupResponse"
                 }
               }
             }
@@ -537,8 +537,8 @@
         "tags": [
           "Smart Groups"
         ],
-        "summary": "Get Group",
-        "operationId": "get_group_api_v1_smart_groups__group_id__get",
+        "summary": "Get Smart Group",
+        "operationId": "get_smart_group_api_v1_smart_groups__group_id__get",
         "parameters": [
           {
             "name": "group_id",
@@ -556,7 +556,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/GroupResponse"
+                  "$ref": "#/components/schemas/SmartGroupResponse"
                 }
               }
             }
@@ -577,8 +577,8 @@
         "tags": [
           "Smart Groups"
         ],
-        "summary": "Update Group",
-        "operationId": "update_group_api_v1_smart_groups__group_id__put",
+        "summary": "Update Smart Group",
+        "operationId": "update_smart_group_api_v1_smart_groups__group_id__put",
         "parameters": [
           {
             "name": "group_id",
@@ -595,7 +595,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/GroupUpdate"
+                "$ref": "#/components/schemas/SmartGroupUpdate"
               }
             }
           }
@@ -606,7 +606,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/GroupResponse"
+                  "$ref": "#/components/schemas/SmartGroupResponse"
                 }
               }
             }
@@ -627,8 +627,8 @@
         "tags": [
           "Smart Groups"
         ],
-        "summary": "Delete Group",
-        "operationId": "delete_group_api_v1_smart_groups__group_id__delete",
+        "summary": "Delete Smart Group",
+        "operationId": "delete_smart_group_api_v1_smart_groups__group_id__delete",
         "parameters": [
           {
             "name": "group_id",
@@ -669,8 +669,8 @@
         "tags": [
           "Smart Groups"
         ],
-        "summary": "Assign Policy To Group",
-        "operationId": "assign_policy_to_group_api_v1_smart_groups__group_id__policies_post",
+        "summary": "Assign Policy To Smart Group",
+        "operationId": "assign_policy_to_smart_group_api_v1_smart_groups__group_id__policies_post",
         "parameters": [
           {
             "name": "group_id",
@@ -697,7 +697,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/GroupResponse"
+                  "$ref": "#/components/schemas/SmartGroupResponse"
                 }
               }
             }
@@ -815,8 +815,8 @@
         "tags": [
           "Static Groups"
         ],
-        "summary": "Get Group",
-        "operationId": "get_group_api_v1_static_groups__group_id__get",
+        "summary": "Get Static Group",
+        "operationId": "get_static_group_api_v1_static_groups__group_id__get",
         "parameters": [
           {
             "name": "group_id",
@@ -855,8 +855,8 @@
         "tags": [
           "Static Groups"
         ],
-        "summary": "Update Group",
-        "operationId": "update_group_api_v1_static_groups__group_id__put",
+        "summary": "Update Static Group",
+        "operationId": "update_static_group_api_v1_static_groups__group_id__put",
         "parameters": [
           {
             "name": "group_id",
@@ -905,8 +905,8 @@
         "tags": [
           "Static Groups"
         ],
-        "summary": "Delete Group",
-        "operationId": "delete_group_api_v1_static_groups__group_id__delete",
+        "summary": "Delete Static Group",
+        "operationId": "delete_static_group_api_v1_static_groups__group_id__delete",
         "parameters": [
           {
             "name": "group_id",
@@ -947,8 +947,8 @@
         "tags": [
           "Static Groups"
         ],
-        "summary": "Assign Policy To Group",
-        "operationId": "assign_policy_to_group_api_v1_static_groups__group_id__policies_post",
+        "summary": "Assign Policy To Static Group",
+        "operationId": "assign_policy_to_static_group_api_v1_static_groups__group_id__policies_post",
         "parameters": [
           {
             "name": "group_id",
@@ -2364,6 +2364,37 @@
         ],
         "title": "PaginatedResponse[PolicyResponse]"
       },
+      "PaginatedResponse_SmartGroupResponse_": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/SmartGroupResponse"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "skip": {
+            "type": "integer",
+            "title": "Skip"
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "skip",
+          "limit"
+        ],
+        "title": "PaginatedResponse[SmartGroupResponse]"
+      },
       "PaginatedResponse_UserResponse_": {
         "properties": {
           "items": {
@@ -2535,6 +2566,151 @@
         },
         "type": "object",
         "title": "PolicyUpdate"
+      },
+      "SmartGroupCreate": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "criteria": {
+            "items": {
+              "$ref": "#/components/schemas/CriteriaSchema"
+            },
+            "type": "array",
+            "title": "Criteria",
+            "default": []
+          },
+          "created_by": {
+            "type": "integer",
+            "title": "Created By",
+            "default": 1
+          }
+        },
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "SmartGroupCreate"
+      },
+      "SmartGroupResponse": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "criteria": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/CriteriaSchema"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Criteria"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "created_by": {
+            "type": "integer",
+            "title": "Created By"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "created_at",
+          "created_by"
+        ],
+        "title": "SmartGroupResponse"
+      },
+      "SmartGroupUpdate": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "criteria": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/CriteriaSchema"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Criteria"
+          }
+        },
+        "type": "object",
+        "title": "SmartGroupUpdate"
       },
       "UserResponse": {
         "properties": {

@@ -1,23 +1,8 @@
 from datetime import datetime
-from enum import Enum
 
 from pydantic import BaseModel
 
-
-class CriteriaType(str, Enum):
-    string = "string"
-    number = "number"
-    boolean = "boolean"
-    date = "date"
-
-
-class CriteriaSchema(BaseModel):
-    criteria: str
-    operator: str
-    type: CriteriaType
-    value: str
-    left_parentheses: bool = False
-    right_parentheses: bool = False
+from app.schemas.common import CriteriaSchema
 
 
 class InventorySearchCreate(BaseModel):

@@ -116,33 +116,28 @@ GROUPS = [
         name="All Android 14 Devices",
         description="Smart group that includes all devices running Android 14",
         created_by=1, is_smart=True,
-        criteria={
-            "conjunction": "AND",
-            "criteria": [{"field": "os_version", "operator": "is", "value": "Android 14"}],
-        },
+        criteria=[
+            {"criteria": "os_version", "operator": "is", "type": "string", "value": "Android 14", "left_parentheses": False, "right_parentheses": False},
+        ],
         display_columns=["name", "serial", "owner", "status", "compliance", "os_version"],
     ),
     Group(
         name="Non-compliant Devices",
         description="Smart group tracking all non-compliant devices",
         created_by=1, is_smart=True,
-        criteria={
-            "conjunction": "AND",
-            "criteria": [{"field": "compliance", "operator": "is", "value": "Non-compliant"}],
-        },
+        criteria=[
+            {"criteria": "compliance", "operator": "is", "type": "string", "value": "Non-compliant", "left_parentheses": False, "right_parentheses": False},
+        ],
         display_columns=["name", "serial", "owner", "compliance", "last_seen"],
     ),
     Group(
         name="Critical Issues",
         description="Devices needing immediate attention",
         created_by=1, is_smart=True,
-        criteria={
-            "conjunction": "OR",
-            "criteria": [
-                {"field": "compliance", "operator": "is", "value": "Needs attention"},
-                {"field": "battery_level", "operator": "lessThan", "value": "15"},
-            ],
-        },
+        criteria=[
+            {"criteria": "compliance", "operator": "is", "type": "string", "value": "Needs attention", "left_parentheses": True, "right_parentheses": False},
+            {"criteria": "battery_level", "operator": "lessThan", "type": "number", "value": "15", "left_parentheses": False, "right_parentheses": True},
+        ],
         display_columns=["name", "serial", "owner", "compliance", "battery_level", "status"],
     ),
     Group(

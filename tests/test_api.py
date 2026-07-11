@@ -73,39 +73,83 @@ class TestPoliciesAPI:
         assert "items" in data
 
 
-class TestGroupsAPI:
+class TestSmartGroupsAPI:
+    BASE = "/api/v1/smart-groups"
+
     async def test_crud_flow(self, client):
-        create = await client.post("/api/v1/groups", json={
-            "name": "Group A",
+        create = await client.post(self.BASE, json={
+            "name": "Smart Group A",
             "description": "desc",
         })
         assert create.status_code == 201
         gid = create.json()["id"]
+        assert create.json()["name"] == "Smart Group A"
 
-        get = await client.get(f"/api/v1/groups/{gid}")
+        get = await client.get(f"{self.BASE}/{gid}")
         assert get.status_code == 200
-        assert get.json()["name"] == "Group A"
+        assert get.json()["name"] == "Smart Group A"
 
-        update = await client.put(f"/api/v1/groups/{gid}", json={"name": "Group B"})
+        update = await client.put(f"{self.BASE}/{gid}", json={"name": "Smart Group B"})
         assert update.status_code == 200
-        assert update.json()["name"] == "Group B"
+        assert update.json()["name"] == "Smart Group B"
 
-        delete = await client.delete(f"/api/v1/groups/{gid}")
+        delete = await client.delete(f"{self.BASE}/{gid}")
         assert delete.status_code == 200
 
-        get2 = await client.get(f"/api/v1/groups/{gid}")
+        get2 = await client.get(f"{self.BASE}/{gid}")
         assert get2.status_code == 404
 
     async def test_list(self, client):
-        await client.post("/api/v1/groups", json={"name": "G1"})
-        resp = await client.get("/api/v1/groups")
+        await client.post(self.BASE, json={"name": "SG1"})
+        resp = await client.get(self.BASE)
         data = resp.json()
         assert data["total"] >= 1 and len(data["items"]) >= 1
+        assert all(g["name"] is not None for g in data["items"])
 
     async def test_update_empty_body(self, client):
-        create = await client.post("/api/v1/groups", json={"name": "G"})
+        create = await client.post(self.BASE, json={"name": "G"})
         gid = create.json()["id"]
-        resp = await client.put(f"/api/v1/groups/{gid}", json={})
+        resp = await client.put(f"{self.BASE}/{gid}", json={})
+        assert resp.status_code == 400
+
+
+class TestStaticGroupsAPI:
+    BASE = "/api/v1/static-groups"
+
+    async def test_crud_flow(self, client):
+        create = await client.post(self.BASE, json={
+            "name": "Static Group A",
+            "description": "desc",
+        })
+        assert create.status_code == 201
+        gid = create.json()["id"]
+        assert create.json()["is_smart"] is False
+
+        get = await client.get(f"{self.BASE}/{gid}")
+        assert get.status_code == 200
+        assert get.json()["name"] == "Static Group A"
+
+        update = await client.put(f"{self.BASE}/{gid}", json={"name": "Static Group B"})
+        assert update.status_code == 200
+        assert update.json()["name"] == "Static Group B"
+
+        delete = await client.delete(f"{self.BASE}/{gid}")
+        assert delete.status_code == 200
+
+        get2 = await client.get(f"{self.BASE}/{gid}")
+        assert get2.status_code == 404
+
+    async def test_list_distinct(self, client):
+        await client.post(self.BASE, json={"name": "Static1"})
+        await client.post("/api/v1/smart-groups", json={"name": "Smart1"})
+        resp = await client.get(self.BASE)
+        data = resp.json()
+        assert all(g["is_smart"] is False for g in data["items"])
+
+    async def test_update_empty_body(self, client):
+        create = await client.post(self.BASE, json={"name": "G"})
+        gid = create.json()["id"]
+        resp = await client.put(f"{self.BASE}/{gid}", json={})
         assert resp.status_code == 400
 
 
@@ -126,29 +170,31 @@ class TestUsersAPI:
 
 
 class TestGroupPolicyAssignment:
+    BASE = "/api/v1/smart-groups"
+
     async def test_assign_policy_success(self, client, db_session):
         group = await GroupRepository(db_session).create({"name": "Test Group", "created_by": 1})
         policy = await PolicyRepository(db_session).create({
             "name": "Test Policy", "version": 1, "scope": "all",
             "rollout_state": "Completed", "target_devices": 0, "applied_devices": 0,
         })
-        resp = await client.post(f"/api/v1/groups/{group.id}/policies", params={"policy_id": policy.id})
+        resp = await client.post(f"{self.BASE}/{group.id}/policies", params={"policy_id": policy.id})
         assert resp.status_code == 201
         data = resp.json()
         assert data["id"] == group.id
         assert data["name"] == "Test Group"
 
     async def test_assign_policy_group_not_found(self, client):
-        resp = await client.post("/api/v1/groups/999/policies", params={"policy_id": 1})
+        resp = await client.post(f"{self.BASE}/999/policies", params={"policy_id": 1})
         assert resp.status_code == 404
 
     async def test_assign_policy_policy_not_found(self, client, db_session):
         group = await GroupRepository(db_session).create({"name": "Test Group", "created_by": 1})
-        resp = await client.post(f"/api/v1/groups/{group.id}/policies", params={"policy_id": 999})
+        resp = await client.post(f"{self.BASE}/{group.id}/policies", params={"policy_id": 999})
         assert resp.status_code == 404
 
     async def test_assign_policy_missing_param(self, client):
-        resp = await client.post("/api/v1/groups/1/policies")
+        resp = await client.post(f"{self.BASE}/1/policies")
         assert resp.status_code == 422
 
 
@@ -167,7 +213,7 @@ class TestHealth:
         assert isinstance(data["uptime_seconds"], int)
         assert data["database"]["status"] == "ok"
         assert isinstance(data["database"]["latency_ms"], float)
-        assert data["kafka"] == "disconnected"
+        assert data["rabbitmq"] == "disconnected"
 
     async def test_health_legacy(self, client):
         resp = await client.get("/health")
