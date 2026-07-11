@@ -8,6 +8,7 @@ from app.database import engine, async_session
 from app.models.base import Base
 from app.models.device import Device
 from app.models.device_policy import DevicePolicy
+from app.models.extension_attribute import ExtensionAttribute
 from app.models.inventory_search import InventorySearch
 from app.models.policy import Policy
 from app.models.smart_group import SmartGroup
@@ -276,6 +277,31 @@ INVENTORY_SEARCHES = [
     ),
 ]
 
+EXTENSION_ATTRIBUTES = [
+    ExtensionAttribute(
+        name="Department",
+        description="The department the device is assigned to",
+        data_type="string",
+        input_type="Pop-up menu",
+        popup_choices=["Engineering", "Sales", "Marketing", "Support", "Executive"],
+        created_by=1,
+    ),
+    ExtensionAttribute(
+        name="Asset Tag",
+        description="Internal asset tracking number",
+        data_type="string",
+        input_type="Text field",
+        created_by=1,
+    ),
+    ExtensionAttribute(
+        name="Purchase Date",
+        description="Date the device was purchased",
+        data_type="date",
+        input_type="Text field",
+        created_by=1,
+    ),
+]
+
 
 async def seed_database() -> None:
     async with engine.begin() as conn:
@@ -329,6 +355,8 @@ async def seed_database() -> None:
             session.add(StaticGroupDevice(static_group_id=static_group_ids[1], device_serial_number="OP12A0J0JH"))
 
         session.add_all(INVENTORY_SEARCHES)
+
+        session.add_all(EXTENSION_ATTRIBUTES)
         await session.commit()
 
-    logger.info("Mock database seeded with 3 users, 15 devices, 3 smart groups, 2 static groups, 5 policies, 17 assignments, 2 inventory searches")
+    logger.info("Mock database seeded with 3 users, 15 devices, 3 smart groups, 2 static groups, 5 policies, 17 assignments, 2 inventory searches, 3 extension attributes")

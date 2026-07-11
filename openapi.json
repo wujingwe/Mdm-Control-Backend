@@ -1381,6 +1381,233 @@
         }
       }
     },
+    "/api/v1/extension-attributes": {
+      "get": {
+        "tags": [
+          "Extension Attributes"
+        ],
+        "summary": "List Extension Attributes",
+        "operationId": "list_extension_attributes_api_v1_extension_attributes_get",
+        "parameters": [
+          {
+            "name": "skip",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Skip"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 1000,
+              "minimum": 1,
+              "default": 100,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedResponse_ExtensionAttributeResponse_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Extension Attributes"
+        ],
+        "summary": "Create Extension Attribute",
+        "operationId": "create_extension_attribute_api_v1_extension_attributes_post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExtensionAttributeCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExtensionAttributeResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/extension-attributes/{attribute_id}": {
+      "get": {
+        "tags": [
+          "Extension Attributes"
+        ],
+        "summary": "Get Extension Attribute",
+        "operationId": "get_extension_attribute_api_v1_extension_attributes__attribute_id__get",
+        "parameters": [
+          {
+            "name": "attribute_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Attribute Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExtensionAttributeResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Extension Attributes"
+        ],
+        "summary": "Update Extension Attribute",
+        "operationId": "update_extension_attribute_api_v1_extension_attributes__attribute_id__put",
+        "parameters": [
+          {
+            "name": "attribute_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Attribute Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExtensionAttributeUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExtensionAttributeResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Extension Attributes"
+        ],
+        "summary": "Delete Extension Attribute",
+        "operationId": "delete_extension_attribute_api_v1_extension_attributes__attribute_id__delete",
+        "parameters": [
+          {
+            "name": "attribute_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Attribute Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/health/live": {
       "get": {
         "summary": "Liveness",
@@ -1659,6 +1886,15 @@
         ],
         "title": "CriteriaType"
       },
+      "DataType": {
+        "type": "string",
+        "enum": [
+          "string",
+          "integer",
+          "date"
+        ],
+        "title": "DataType"
+      },
       "DeviceResponse": {
         "properties": {
           "id": {
@@ -1824,6 +2060,193 @@
         ],
         "title": "DeviceSearchCriteria"
       },
+      "ExtensionAttributeCreate": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "data_type": {
+            "$ref": "#/components/schemas/DataType"
+          },
+          "input_type": {
+            "$ref": "#/components/schemas/InputType"
+          },
+          "popup_choices": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Popup Choices"
+          },
+          "created_by": {
+            "type": "integer",
+            "title": "Created By",
+            "default": 1
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "data_type",
+          "input_type"
+        ],
+        "title": "ExtensionAttributeCreate"
+      },
+      "ExtensionAttributeResponse": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "data_type": {
+            "$ref": "#/components/schemas/DataType"
+          },
+          "input_type": {
+            "$ref": "#/components/schemas/InputType"
+          },
+          "popup_choices": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Popup Choices"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "created_by": {
+            "type": "integer",
+            "title": "Created By"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "data_type",
+          "input_type",
+          "created_at",
+          "created_by"
+        ],
+        "title": "ExtensionAttributeResponse"
+      },
+      "ExtensionAttributeUpdate": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "data_type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DataType"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "input_type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/InputType"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "popup_choices": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Popup Choices"
+          }
+        },
+        "type": "object",
+        "title": "ExtensionAttributeUpdate"
+      },
       "FleetMetricsResponse": {
         "properties": {
           "total_devices": {
@@ -1859,6 +2282,14 @@
         },
         "type": "object",
         "title": "HTTPValidationError"
+      },
+      "InputType": {
+        "type": "string",
+        "enum": [
+          "Text field",
+          "Pop-up menu"
+        ],
+        "title": "InputType"
       },
       "InventorySearchCreate": {
         "properties": {
@@ -2062,6 +2493,37 @@
           "limit"
         ],
         "title": "PaginatedResponse[DeviceResponse]"
+      },
+      "PaginatedResponse_ExtensionAttributeResponse_": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ExtensionAttributeResponse"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "skip": {
+            "type": "integer",
+            "title": "Skip"
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "skip",
+          "limit"
+        ],
+        "title": "PaginatedResponse[ExtensionAttributeResponse]"
       },
       "PaginatedResponse_InventorySearchResponse_": {
         "properties": {
