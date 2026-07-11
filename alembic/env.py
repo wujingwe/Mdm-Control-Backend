@@ -9,10 +9,13 @@ from app.config.settings import settings
 from app.models.base import Base
 from app.models.device import Device  # noqa: F401
 from app.models.device_policy import DevicePolicy  # noqa: F401
-from app.models.group import Group  # noqa: F401
-from app.models.group_policy import GroupPolicy  # noqa: F401
 from app.models.inventory_search import InventorySearch  # noqa: F401
 from app.models.policy import Policy  # noqa: F401
+from app.models.smart_group import SmartGroup  # noqa: F401
+from app.models.smart_group_policy import SmartGroupPolicy  # noqa: F401
+from app.models.static_group import StaticGroup  # noqa: F401
+from app.models.static_group_device import StaticGroupDevice  # noqa: F401
+from app.models.static_group_policy import StaticGroupPolicy  # noqa: F401
 from app.models.user import User  # noqa: F401
 
 config = context.config

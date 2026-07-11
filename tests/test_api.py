@@ -1,5 +1,4 @@
-from app.repositories.device import DeviceRepository
-from app.repositories.group import GroupRepository
+from app.repositories.smart_group import SmartGroupRepository
 from app.repositories.policy import PolicyRepository
 from app.schemas.device import CertificateInfo, NetworkInfo, WifiInfo
 
@@ -23,6 +22,7 @@ class TestDevicesAPI:
         assert resp.json() == []
 
     async def test_device_response_shape(self, client, db_session):
+        from app.repositories.device import DeviceRepository
         repo = DeviceRepository(db_session)
         device = await repo.create({
             "name": "MacBook",
@@ -181,7 +181,8 @@ class TestGroupPolicyAssignment:
     BASE = "/api/v1/smart-groups"
 
     async def test_assign_policy_success(self, client, db_session):
-        group = await GroupRepository(db_session).create({"name": "Test Group", "created_by": 1})
+        repo = SmartGroupRepository(db_session)
+        group = await repo.create({"name": "Test Group", "created_by": 1})
         policy = await PolicyRepository(db_session).create({
             "name": "Test Policy", "version": 1, "scope": "all",
             "rollout_state": "Completed", "target_devices": 0, "applied_devices": 0,
@@ -197,7 +198,8 @@ class TestGroupPolicyAssignment:
         assert resp.status_code == 404
 
     async def test_assign_policy_policy_not_found(self, client, db_session):
-        group = await GroupRepository(db_session).create({"name": "Test Group", "created_by": 1})
+        repo = SmartGroupRepository(db_session)
+        group = await repo.create({"name": "Test Group", "created_by": 1})
         resp = await client.post(f"{self.BASE}/{group.id}/policies", params={"policy_id": 999})
         assert resp.status_code == 404
 

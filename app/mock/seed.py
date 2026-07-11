@@ -8,9 +8,13 @@ from app.database import engine, async_session
 from app.models.base import Base
 from app.models.device import Device
 from app.models.device_policy import DevicePolicy
-from app.models.group import Group
 from app.models.inventory_search import InventorySearch
 from app.models.policy import Policy
+from app.models.smart_group import SmartGroup
+from app.models.smart_group_policy import SmartGroupPolicy
+from app.models.static_group import StaticGroup
+from app.models.static_group_device import StaticGroupDevice
+from app.models.static_group_policy import StaticGroupPolicy
 from app.models.user import User
 from app.schemas.device import NetworkInfo, WifiInfo
 
@@ -111,46 +115,44 @@ DEVICES = [
     ),
 ]
 
-GROUPS = [
-    Group(
+SMART_GROUPS = [
+    SmartGroup(
         name="All Android 14 Devices",
         description="Smart group that includes all devices running Android 14",
-        created_by=1, is_smart=True,
+        created_by=1,
         criteria=[
             {"criteria": "os_version", "operator": "is", "type": "string", "value": "Android 14", "left_parentheses": False, "right_parentheses": False},
         ],
-        display_columns=["name", "serial", "owner", "status", "compliance", "os_version"],
     ),
-    Group(
+    SmartGroup(
         name="Non-compliant Devices",
         description="Smart group tracking all non-compliant devices",
-        created_by=1, is_smart=True,
+        created_by=1,
         criteria=[
             {"criteria": "compliance", "operator": "is", "type": "string", "value": "Non-compliant", "left_parentheses": False, "right_parentheses": False},
         ],
-        display_columns=["name", "serial", "owner", "compliance", "last_seen"],
     ),
-    Group(
+    SmartGroup(
         name="Critical Issues",
         description="Devices needing immediate attention",
-        created_by=1, is_smart=True,
+        created_by=1,
         criteria=[
             {"criteria": "compliance", "operator": "is", "type": "string", "value": "Needs attention", "left_parentheses": True, "right_parentheses": False},
             {"criteria": "battery_level", "operator": "lessThan", "type": "number", "value": "15", "left_parentheses": False, "right_parentheses": True},
         ],
-        display_columns=["name", "serial", "owner", "compliance", "battery_level", "status"],
     ),
-    Group(
+]
+
+STATIC_GROUPS = [
+    StaticGroup(
         name="Executive Devices",
         description="Static group for executive team devices",
-        created_by=1, is_smart=False,
-        device_serial_numbers=["RZCR80GJ0JH", "PIX8A0J0JH", "PIX9A0J0JH"],
+        created_by=1,
     ),
-    Group(
+    StaticGroup(
         name="Alpha Test Group",
         description="Initial test group for policy rollout",
-        created_by=1, is_smart=False,
-        device_serial_numbers=["RZCT80G0JH", "OP12A0J0JH"],
+        created_by=1,
     ),
 ]
 
@@ -302,8 +304,13 @@ async def seed_database() -> None:
         session.add_all(DEVICES)
         await session.flush()
 
-        session.add_all(GROUPS)
+        session.add_all(SMART_GROUPS)
         await session.flush()
+        smart_group_ids = [sg.id for sg in SMART_GROUPS]
+
+        session.add_all(STATIC_GROUPS)
+        await session.flush()
+        static_group_ids = [sg.id for sg in STATIC_GROUPS]
 
         session.add_all(POLICIES)
         await session.flush()
@@ -311,7 +318,17 @@ async def seed_database() -> None:
         for device_id, policy_id in DEVICE_POLICIES:
             session.add(DevicePolicy(device_id=device_id, policy_id=policy_id))
 
+        for sg_id in smart_group_ids:
+            session.add(SmartGroupPolicy(smart_group_id=sg_id, policy_id=1))
+        if len(static_group_ids) >= 2:
+            session.add(StaticGroupPolicy(static_group_id=static_group_ids[0], policy_id=5))
+            session.add(StaticGroupDevice(static_group_id=static_group_ids[0], device_serial_number="RZCR80GJ0JH"))
+            session.add(StaticGroupDevice(static_group_id=static_group_ids[0], device_serial_number="PIX8A0J0JH"))
+            session.add(StaticGroupDevice(static_group_id=static_group_ids[0], device_serial_number="PIX9A0J0JH"))
+            session.add(StaticGroupDevice(static_group_id=static_group_ids[1], device_serial_number="RZCT80G0JH"))
+            session.add(StaticGroupDevice(static_group_id=static_group_ids[1], device_serial_number="OP12A0J0JH"))
+
         session.add_all(INVENTORY_SEARCHES)
         await session.commit()
 
-    logger.info("Mock database seeded with 3 users, 15 devices, 5 groups, 5 policies, 17 assignments, 2 inventory searches")
+    logger.info("Mock database seeded with 3 users, 15 devices, 3 smart groups, 2 static groups, 5 policies, 17 assignments, 2 inventory searches")

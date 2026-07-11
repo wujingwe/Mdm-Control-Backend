@@ -2,7 +2,7 @@ import pytest
 from app.core.exceptions import ConflictError
 from app.repositories.device import DeviceRepository
 from app.repositories.policy import PolicyRepository
-from app.repositories.group import GroupRepository
+from app.repositories.smart_group import SmartGroupRepository
 from app.repositories.user import UserRepository
 from app.schemas.device import CertificateInfo, CellularInfo, NetworkInfo, WifiInfo
 
@@ -159,9 +159,9 @@ class TestPolicyRepository:
         assert len(await repo.list_all()) == 2
 
 
-class TestGroupRepository:
+class TestSmartGroupRepository:
     async def test_crud(self, db_session):
-        repo = GroupRepository(db_session)
+        repo = SmartGroupRepository(db_session)
         created = await repo.create({"name": "Group A", "created_by": 1})
         assert created.id is not None
 

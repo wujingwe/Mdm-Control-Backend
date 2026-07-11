@@ -7,7 +7,7 @@ from app.schemas.device import (
     WifiInfo,
 )
 from app.schemas.policy import PolicyResponse
-from app.schemas.group import GroupCreate, GroupUpdate, GroupResponse
+from app.schemas.group import SmartGroupCreate, SmartGroupUpdate, SmartGroupResponse
 from app.schemas.user import UserResponse
 from app.schemas.common import Message
 
@@ -174,23 +174,23 @@ class TestPolicySchemas:
         assert data.version == 1
 
 
-class TestGroupSchemas:
+class TestSmartGroupSchemas:
     def test_create_valid(self):
-        data = GroupCreate(name="Group A")
+        data = SmartGroupCreate(name="Group A")
         assert data.name == "Group A"
 
     def test_create_with_description(self):
-        data = GroupCreate(name="Group A", description="desc")
+        data = SmartGroupCreate(name="Group A", description="desc")
         assert data.description == "desc"
 
     def test_update_partial(self):
-        data = GroupUpdate(description="Updated desc")
+        data = SmartGroupUpdate(description="Updated desc")
         assert data.model_dump(exclude_unset=True) == {"description": "Updated desc"}
 
     def test_response(self):
         from datetime import datetime, timezone
         now = datetime.now(timezone.utc)
-        data = GroupResponse(id=1, name="Group A", created_by=1, created_at=now)
+        data = SmartGroupResponse(id=1, name="Group A", created_by=1, created_at=now)
         assert data.id == 1
 
 

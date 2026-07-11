@@ -1,28 +1,30 @@
 from typing import Any
+
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 from sqlalchemy.exc import IntegrityError
 
-from app.models.group import Group
+from app.models.smart_group import SmartGroup
 from app.core.exceptions import ConflictError
 
 
-class GroupRepository:
+class SmartGroupRepository:
     def __init__(self, db: AsyncSession) -> None:
         self.db = db
 
-    async def list_all(self, skip: int = 0, limit: int = 100) -> list[Group]:
-        stmt = select(Group).offset(skip).limit(limit)
+    async def list_all(self, skip: int = 0, limit: int = 100) -> list[SmartGroup]:
+        stmt = select(SmartGroup).order_by(SmartGroup.id).offset(skip).limit(limit)
         result = await self.db.execute(stmt)
         return list(result.scalars().all())
 
-    async def get_by_id(self, record_id: int) -> Group | None:
-        stmt = select(Group).where(Group.id == record_id)
+    async def get_by_id(self, record_id: int) -> SmartGroup | None:
+        stmt = select(SmartGroup).where(SmartGroup.id == record_id).options(selectinload(SmartGroup.policies))
         result = await self.db.execute(stmt)
         return result.scalar_one_or_none()
 
-    async def create(self, data: dict[str, Any]) -> Group:
-        instance = Group(**data)
+    async def create(self, data: dict[str, Any]) -> SmartGroup:
+        instance = SmartGroup(**data)
         self.db.add(instance)
         try:
             await self.db.commit()
@@ -32,7 +34,7 @@ class GroupRepository:
             raise ConflictError("Resource already exists") from err  # noqa: TRY003, EM101
         return instance
 
-    async def update(self, record_id: int, data: dict[str, Any]) -> Group | None:
+    async def update(self, record_id: int, data: dict[str, Any]) -> SmartGroup | None:
         instance = await self.get_by_id(record_id)
         if not instance:
             return None
@@ -55,6 +57,6 @@ class GroupRepository:
         return True
 
     async def count(self) -> int:
-        stmt = select(func.count()).select_from(Group)
+        stmt = select(func.count()).select_from(SmartGroup)
         result = await self.db.execute(stmt)
         return result.scalar_one()

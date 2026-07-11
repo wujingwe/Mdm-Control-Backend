@@ -1,7 +1,7 @@
 from unittest.mock import AsyncMock, MagicMock
 import pytest
 from app.services.device import DeviceService
-from app.services.group import GroupService
+from app.services.smart_group import SmartGroupService
 from app.services.policy import PolicyService
 
 
@@ -120,7 +120,7 @@ class TestPolicyService:
         assert result is None
 
 
-class TestGroupService:
+class TestSmartGroupService:
     @pytest.fixture
     def repo(self):
         m = MagicMock()
@@ -143,7 +143,7 @@ class TestGroupService:
         mock_result.scalar_one_or_none.return_value = group
         repo.db.execute = AsyncMock(return_value=mock_result)
 
-        svc = GroupService(repo)
+        svc = SmartGroupService(repo)
         result = await svc.assign_policy(1, 10)
         assert result is not None
         assert policy in group.policies
@@ -160,7 +160,7 @@ class TestGroupService:
         mock_result.scalar_one_or_none.return_value = group
         repo.db.execute = AsyncMock(return_value=mock_result)
 
-        svc = GroupService(repo)
+        svc = SmartGroupService(repo)
         result = await svc.assign_policy(1, 10)
         assert result is not None
         assert len(group.policies) == 1
@@ -171,7 +171,7 @@ class TestGroupService:
         mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = None
         repo.db.execute = AsyncMock(return_value=mock_result)
-        svc = GroupService(repo)
+        svc = SmartGroupService(repo)
         result = await svc.assign_policy(999, 1)
         assert result is None
 
@@ -180,37 +180,37 @@ class TestGroupService:
         mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = None
         repo.db.execute = AsyncMock(return_value=mock_result)
-        svc = GroupService(repo)
+        svc = SmartGroupService(repo)
         result = await svc.assign_policy(1, 999)
         assert result is None
 
     async def test_list_groups(self, repo):
-        svc = GroupService(repo)
+        svc = SmartGroupService(repo)
         await svc.list_groups()
         repo.list_all.assert_called_once_with(skip=0, limit=100)
 
     async def test_get_group(self, repo):
         fake = MagicMock()
         repo.get_by_id = AsyncMock(return_value=fake)
-        svc = GroupService(repo)
+        svc = SmartGroupService(repo)
         result = await svc.get_group(1)
         assert result is fake
 
     async def test_create_group(self, repo):
         fake = MagicMock()
         repo.create = AsyncMock(return_value=fake)
-        svc = GroupService(repo)
+        svc = SmartGroupService(repo)
         result = await svc.create_group({"name": "G"})
         assert result is fake
 
     async def test_update_group(self, repo):
         fake = MagicMock()
         repo.update = AsyncMock(return_value=fake)
-        svc = GroupService(repo)
+        svc = SmartGroupService(repo)
         result = await svc.update_group(1, {"name": "G2"})
         assert result is fake
 
     async def test_delete_group(self, repo):
         repo.delete = AsyncMock(return_value=True)
-        svc = GroupService(repo)
+        svc = SmartGroupService(repo)
         assert await svc.delete_group(1) is True

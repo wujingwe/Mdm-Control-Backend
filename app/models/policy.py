@@ -4,11 +4,13 @@ from sqlalchemy import String, Integer, Text, JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.models.base import Base
 from app.models.device_policy import DevicePolicy  # noqa: F401
-from app.models.group_policy import GroupPolicy  # noqa: F401
+from app.models.smart_group_policy import SmartGroupPolicy  # noqa: F401
+from app.models.static_group_policy import StaticGroupPolicy  # noqa: F401
 
 if TYPE_CHECKING:
     from app.models.device import Device
-    from app.models.group import Group
+    from app.models.smart_group import SmartGroup
+    from app.models.static_group import StaticGroup
 
 
 class Policy(Base):
@@ -29,7 +31,12 @@ class Policy(Base):
         back_populates="policies",
     )
 
-    groups: Mapped[list["Group"]] = relationship(
-        secondary="group_policies",
+    smart_groups: Mapped[list["SmartGroup"]] = relationship(
+        secondary="smart_group_policies",
+        back_populates="policies",
+    )
+
+    static_groups: Mapped[list["StaticGroup"]] = relationship(
+        secondary="static_group_policies",
         back_populates="policies",
     )
