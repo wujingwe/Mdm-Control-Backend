@@ -144,13 +144,13 @@ GROUPS = [
         name="Executive Devices",
         description="Static group for executive team devices",
         created_by=1, is_smart=False,
-        display_columns=["name", "serial", "owner", "status", "os_version"],
+        device_serial_numbers=["RZCR80GJ0JH", "PIX8A0J0JH", "PIX9A0J0JH"],
     ),
     Group(
         name="Alpha Test Group",
         description="Initial test group for policy rollout",
         created_by=1, is_smart=False,
-        display_columns=["name", "serial", "status", "compliance"],
+        device_serial_numbers=["RZCT80G0JH", "OP12A0J0JH"],
     ),
 ]
 

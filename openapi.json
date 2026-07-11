@@ -753,7 +753,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PaginatedResponse_GroupResponse_"
+                  "$ref": "#/components/schemas/PaginatedResponse_StaticGroupResponse_"
                 }
               }
             }
@@ -781,7 +781,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/GroupCreate"
+                "$ref": "#/components/schemas/StaticGroupCreate"
               }
             }
           }
@@ -792,7 +792,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/GroupResponse"
+                  "$ref": "#/components/schemas/StaticGroupResponse"
                 }
               }
             }
@@ -834,7 +834,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/GroupResponse"
+                  "$ref": "#/components/schemas/StaticGroupResponse"
                 }
               }
             }
@@ -873,7 +873,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/GroupUpdate"
+                "$ref": "#/components/schemas/StaticGroupUpdate"
               }
             }
           }
@@ -884,7 +884,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/GroupResponse"
+                  "$ref": "#/components/schemas/StaticGroupResponse"
                 }
               }
             }
@@ -975,7 +975,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/GroupResponse"
+                  "$ref": "#/components/schemas/StaticGroupResponse"
                 }
               }
             }
@@ -1847,214 +1847,6 @@
         ],
         "title": "FleetMetricsResponse"
       },
-      "GroupCreate": {
-        "properties": {
-          "name": {
-            "type": "string",
-            "title": "Name"
-          },
-          "description": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Description"
-          },
-          "criteria": {
-            "anyOf": [
-              {
-                "additionalProperties": true,
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Criteria"
-          },
-          "display_columns": {
-            "anyOf": [
-              {
-                "items": {
-                  "type": "string"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Display Columns"
-          },
-          "is_smart": {
-            "type": "boolean",
-            "title": "Is Smart",
-            "default": false
-          },
-          "created_by": {
-            "type": "integer",
-            "title": "Created By",
-            "default": 1
-          }
-        },
-        "type": "object",
-        "required": [
-          "name"
-        ],
-        "title": "GroupCreate"
-      },
-      "GroupResponse": {
-        "properties": {
-          "id": {
-            "type": "integer",
-            "title": "Id"
-          },
-          "name": {
-            "type": "string",
-            "title": "Name"
-          },
-          "description": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Description"
-          },
-          "criteria": {
-            "anyOf": [
-              {
-                "additionalProperties": true,
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Criteria"
-          },
-          "display_columns": {
-            "anyOf": [
-              {
-                "items": {
-                  "type": "string"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Display Columns"
-          },
-          "is_smart": {
-            "type": "boolean",
-            "title": "Is Smart",
-            "default": false
-          },
-          "created_by": {
-            "type": "integer",
-            "title": "Created By"
-          },
-          "created_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Created At"
-          },
-          "updated_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Updated At"
-          }
-        },
-        "type": "object",
-        "required": [
-          "id",
-          "name",
-          "created_by",
-          "created_at"
-        ],
-        "title": "GroupResponse"
-      },
-      "GroupUpdate": {
-        "properties": {
-          "name": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Name"
-          },
-          "description": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Description"
-          },
-          "criteria": {
-            "anyOf": [
-              {
-                "additionalProperties": true,
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Criteria"
-          },
-          "display_columns": {
-            "anyOf": [
-              {
-                "items": {
-                  "type": "string"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Display Columns"
-          },
-          "is_smart": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Is Smart"
-          }
-        },
-        "type": "object",
-        "title": "GroupUpdate"
-      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -2271,37 +2063,6 @@
         ],
         "title": "PaginatedResponse[DeviceResponse]"
       },
-      "PaginatedResponse_GroupResponse_": {
-        "properties": {
-          "items": {
-            "items": {
-              "$ref": "#/components/schemas/GroupResponse"
-            },
-            "type": "array",
-            "title": "Items"
-          },
-          "total": {
-            "type": "integer",
-            "title": "Total"
-          },
-          "skip": {
-            "type": "integer",
-            "title": "Skip"
-          },
-          "limit": {
-            "type": "integer",
-            "title": "Limit"
-          }
-        },
-        "type": "object",
-        "required": [
-          "items",
-          "total",
-          "skip",
-          "limit"
-        ],
-        "title": "PaginatedResponse[GroupResponse]"
-      },
       "PaginatedResponse_InventorySearchResponse_": {
         "properties": {
           "items": {
@@ -2394,6 +2155,37 @@
           "limit"
         ],
         "title": "PaginatedResponse[SmartGroupResponse]"
+      },
+      "PaginatedResponse_StaticGroupResponse_": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/StaticGroupResponse"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "skip": {
+            "type": "integer",
+            "title": "Skip"
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "skip",
+          "limit"
+        ],
+        "title": "PaginatedResponse[StaticGroupResponse]"
       },
       "PaginatedResponse_UserResponse_": {
         "properties": {
@@ -2711,6 +2503,145 @@
         },
         "type": "object",
         "title": "SmartGroupUpdate"
+      },
+      "StaticGroupCreate": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "device_serial_numbers": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Device Serial Numbers",
+            "default": []
+          },
+          "created_by": {
+            "type": "integer",
+            "title": "Created By",
+            "default": 1
+          }
+        },
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "StaticGroupCreate"
+      },
+      "StaticGroupResponse": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "device_serial_numbers": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Device Serial Numbers",
+            "default": []
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "created_by": {
+            "type": "integer",
+            "title": "Created By"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "created_at",
+          "created_by"
+        ],
+        "title": "StaticGroupResponse"
+      },
+      "StaticGroupUpdate": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "device_serial_numbers": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Device Serial Numbers"
+          }
+        },
+        "type": "object",
+        "title": "StaticGroupUpdate"
       },
       "UserResponse": {
         "properties": {

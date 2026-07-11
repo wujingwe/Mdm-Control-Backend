@@ -5,12 +5,12 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from app.dependencies import get_group_service
 from app.schemas.common import Message, PaginatedResponse
 from app.schemas.group import (
-    GroupCreate,
-    GroupResponse,
-    GroupUpdate,
     SmartGroupCreate,
     SmartGroupResponse,
     SmartGroupUpdate,
+    StaticGroupCreate,
+    StaticGroupResponse,
+    StaticGroupUpdate,
 )
 from app.services.group import GroupService
 from app.notification.sse import notify_group_policy_assignment
@@ -37,16 +37,16 @@ async def list_smart_groups(
     )
 
 
-@static_groups_router.get("", response_model=PaginatedResponse[GroupResponse])
+@static_groups_router.get("", response_model=PaginatedResponse[StaticGroupResponse])
 async def list_static_groups(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
     service: GroupService = Depends(get_group_service),
-) -> PaginatedResponse[GroupResponse]:
+) -> PaginatedResponse[StaticGroupResponse]:
     items = await service.list_groups(skip=skip, limit=limit, is_smart=False)
     total = await service.repo.count(is_smart=False)
     return PaginatedResponse(
-        items=[GroupResponse.model_validate(g) for g in items],
+        items=[StaticGroupResponse.model_validate(g) for g in items],
         total=total, skip=skip, limit=limit,
     )
 
@@ -62,15 +62,15 @@ async def get_smart_group(
     return SmartGroupResponse.model_validate(group)
 
 
-@static_groups_router.get("/{group_id}", response_model=GroupResponse)
+@static_groups_router.get("/{group_id}", response_model=StaticGroupResponse)
 async def get_static_group(
     group_id: int,
     service: GroupService = Depends(get_group_service),
-) -> GroupResponse:
+) -> StaticGroupResponse:
     group = await service.get_group(group_id)
     if not group:
         raise HTTPException(status_code=404, detail="Group not found")
-    return GroupResponse.model_validate(group)
+    return StaticGroupResponse.model_validate(group)
 
 
 @smart_groups_router.post("", response_model=SmartGroupResponse, status_code=201)
@@ -90,16 +90,20 @@ async def create_smart_group(
     return SmartGroupResponse.model_validate(group)
 
 
-@static_groups_router.post("", response_model=GroupResponse, status_code=201)
+@static_groups_router.post("", response_model=StaticGroupResponse, status_code=201)
 async def create_static_group(
-    data: GroupCreate,
+    data: StaticGroupCreate,
     service: GroupService = Depends(get_group_service),
-) -> GroupResponse:
-    payload = data.model_dump()
-    payload["is_smart"] = False
-    group = await service.create_group(payload)
+) -> StaticGroupResponse:
+    group = await service.create_group({
+        "name": data.name,
+        "description": data.description,
+        "device_serial_numbers": data.device_serial_numbers,
+        "is_smart": False,
+        "created_by": data.created_by,
+    })
     await revalidate(["groups"])
-    return GroupResponse.model_validate(group)
+    return StaticGroupResponse.model_validate(group)
 
 
 @smart_groups_router.put("/{group_id}", response_model=SmartGroupResponse)
@@ -125,20 +129,27 @@ async def update_smart_group(
     return SmartGroupResponse.model_validate(updated)
 
 
-@static_groups_router.put("/{group_id}", response_model=GroupResponse)
+@static_groups_router.put("/{group_id}", response_model=StaticGroupResponse)
 async def update_static_group(
     group_id: int,
-    data: GroupUpdate,
+    data: StaticGroupUpdate,
     service: GroupService = Depends(get_group_service),
-) -> GroupResponse:
-    update_data = data.model_dump(exclude_unset=True)
-    if not update_data:
-        raise HTTPException(status_code=400, detail="No fields to update")
-    group = await service.update_group(group_id, update_data)
-    if not group:
+) -> StaticGroupResponse:
+    existing = await service.get_group(group_id)
+    if not existing:
         raise HTTPException(status_code=404, detail="Group not found")
+    update: dict = {}
+    if data.name is not None:
+        update["name"] = data.name
+    if data.description is not None:
+        update["description"] = data.description
+    if data.device_serial_numbers is not None:
+        update["device_serial_numbers"] = data.device_serial_numbers
+    if not update:
+        raise HTTPException(status_code=400, detail="No fields to update")
+    updated = await service.update_group(group_id, update)
     await revalidate(["groups"])
-    return GroupResponse.model_validate(group)
+    return StaticGroupResponse.model_validate(updated)
 
 
 @smart_groups_router.delete("/{group_id}", response_model=Message)
@@ -187,12 +198,12 @@ async def assign_policy_to_smart_group(
     return SmartGroupResponse.model_validate(group)
 
 
-@static_groups_router.post("/{group_id}/policies", response_model=GroupResponse, status_code=201)
+@static_groups_router.post("/{group_id}/policies", response_model=StaticGroupResponse, status_code=201)
 async def assign_policy_to_static_group(
     group_id: int,
     policy_id: int = Query(...),
     service: GroupService = Depends(get_group_service),
-) -> GroupResponse:
+) -> StaticGroupResponse:
     group = await service.assign_policy(group_id, policy_id)
     if not group:
         raise HTTPException(status_code=404, detail="Group or policy not found")
@@ -206,4 +217,4 @@ async def assign_policy_to_static_group(
     except Exception as e:
         logger.error(f"SSE notification failed, continuing: {e}", exc_info=True)
     await revalidate(["groups", "policies"])
-    return GroupResponse.model_validate(group)
+    return StaticGroupResponse.model_validate(group)

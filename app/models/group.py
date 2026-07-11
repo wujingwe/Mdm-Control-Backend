@@ -21,6 +21,7 @@ class Group(Base):
     criteria: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     is_smart: Mapped[bool] = mapped_column(Boolean, default=False)
     display_columns: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    device_serial_numbers: Mapped[list | None] = mapped_column(JSON, nullable=True)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, onupdate=utcnow)
 
     policies: Mapped[list["Policy"]] = relationship(
