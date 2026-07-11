@@ -134,17 +134,17 @@ All fields optional.
 
 **Response `404`:** `{"detail": "Policy not found"}`
 
-## Groups
+## Smart Groups
 
 | Method | Path | Description |
 |---|---|---|
-| `GET` | `/groups` | List all groups (paginated) |
-| `GET` | `/groups/{group_id}` | Get group by ID |
-| `POST` | `/groups` | Create a group |
-| `PUT` | `/groups/{group_id}` | Update a group |
-| `DELETE` | `/groups/{group_id}` | Delete a group |
+| `GET` | `/smart-groups` | List all smart groups (paginated) |
+| `GET` | `/smart-groups/{group_id}` | Get group by ID |
+| `POST` | `/smart-groups` | Create a smart group (`is_smart=true`) |
+| `PUT` | `/smart-groups/{group_id}` | Update a group |
+| `DELETE` | `/smart-groups/{group_id}` | Delete a group |
 
-### `GET /groups`
+### `GET /smart-groups`
 
 **Query parameters:**
 
@@ -161,7 +161,10 @@ All fields optional.
     {
       "id": 1,
       "name": "Engineering",
-      "description": "Engineering department"
+      "description": "Engineering department",
+      "is_smart": true,
+      "criteria": { "os": "macOS" },
+      "display_columns": ["name", "os_version"]
     }
   ],
   "total": 3,
@@ -170,7 +173,7 @@ All fields optional.
 }
 ```
 
-### `GET /groups/{group_id}`
+### `GET /smart-groups/{group_id}`
 
 **Path parameters:** `group_id` (int)
 
@@ -178,22 +181,24 @@ All fields optional.
 
 **Response `404`:** `{"detail": "Group not found"}`
 
-### `POST /groups`
+### `POST /smart-groups`
 
 **Request body:**
 
 ```json
 {
   "name": "Engineering",
-  "description": "Engineering department"
+  "description": "Engineering department",
+  "criteria": { "os": "macOS" },
+  "display_columns": ["name", "os_version"]
 }
 ```
 
-`name` required, `description` optional.
+`name` required, rest optional. `is_smart` is set to `true` automatically.
 
 **Response `201`:** Created `GroupResponse` object.
 
-### `PUT /groups/{group_id}`
+### `PUT /smart-groups/{group_id}`
 
 **Path parameters:** `group_id` (int)
 
@@ -212,13 +217,116 @@ All fields optional.
 
 **Response `404`:** `{"detail": "Group not found"}`
 
-### `DELETE /groups/{group_id}`
+### `DELETE /smart-groups/{group_id}`
 
 **Path parameters:** `group_id` (int)
 
 **Response `200`:** `{"detail": "Group deleted"}`
 
 **Response `404`:** `{"detail": "Group not found"}`
+
+## Static Groups
+
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/static-groups` | List all static groups (paginated) |
+| `GET` | `/static-groups/{group_id}` | Get group by ID |
+| `POST` | `/static-groups` | Create a static group (`is_smart=false`) |
+| `PUT` | `/static-groups/{group_id}` | Update a group |
+| `DELETE` | `/static-groups/{group_id}` | Delete a group |
+
+### `GET /static-groups`
+
+**Query parameters:**
+
+| Param | Type | Default | Description |
+|---|---|---|---|
+| `skip` | int | `0` | Number of items to skip (min 0) |
+| `limit` | int | `100` | Max items to return (max 1000) |
+
+**Response `200`:**
+
+```json
+{
+  "items": [
+    {
+      "id": 2,
+      "name": "Marketing",
+      "description": "Marketing department",
+      "is_smart": false
+    }
+  ],
+  "total": 3,
+  "skip": 0,
+  "limit": 100
+}
+```
+
+### `GET /static-groups/{group_id}`
+
+**Path parameters:** `group_id` (int)
+
+**Response `200`:** Single `GroupResponse` object.
+
+**Response `404`:** `{"detail": "Group not found"}`
+
+### `POST /static-groups`
+
+**Request body:**
+
+```json
+{
+  "name": "Marketing",
+  "description": "Marketing department"
+}
+```
+
+`name` required, `description` optional. `is_smart` is set to `false` automatically.
+
+**Response `201`:** Created `GroupResponse` object.
+
+### `PUT /static-groups/{group_id}`
+
+**Path parameters:** `group_id` (int)
+
+**Request body** (at least one field):
+
+```json
+{
+  "name": "Marketing Team",
+  "description": "Updated description"
+}
+```
+
+**Response `200`:** Updated `GroupResponse` object.
+
+**Response `400`:** `{"detail": "No fields to update"}`
+
+**Response `404`:** `{"detail": "Group not found"}`
+
+### `DELETE /static-groups/{group_id}`
+
+**Path parameters:** `group_id` (int)
+
+**Response `200`:** `{"detail": "Group deleted"}`
+
+**Response `404`:** `{"detail": "Group not found"}`
+
+### Policy Assignment (both Smart and Static)
+
+| Method | Path | Description |
+|---|---|---|
+| `POST` | `/{type}/groups/{group_id}/policies` | Assign a policy to a group |
+
+**Query parameters:**
+
+| Param | Type | Required | Description |
+|---|---|---|---|
+| `policy_id` | int | Yes | Policy ID to assign |
+
+**Response `201`:** Updated `GroupResponse` object.
+
+**Response `404`:** `{"detail": "Group or policy not found"}`
 
 ## Users
 

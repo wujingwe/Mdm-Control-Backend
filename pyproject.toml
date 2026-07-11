@@ -4,7 +4,7 @@ asyncio_default_fixture_loop_scope = "function"
 testpaths = ["tests"]
 
 [tool.mypy]
-python_version = "3.12"
+python_version = "3.14"
 plugins = "sqlalchemy.ext.mypy.plugin"
 strict = false
 warn_unused_configs = true

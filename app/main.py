@@ -13,7 +13,7 @@ from app.api.v1.router import router as v1_router
 from app.config.settings import settings
 from app.dependencies import get_db
 from app.lifecycle import Lifecycle
-from app.messaging.producer import kafka_producer
+from app.messaging.producer import rabbitmq_producer
 
 APP_VERSION = "1.0.0"
 _start_time = time.monotonic()
@@ -72,9 +72,9 @@ async def readiness(db: AsyncSession = Depends(get_db)) -> JSONResponse:
         db_status = "error"
     # noinspection PyBroadException
     try:
-        kafka_status = "ok" if kafka_producer.healthy else "disconnected"
+        rabbitmq_status = "ok" if rabbitmq_producer.healthy else "disconnected"
     except Exception:  # noqa: BLE001
-        kafka_status = "error"
+        rabbitmq_status = "error"
 
     overall = "ok" if db_status == "ok" else "error"
     return JSONResponse(
@@ -83,7 +83,7 @@ async def readiness(db: AsyncSession = Depends(get_db)) -> JSONResponse:
             "version": APP_VERSION,
             "uptime_seconds": int(time.monotonic() - _start_time),
             "database": {"status": db_status, "latency_ms": db_latency_ms},
-            "kafka": kafka_status,
+            "rabbitmq": rabbitmq_status,
         },
         status_code=200 if overall == "ok" else 503,
     )

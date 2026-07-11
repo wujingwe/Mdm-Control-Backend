@@ -167,16 +167,27 @@ Tests use an in-memory SQLite database with `aiosqlite`. Kafka is not required t
 
 Full reference at [API.md](API.md).
 
-### Groups
+### Smart Groups
 
 | Method | Path | Description |
 |--------|------|-------------|
-| `GET` | `/groups` | List all groups |
-| `GET` | `/groups/{id}` | Get group by ID |
-| `POST` | `/groups` | Create a group |
-| `PUT` | `/groups/{id}` | Update a group |
-| `DELETE` | `/groups/{id}` | Delete a group |
-| `POST` | `/groups/{id}/policies` | Assign a policy to a group |
+| `GET` | `/smart-groups` | List all smart groups |
+| `GET` | `/smart-groups/{id}` | Get group by ID |
+| `POST` | `/smart-groups` | Create a smart group |
+| `PUT` | `/smart-groups/{id}` | Update a group |
+| `DELETE` | `/smart-groups/{id}` | Delete a group |
+| `POST` | `/smart-groups/{id}/policies` | Assign a policy to a group |
+
+### Static Groups
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/static-groups` | List all static groups |
+| `GET` | `/static-groups/{id}` | Get group by ID |
+| `POST` | `/static-groups` | Create a static group |
+| `PUT` | `/static-groups/{id}` | Update a group |
+| `DELETE` | `/static-groups/{id}` | Delete a group |
+| `POST` | `/static-groups/{id}/policies` | Assign a policy to a group |
 
 ### Policies
 

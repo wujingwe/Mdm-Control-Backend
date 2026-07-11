@@ -4,7 +4,7 @@ from app.schemas.policy import PolicyCreate, PolicyUpdate, PolicyResponse
 from app.schemas.common import Message, PaginatedResponse
 from app.services.policy import PolicyService
 from app.webhook_client import revalidate
-from app.messaging.producer import kafka_producer
+from app.messaging.producer import rabbitmq_producer
 
 router = APIRouter(prefix="/policies", tags=["Policies"])
 
@@ -75,26 +75,24 @@ async def update_policy(
 @router.post("/{policy_id}/push", response_model=Message)
 async def push_policy(
     policy_id: int,
+    device_id: int = Query(...),
     service: PolicyService = Depends(get_policy_service),
 ) -> Message:
     policy = await service.get_policy(policy_id)
     if not policy:
         raise HTTPException(status_code=404, detail="Policy not found")
 
-    payload = {
-        "policy_id": policy.id,
-        "policy_name": policy.name,
-        "policy_config": policy.settings or {},
-    }
-
     try:
-        await kafka_producer.send_event(
-            topic="policy-assignments",
-            key=str(policy.id),
-            value=payload,
+        await rabbitmq_producer.publish_policy_deployment(
+            device_id=device_id,
+            policy_id=policy.id,
+            policy_name=policy.name,
+            policy_config=policy.settings or {},
         )
     except RuntimeError as err:
-        raise HTTPException(status_code=503, detail="Kafka producer not available") from err
+        raise HTTPException(status_code=503, detail="RabbitMQ producer not available") from err
+    except Exception as err:
+        raise HTTPException(status_code=503, detail=f"RabbitMQ publish failed: {err}") from err
 
     await service.update_policy(policy_id, {"rollout_state": "Pushing"})
     await revalidate(["policies"])

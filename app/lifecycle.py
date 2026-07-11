@@ -1,6 +1,8 @@
 import asyncio
 import logging
 
+from app.config.settings import settings
+
 logger = logging.getLogger(__name__)
 
 
@@ -9,40 +11,53 @@ class Lifecycle:
         self._consumer_task: asyncio.Task | None = None
 
     async def start(self) -> None:
-        await self._start_kafka()
-        self._consumer_task = await self._start_consumer()
+        await self._start_rabbitmq()
+        if settings.rabbitmq_consumer_enabled:
+            self._consumer_task = await self._start_consumer()
 
     async def stop(self) -> None:
         await self._stop_consumer()
-        await self._stop_kafka()
+        await self._stop_rabbitmq()
 
     @staticmethod
-    async def _start_kafka() -> None:
-        from app.messaging.producer import kafka_producer
+    async def _start_rabbitmq() -> None:
+        from app.messaging.producer import rabbitmq_producer
 
         # noinspection PyBroadException
         try:
-            await kafka_producer.start()
+            await rabbitmq_producer.start()
         except Exception:
-            logger.warning("Kafka unavailable, continuing without it")
+            logger.warning("RabbitMQ unavailable, continuing without it")
 
     @staticmethod
-    async def _stop_kafka() -> None:
-        from app.messaging.producer import kafka_producer
+    async def _stop_rabbitmq() -> None:
+        from app.messaging.producer import rabbitmq_producer
 
         # noinspection PyBroadException
         try:
-            await kafka_producer.stop()
+            await rabbitmq_producer.stop()
         except Exception:
             pass
 
     @staticmethod
     async def _start_consumer() -> asyncio.Task:
-        from app.messaging.consumer import consume_policy_assignments
+        from app.messaging.consumer import rabbitmq_consumer
 
-        return asyncio.create_task(consume_policy_assignments())
+        async def run_consumer() -> None:
+            # noinspection PyBroadException
+            try:
+                await rabbitmq_consumer.run_until_stopped()
+            except asyncio.CancelledError:
+                raise
+            except Exception:
+                logger.warning("RabbitMQ consumer unavailable, continuing without it")
+
+        return asyncio.create_task(run_consumer())
 
     async def _stop_consumer(self) -> None:
+        from app.messaging.consumer import rabbitmq_consumer
+
+        await rabbitmq_consumer.stop()
         if self._consumer_task is None:
             return
         self._consumer_task.cancel()
