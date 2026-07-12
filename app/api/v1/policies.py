@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from app.dependencies import get_policy_service
-from app.schemas.policy import PolicyCreate, PolicyUpdate, PolicyResponse
-from app.schemas.common import Message, PaginatedResponse
-from app.services.policy import PolicyService
+from app.policies.schemas import PolicyCreate, PolicyUpdate, PolicyResponse
+from app.common.schemas import Message, PaginatedResponse
+from app.policies.services import PolicyService
 from app.webhook_client import revalidate
 from app.messaging.producer import rabbitmq_producer
 

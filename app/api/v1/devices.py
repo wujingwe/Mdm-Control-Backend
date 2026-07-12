@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from app.dependencies import get_device_service
-from app.models.device import Device
-from app.schemas.device import DeviceResponse, DeviceSearchCriteria
-from app.schemas.common import PaginatedResponse
-from app.services.device import DeviceService
+from app.devices.models import Device
+from app.devices.schemas import DeviceResponse, DeviceSearchCriteria
+from app.common.schemas import PaginatedResponse
+from app.devices.services import DeviceService
 from app.webhook_client import revalidate
 
 router = APIRouter(prefix="/devices", tags=["Devices"])

@@ -1,10 +1,10 @@
 import pytest
 from app.core.exceptions import ConflictError
-from app.repositories.device import DeviceRepository
-from app.repositories.policy import PolicyRepository
-from app.repositories.smart_group import SmartGroupRepository
-from app.repositories.user import UserRepository
-from app.schemas.device import Certificate, Cellular, Network, Wifi
+from app.devices.repositories import DeviceRepository
+from app.policies.repositories import PolicyRepository
+from app.smart_groups.repositories import SmartGroupRepository
+from app.users.repositories import UserRepository
+from app.devices.schemas import Certificate, Cellular, Network, Wifi
 
 
 def _make_device_data(serial: str = "SN001", name: str = "Test Device") -> dict:

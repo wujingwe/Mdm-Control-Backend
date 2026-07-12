@@ -1,9 +1,9 @@
 from unittest.mock import AsyncMock, MagicMock
 import pytest
-from app.services.device import DeviceService
-from app.services.smart_group import SmartGroupService
-from app.services.policy import PolicyService
-from app.services.profile import ProfileService
+from app.devices.services import DeviceService
+from app.smart_groups.services import SmartGroupService
+from app.policies.services import PolicyService
+from app.profiles.services import ProfileService
 
 
 class TestDeviceService:
@@ -308,7 +308,6 @@ class TestProfileService:
         assert result == fake_assignments
 
     async def test_update_assignment_status_found(self, repo):
-        from datetime import datetime, timezone
         assignment = MagicMock(
             profile_id=1, device_id=10, source="DIRECT",
             source_id=None, profile_version=1,

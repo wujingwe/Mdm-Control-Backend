@@ -1,6 +1,6 @@
-from app.repositories.smart_group import SmartGroupRepository
-from app.repositories.policy import PolicyRepository
-from app.schemas.device import Certificate, Network, Wifi
+from app.smart_groups.repositories import SmartGroupRepository
+from app.policies.repositories import PolicyRepository
+from app.devices.schemas import Certificate, Network, Wifi
 
 
 class TestDevicesAPI:
@@ -22,7 +22,7 @@ class TestDevicesAPI:
         assert resp.json() == []
 
     async def test_device_response_shape(self, client, db_session):
-        from app.repositories.device import DeviceRepository
+        from app.devices.repositories import DeviceRepository
         repo = DeviceRepository(db_session)
         device = await repo.create({
             "name": "MacBook",

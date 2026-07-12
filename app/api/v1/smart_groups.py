@@ -3,9 +3,9 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from app.dependencies import get_smart_group_service
-from app.schemas.common import Message, PaginatedResponse
-from app.schemas.group import SmartGroupCreate, SmartGroupResponse, SmartGroupUpdate
-from app.services.smart_group import SmartGroupService
+from app.common.schemas import Message, PaginatedResponse
+from app.smart_groups.schemas import SmartGroupCreate, SmartGroupResponse, SmartGroupUpdate
+from app.smart_groups.services import SmartGroupService
 from app.notification.sse import notify_group_policy_assignment
 from app.webhook_client import revalidate
 

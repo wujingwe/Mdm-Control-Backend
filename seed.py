@@ -9,13 +9,13 @@ import asyncio
 from datetime import datetime, timezone
 
 from app.database import async_session, engine
-from app.models.device import Device
-from app.models.device_policy import DevicePolicy
-from app.models.policy import Policy
-from app.models.smart_group import SmartGroup
-from app.models.static_group import StaticGroup
-from app.models.user import User
-from app.schemas.device import Network, Wifi
+from app.devices.models import Device
+from app.policies.device_policy import DevicePolicy
+from app.policies.models import Policy
+from app.smart_groups.models import SmartGroup
+from app.static_groups.models import StaticGroup
+from app.users.models import User
+from app.devices.schemas import Network, Wifi
 from passlib.context import CryptContext
 from sqlalchemy import text
 

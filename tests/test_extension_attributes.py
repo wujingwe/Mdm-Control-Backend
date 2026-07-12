@@ -1,4 +1,4 @@
-from app.repositories.extension_attribute import ExtensionAttributeRepository
+from app.extension_attributes.repositories import ExtensionAttributeRepository
 
 
 class TestExtensionAttributeRepository:

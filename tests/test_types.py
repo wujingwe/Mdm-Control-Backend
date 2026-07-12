@@ -1,5 +1,5 @@
-from app.models.types import CertificateListType, NetworkInfoType
-from app.schemas.device import Certificate, Network, Wifi
+from app.types import CertificateListType, NetworkInfoType
+from app.devices.schemas import Certificate, Network, Wifi
 
 
 class TestNetworkInfoType:

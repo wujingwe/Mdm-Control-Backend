@@ -1,13 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from app.dependencies import get_inventory_search_service
-from app.schemas.common import Message, PaginatedResponse
-from app.schemas.inventory_search import (
+from app.common.schemas import Message, PaginatedResponse
+from app.inventory_search.schemas import (
     InventorySearchCreate,
     InventorySearchResponse,
     InventorySearchUpdate,
 )
-from app.services.inventory_search import InventorySearchService
+from app.inventory_search.services import InventorySearchService
 from app.webhook_client import revalidate
 
 router = APIRouter(prefix="/inventory-search", tags=["Inventory Search"])

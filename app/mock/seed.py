@@ -5,21 +5,21 @@ from passlib.context import CryptContext
 from sqlalchemy import text
 
 from app.database import engine, async_session
-from app.models.base import Base
-from app.models.device import Device
-from app.models.device_policy import DevicePolicy
-from app.models.extension_attribute import ExtensionAttribute
-from app.models.inventory_search import InventorySearch
-from app.models.policy import Policy
-from app.models.profile import Profile
-from app.models.profile_scope import ProfileScope
-from app.models.smart_group import SmartGroup
-from app.models.smart_group_policy import SmartGroupPolicy
-from app.models.static_group import StaticGroup
-from app.models.static_group_device import StaticGroupDevice
-from app.models.static_group_policy import StaticGroupPolicy
-from app.models.user import User
-from app.schemas.device import Network, Wifi
+from app.base import Base
+from app.devices.models import Device
+from app.policies.device_policy import DevicePolicy
+from app.extension_attributes.models import ExtensionAttribute
+from app.inventory_search.models import InventorySearch
+from app.policies.models import Policy
+from app.profiles.models import Profile
+from app.profiles.profile_scope import ProfileScope
+from app.smart_groups.models import SmartGroup
+from app.smart_groups.smart_group_policy import SmartGroupPolicy
+from app.static_groups.models import StaticGroup
+from app.static_groups.static_group_device import StaticGroupDevice
+from app.static_groups.static_group_policy import StaticGroupPolicy
+from app.users.models import User
+from app.devices.schemas import Network, Wifi
 
 logger = logging.getLogger(__name__)
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")

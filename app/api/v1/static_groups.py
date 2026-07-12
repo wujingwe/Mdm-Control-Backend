@@ -3,9 +3,9 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from app.dependencies import get_static_group_service
-from app.schemas.common import Message, PaginatedResponse
-from app.schemas.group import StaticGroupCreate, StaticGroupResponse, StaticGroupUpdate
-from app.services.static_group import StaticGroupService
+from app.common.schemas import Message, PaginatedResponse
+from app.static_groups.schemas import StaticGroupCreate, StaticGroupResponse, StaticGroupUpdate
+from app.static_groups.services import StaticGroupService
 from app.notification.sse import notify_group_policy_assignment
 from app.webhook_client import revalidate
 

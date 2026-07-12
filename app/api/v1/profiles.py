@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from app.dependencies import get_profile_service
-from app.schemas.common import Message, PaginatedResponse
-from app.schemas.profile import (
+from app.common.schemas import Message, PaginatedResponse
+from app.profiles.schemas import (
     AssignmentResponse,
     ProfileCreate,
     ProfileResponse,
@@ -12,7 +12,7 @@ from app.schemas.profile import (
     StatusUpdate,
     TargetType,
 )
-from app.services.profile import ProfileService
+from app.profiles.services import ProfileService
 from app.webhook_client import revalidate
 
 router = APIRouter(prefix="/profiles", tags=["Profiles"])

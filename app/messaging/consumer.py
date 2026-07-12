@@ -12,8 +12,8 @@ from sqlalchemy.orm import selectinload
 
 from app.config.settings import settings
 from app.database import async_session
-from app.models.device import Device
-from app.models.policy import Policy
+from app.devices.models import Device
+from app.policies.models import Policy
 from app.notification.webhook import send_validation_webhook
 
 try:

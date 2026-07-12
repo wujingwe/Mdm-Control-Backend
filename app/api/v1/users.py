@@ -2,9 +2,9 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.dependencies import get_db
-from app.models.user import User
-from app.schemas.user import UserResponse
-from app.schemas.common import PaginatedResponse
+from app.users.models import User
+from app.users.schemas import UserResponse
+from app.common.schemas import PaginatedResponse
 
 router = APIRouter(prefix="/users", tags=["Users"])
 

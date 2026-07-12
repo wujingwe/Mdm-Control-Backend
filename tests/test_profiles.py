@@ -1,6 +1,6 @@
-from app.repositories.profile import ProfileRepository
-from app.repositories.device import DeviceRepository
-from app.repositories.smart_group import SmartGroupRepository
+from app.profiles.repositories import ProfileRepository
+from app.devices.repositories import DeviceRepository
+from app.smart_groups.repositories import SmartGroupRepository
 
 
 class TestProfileRepository:

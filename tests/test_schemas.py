@@ -1,4 +1,4 @@
-from app.schemas.device import (
+from app.devices.schemas import (
     Certificate,
     Cellular,
     DeviceResponse,
@@ -6,10 +6,10 @@ from app.schemas.device import (
     Network,
     Wifi,
 )
-from app.schemas.policy import PolicyResponse
-from app.schemas.group import SmartGroupCreate, SmartGroupUpdate, SmartGroupResponse
-from app.schemas.user import UserResponse
-from app.schemas.common import Message
+from app.policies.schemas import PolicyResponse
+from app.smart_groups.schemas import SmartGroupCreate, SmartGroupUpdate, SmartGroupResponse
+from app.users.schemas import UserResponse
+from app.common.schemas import Message
 
 
 from datetime import datetime, timezone
