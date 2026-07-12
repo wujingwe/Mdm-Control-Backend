@@ -4,13 +4,11 @@ from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import async_session
-from app.devices.repositories import DeviceRepository
 from app.extension_attributes.repositories import ExtensionAttributeRepository
 from app.inventory_search.repositories import InventorySearchRepository
 from app.profiles.repositories import ProfileRepository
 from app.smart_groups.repositories import SmartGroupRepository
 from app.static_groups.repositories import StaticGroupRepository
-from app.devices.services import DeviceService
 from app.extension_attributes.services import ExtensionAttributeService
 from app.inventory_search.services import InventorySearchService
 from app.profiles.services import ProfileService
@@ -21,10 +19,6 @@ from app.static_groups.services import StaticGroupService
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
     async with async_session() as session:
         yield session
-
-
-def get_device_service(db: AsyncSession = Depends(get_db)) -> DeviceService:
-    return DeviceService(DeviceRepository(db))
 
 
 def get_smart_group_service(db: AsyncSession = Depends(get_db)) -> SmartGroupService:
