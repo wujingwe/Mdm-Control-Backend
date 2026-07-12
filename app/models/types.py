@@ -4,7 +4,7 @@ from typing import Generic, TypeVar
 from sqlalchemy import JSON, TypeDecorator
 from sqlalchemy.engine.interfaces import Dialect
 
-from app.schemas.device import CertificateInfo, NetworkInfo
+from app.schemas.device import Certificate, Network
 
 S = TypeVar("S")
 T = TypeVar("T")
@@ -30,20 +30,20 @@ class JsonType(TypeDecorator[T], ABC, Generic[S, T]):
     def _result(self, value: S) -> T: ...
 
 
-class NetworkInfoType(JsonType[dict, NetworkInfo]):
-    def _bind(self, value: NetworkInfo) -> dict:
+class NetworkInfoType(JsonType[dict, Network]):
+    def _bind(self, value: Network) -> dict:
         return value.model_dump()
 
-    def _result(self, value: dict) -> NetworkInfo:
-        return NetworkInfo.model_validate(value)
+    def _result(self, value: dict) -> Network:
+        return Network.model_validate(value)
 
 
-class CertificateListType(JsonType[list[dict], list[CertificateInfo]]):
-    def _bind(self, value: list[CertificateInfo]) -> list[dict]:
+class CertificateListType(JsonType[list[dict], list[Certificate]]):
+    def _bind(self, value: list[Certificate]) -> list[dict]:
         return [c.model_dump() for c in value]
 
-    def _result(self, value: list[dict]) -> list[CertificateInfo]:
-        return [CertificateInfo.model_validate(c) for c in value]
+    def _result(self, value: list[dict]) -> list[Certificate]:
+        return [Certificate.model_validate(c) for c in value]
 
 
 class PermissionListType(JsonType[list[str], frozenset[str]]):

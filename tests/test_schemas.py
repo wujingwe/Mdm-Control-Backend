@@ -1,10 +1,10 @@
 from app.schemas.device import (
-    CertificateInfo,
-    CellularInfo,
+    Certificate,
+    Cellular,
     DeviceResponse,
     DeviceSearchCriteria,
-    NetworkInfo,
-    WifiInfo,
+    Network,
+    Wifi,
 )
 from app.schemas.policy import PolicyResponse
 from app.schemas.group import SmartGroupCreate, SmartGroupUpdate, SmartGroupResponse
@@ -54,8 +54,8 @@ class TestDeviceSchemas:
         assert data.certificates is None
 
     def test_with_network_info(self):
-        wifi = WifiInfo(ssid="Office", bssid="00:11:22:33:44:55", signal_strength=-45)
-        net = NetworkInfo(wifi=wifi)
+        wifi = Wifi(ssid="Office", bssid="00:11:22:33:44:55", signal_strength=-45)
+        net = Network(wifi=wifi)
         data = DeviceResponse(**_DEVICE_FIELDS, network=net)
         assert data.network.wifi.ssid == "Office"
         assert data.network.wifi.bssid == "00:11:22:33:44:55"
@@ -63,8 +63,8 @@ class TestDeviceSchemas:
         assert data.network.cellular is None
 
     def test_with_network_cellular(self):
-        cell = CellularInfo(carrier="AT&T", imei="123456789012345", roaming=False)
-        net = NetworkInfo(cellular=cell)
+        cell = Cellular(carrier="AT&T", imei="123456789012345", roaming=False)
+        net = Network(cellular=cell)
         data = DeviceResponse(**_DEVICE_FIELDS, network=net)
         assert data.network.cellular.carrier == "AT&T"
         assert data.network.cellular.imei == "123456789012345"
@@ -73,8 +73,8 @@ class TestDeviceSchemas:
 
     def test_with_certificates(self):
         certs = [
-            CertificateInfo(common_name="example.com", issuer="CA Inc", type="identity"),
-            CertificateInfo(common_name="backup.example.com", fingerprint="AB:CD:EF"),
+            Certificate(common_name="example.com", issuer="CA Inc", type="identity"),
+            Certificate(common_name="backup.example.com", fingerprint="AB:CD:EF"),
         ]
         data = DeviceResponse(**_DEVICE_FIELDS, certificates=certs)
         assert len(data.certificates) == 2
@@ -85,7 +85,7 @@ class TestDeviceSchemas:
 
 class TestWifiInfo:
     def test_all_fields_default_to_none(self):
-        w = WifiInfo()
+        w = Wifi()
         assert w.ssid is None
         assert w.bssid is None
         assert w.ip_address is None
@@ -96,7 +96,7 @@ class TestWifiInfo:
         assert w.signal_strength is None
 
     def test_constructor(self):
-        w = WifiInfo(ssid="Home", mac_address="aa:bb:cc:dd:ee:ff", signal_strength=-60)
+        w = Wifi(ssid="Home", mac_address="aa:bb:cc:dd:ee:ff", signal_strength=-60)
         assert w.ssid == "Home"
         assert w.mac_address == "aa:bb:cc:dd:ee:ff"
         assert w.signal_strength == -60
@@ -104,14 +104,14 @@ class TestWifiInfo:
 
 class TestCellularInfo:
     def test_all_fields_default_to_none(self):
-        c = CellularInfo()
+        c = Cellular()
         assert c.carrier is None
         assert c.ip_address is None
         assert c.imei is None
         assert c.roaming is None
 
     def test_constructor(self):
-        c = CellularInfo(carrier="Verizon", connection_type="5G", roaming=True)
+        c = Cellular(carrier="Verizon", connection_type="5G", roaming=True)
         assert c.carrier == "Verizon"
         assert c.connection_type == "5G"
         assert c.roaming is True
@@ -119,31 +119,31 @@ class TestCellularInfo:
 
 class TestNetworkInfo:
     def test_both_subfields_default_to_none(self):
-        n = NetworkInfo()
+        n = Network()
         assert n.wifi is None
         assert n.cellular is None
 
     def test_with_wifi(self):
-        n = NetworkInfo(wifi=WifiInfo(ssid="Guest"))
+        n = Network(wifi=Wifi(ssid="Guest"))
         assert n.wifi.ssid == "Guest"
         assert n.cellular is None
 
     def test_with_cellular(self):
-        n = NetworkInfo(cellular=CellularInfo(imei="000000000000000"))
+        n = Network(cellular=Cellular(imei="000000000000000"))
         assert n.cellular.imei == "000000000000000"
         assert n.wifi is None
 
     def test_model_dump_roundtrip(self):
-        n = NetworkInfo(wifi=WifiInfo(ssid="Test"), cellular=CellularInfo(carrier="T-Mobile"))
+        n = Network(wifi=Wifi(ssid="Test"), cellular=Cellular(carrier="T-Mobile"))
         dumped = n.model_dump()
-        loaded = NetworkInfo.model_validate(dumped)
+        loaded = Network.model_validate(dumped)
         assert loaded.wifi.ssid == "Test"
         assert loaded.cellular.carrier == "T-Mobile"
 
 
 class TestCertificateInfo:
     def test_all_fields_default_to_none(self):
-        c = CertificateInfo()
+        c = Certificate()
         assert c.common_name is None
         assert c.issuer is None
         assert c.expiry is None
@@ -152,15 +152,15 @@ class TestCertificateInfo:
         assert c.serial_number is None
 
     def test_constructor(self):
-        c = CertificateInfo(common_name="example.com", issuer="CA Inc", type="identity")
+        c = Certificate(common_name="example.com", issuer="CA Inc", type="identity")
         assert c.common_name == "example.com"
         assert c.issuer == "CA Inc"
         assert c.type == "identity"
 
     def test_model_dump_roundtrip(self):
-        c = CertificateInfo(common_name="test.com", fingerprint="12:34:56")
+        c = Certificate(common_name="test.com", fingerprint="12:34:56")
         dumped = c.model_dump()
-        loaded = CertificateInfo.model_validate(dumped)
+        loaded = Certificate.model_validate(dumped)
         assert loaded.common_name == "test.com"
         assert loaded.fingerprint == "12:34:56"
 

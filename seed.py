@@ -15,7 +15,7 @@ from app.models.policy import Policy
 from app.models.smart_group import SmartGroup
 from app.models.static_group import StaticGroup
 from app.models.user import User
-from app.schemas.device import NetworkInfo, WifiInfo
+from app.schemas.device import Network, Wifi
 from passlib.context import CryptContext
 from sqlalchemy import text
 
@@ -27,7 +27,7 @@ DEVICES = [
         os_version="Android 14", connection_status="Online", enrollment_status="Compliant",
         battery_status=85,
         total_storage=256, available_storage=180, total_memory=12, available_memory=6,
-        network=NetworkInfo(wifi=WifiInfo(ssid="Office")),
+        network=Network(wifi=Wifi(ssid="Office")),
     ),
     Device(
         name="SM-F936B-002", serial_number="R3CT90J0JH",

@@ -1,6 +1,6 @@
 from app.repositories.smart_group import SmartGroupRepository
 from app.repositories.policy import PolicyRepository
-from app.schemas.device import CertificateInfo, NetworkInfo, WifiInfo
+from app.schemas.device import Certificate, Network, Wifi
 
 
 class TestDevicesAPI:
@@ -30,8 +30,8 @@ class TestDevicesAPI:
             "os_version": "15.0",
             "connection_status": "Online",
             "enrollment_status": "Enrolled",
-            "network": NetworkInfo(wifi=WifiInfo(ssid="Office")),
-            "certificates": [CertificateInfo(common_name="example.com")],
+            "network": Network(wifi=Wifi(ssid="Office")),
+            "certificates": [Certificate(common_name="example.com")],
         })
         resp = await client.get(f"/api/v1/devices/{device.id}")
         assert resp.status_code == 200

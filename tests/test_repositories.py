@@ -4,7 +4,7 @@ from app.repositories.device import DeviceRepository
 from app.repositories.policy import PolicyRepository
 from app.repositories.smart_group import SmartGroupRepository
 from app.repositories.user import UserRepository
-from app.schemas.device import CertificateInfo, CellularInfo, NetworkInfo, WifiInfo
+from app.schemas.device import Certificate, Cellular, Network, Wifi
 
 
 def _make_device_data(serial: str = "SN001", name: str = "Test Device") -> dict:
@@ -114,8 +114,8 @@ class TestDeviceRepository:
     async def test_create_with_network_and_certificates(self, db_session):
         repo = DeviceRepository(db_session)
         data = _make_device_data()
-        data["network"] = NetworkInfo(wifi=WifiInfo(ssid="Office", bssid="00:11:22:33:44:55"))
-        data["certificates"] = [CertificateInfo(common_name="example.com", issuer="CA Inc")]
+        data["network"] = Network(wifi=Wifi(ssid="Office", bssid="00:11:22:33:44:55"))
+        data["certificates"] = [Certificate(common_name="example.com", issuer="CA Inc")]
         device = await repo.create(data)
         assert device.id is not None
         assert device.network is not None
@@ -130,7 +130,7 @@ class TestDeviceRepository:
         repo = DeviceRepository(db_session)
         created = await repo.create(_make_device_data())
         updated = await repo.update(created.id, {
-            "network": NetworkInfo(wifi=WifiInfo(ssid="Updated"), cellular=CellularInfo(carrier="Verizon")),
+            "network": Network(wifi=Wifi(ssid="Updated"), cellular=Cellular(carrier="Verizon")),
         })
         assert updated.network.wifi.ssid == "Updated"
         assert updated.network.cellular.carrier == "Verizon"

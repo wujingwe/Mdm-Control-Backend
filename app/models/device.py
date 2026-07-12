@@ -7,7 +7,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.models.base import Base, utcnow
 from app.models.device_policy import DevicePolicy  # noqa: F401
 from app.models.types import CertificateListType, NetworkInfoType
-from app.schemas.device import CertificateInfo, NetworkInfo
+from app.schemas.device import Certificate, Network
 
 if TYPE_CHECKING:
     from app.models.policy import Policy
@@ -30,8 +30,8 @@ class Device(Base):
     available_storage: Mapped[int | None] = mapped_column(Integer, nullable=True)
     total_memory: Mapped[int | None] = mapped_column(Integer, nullable=True)
     available_memory: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    network: Mapped[NetworkInfo | None] = mapped_column(NetworkInfoType, nullable=True)
-    certificates: Mapped[list[CertificateInfo] | None] = mapped_column(CertificateListType, nullable=True)
+    network: Mapped[Network | None] = mapped_column(NetworkInfoType, nullable=True)
+    certificates: Mapped[list[Certificate] | None] = mapped_column(CertificateListType, nullable=True)
 
     policies: Mapped[list["Policy"]] = relationship(
         secondary="device_policies",

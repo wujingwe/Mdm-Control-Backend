@@ -3,7 +3,7 @@ from typing import Any
 from pydantic import BaseModel
 
 
-class WifiInfo(BaseModel):
+class Wifi(BaseModel):
     ssid: str | None = None
     bssid: str | None = None
     ip_address: str | None = None
@@ -14,7 +14,7 @@ class WifiInfo(BaseModel):
     signal_strength: int | None = None
 
 
-class CellularInfo(BaseModel):
+class Cellular(BaseModel):
     carrier: str | None = None
     ip_address: str | None = None
     gateway: str | None = None
@@ -26,12 +26,12 @@ class CellularInfo(BaseModel):
     roaming: bool | None = None
 
 
-class NetworkInfo(BaseModel):
-    wifi: WifiInfo | None = None
-    cellular: CellularInfo | None = None
+class Network(BaseModel):
+    wifi: Wifi | None = None
+    cellular: Cellular | None = None
 
 
-class CertificateInfo(BaseModel):
+class Certificate(BaseModel):
     common_name: str | None = None
     issuer: str | None = None
     expiry: str | None = None
@@ -55,8 +55,8 @@ class DeviceResponse(BaseModel):
     available_storage: int | None = None
     total_memory: int | None = None
     available_memory: int | None = None
-    network: NetworkInfo | None = None
-    certificates: list[CertificateInfo] | None = None
+    network: Network | None = None
+    certificates: list[Certificate] | None = None
     policies: list[str] = []
 
     model_config = {"from_attributes": True}
