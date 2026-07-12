@@ -1,14 +1,11 @@
 from datetime import datetime
-from typing import TYPE_CHECKING
 
 from sqlalchemy import ForeignKey, Index, String, Integer, DateTime
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.base import Base, utcnow
 from app.static_groups.static_group_device import StaticGroupDevice  # noqa: F401
-
-if TYPE_CHECKING:
-    from app.users.models import User
+from app.users.models import User
 
 
 class StaticGroup(Base):
@@ -22,4 +19,4 @@ class StaticGroup(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, onupdate=utcnow)
 
-    creator: Mapped["User"] = relationship(foreign_keys=[created_by])
+    creator: Mapped[User] = relationship(foreign_keys=[created_by])

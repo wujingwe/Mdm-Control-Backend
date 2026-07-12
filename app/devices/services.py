@@ -1,13 +1,9 @@
-from __future__ import annotations
-
 import logging
+from collections.abc import Callable
 from operator import and_, or_
-from typing import TYPE_CHECKING, Callable
 
 from sqlalchemy import select
-
-if TYPE_CHECKING:
-    from sqlalchemy.sql.expression import BinaryExpression
+from sqlalchemy.sql.expression import BinaryExpression
 
 from app.devices.models import Device
 from app.devices.repositories import DeviceRepository

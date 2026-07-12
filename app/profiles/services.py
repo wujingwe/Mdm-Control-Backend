@@ -1,10 +1,9 @@
-from __future__ import annotations
-
 import logging
+from collections.abc import Callable
 from operator import and_
-from typing import TYPE_CHECKING, Callable
 
 from sqlalchemy import select
+from sqlalchemy.sql.expression import BinaryExpression
 
 from app.devices.models import Device
 from app.profiles.models import Profile
@@ -12,9 +11,6 @@ from app.profiles.profile_assignment import ProfileAssignment
 from app.profiles.profile_scope import ProfileScope
 from app.static_groups.static_group_device import StaticGroupDevice
 from app.profiles.repositories import ProfileRepository
-
-if TYPE_CHECKING:
-    from sqlalchemy.sql.expression import BinaryExpression
 
 logger = logging.getLogger(__name__)
 
