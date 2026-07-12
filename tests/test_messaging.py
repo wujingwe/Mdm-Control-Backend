@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from app.messaging.consumer import RabbitMQConsumer, RabbitMQConsumerConfig, process_policy_deployment_message
+from app.messaging.consumer import RabbitMQConsumer, RabbitMQConsumerConfig, process_profile_status_message
 from app.messaging.producer import RabbitMQProducer, RabbitMQPublisherConfig
 
 
@@ -94,7 +94,7 @@ class TestRabbitMQProducer:
         producer._exchange = exchange
 
         message_id = await producer.publish_json(
-            {"policy_id": 1, "policy_name": "Base"},
+            {"profile_id": 1, "profile_name": "Base"},
             routing_key="device.42",
             correlation_id="1",
         )
@@ -102,8 +102,8 @@ class TestRabbitMQProducer:
         exchange.publish.assert_awaited_once()
         message = exchange.publish.call_args.args[0]
         assert json.loads(message.kwargs["body"].decode()) == {
-            "policy_id": 1,
-            "policy_name": "Base",
+            "profile_id": 1,
+            "profile_name": "Base",
         }
         assert message.kwargs["content_type"] == "application/json"
         assert message.kwargs["delivery_mode"] == "persistent"
@@ -126,7 +126,7 @@ class TestRabbitMQProducer:
         )
 
         assert isinstance(message_id, str)
-        assert len(message_id) == 36  # UUID format
+        assert len(message_id) == 36
 
     async def test_publish_json_with_headers(self, monkeypatch: pytest.MonkeyPatch) -> None:
         import app.messaging.producer as producer_module
@@ -165,9 +165,9 @@ class TestRabbitMQProducer:
         )
 
         with pytest.raises(RuntimeError, match="not started"):
-            await producer.publish_json({"policy_id": 1}, routing_key="device.1")
+            await producer.publish_json({"profile_id": 1}, routing_key="device.1")
 
-    async def test_publish_policy_deployment_routes_by_device_id(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    async def test_publish_profile_push_routes_by_device_id(self, monkeypatch: pytest.MonkeyPatch) -> None:
         import app.messaging.producer as producer_module
 
         monkeypatch.setattr(producer_module, "aio_pika", _FakeAioPika)
@@ -176,28 +176,23 @@ class TestRabbitMQProducer:
         exchange = _make_mock_exchange()
         producer._exchange = exchange
 
-        await producer.publish_policy_deployment(
+        await producer.publish_profile_push(
             device_id=42,
-            policy_id=10,
-            policy_name="Strict",
-            policy_config={"cameraDisabled": True},
-            deployment_id=99,
-            device_serial_number="SN001",
+            profile_id=10,
+            profile_config={"cameraDisabled": True},
         )
 
         message = exchange.publish.call_args.args[0]
         assert json.loads(message.kwargs["body"].decode()) == {
-            "event_type": "policy.deployment.requested",
+            "event_type": "profile.push.requested",
             "device_id": 42,
-            "policy_id": 10,
-            "policy_name": "Strict",
-            "policy_config": {"cameraDisabled": True},
-            "deployment_id": 99,
-            "device_serial_number": "SN001",
+            "profile_id": 10,
+            "profile_config": {"cameraDisabled": True},
         }
         assert exchange.publish.call_args.kwargs["routing_key"] == "device.42"
+        assert message.kwargs["correlation_id"] == "10"
 
-    async def test_publish_policy_deployment_without_optional_fields(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    async def test_publish_profile_revoke_routes_by_device_id(self, monkeypatch: pytest.MonkeyPatch) -> None:
         import app.messaging.producer as producer_module
 
         monkeypatch.setattr(producer_module, "aio_pika", _FakeAioPika)
@@ -206,17 +201,18 @@ class TestRabbitMQProducer:
         exchange = _make_mock_exchange()
         producer._exchange = exchange
 
-        await producer.publish_policy_deployment(
+        await producer.publish_profile_revoke(
             device_id=42,
-            policy_id=10,
-            policy_name="Strict",
-            policy_config={"cameraDisabled": True},
+            profile_id=10,
         )
 
         message = exchange.publish.call_args.args[0]
         payload = json.loads(message.kwargs["body"].decode())
-        assert "deployment_id" not in payload
-        assert "device_serial_number" not in payload
+        assert payload == {
+            "event_type": "profile.revoke.requested",
+            "device_id": 42,
+            "profile_id": 10,
+        }
         assert message.kwargs["correlation_id"] == "10"
 
     async def test_start_connects_and_declares_exchange(self, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -422,7 +418,7 @@ class TestRabbitMQProducer:
 
 class TestRabbitMQConsumer:
     def test_decode_message_valid(self) -> None:
-        assert RabbitMQConsumer._decode_message(b'{"policy_id": 1}') == {"policy_id": 1}
+        assert RabbitMQConsumer._decode_message(b'{"profile_id": 1}') == {"profile_id": 1}
 
     def test_decode_message_invalid_json(self) -> None:
         with pytest.raises(ValueError, match="valid JSON"):
@@ -743,250 +739,134 @@ class TestRabbitMQConsumer:
         monkeypatch.setattr(consumer_module, "aio_pika", _FakeAioPika)
         monkeypatch.setattr(_FakeAioPika, "connect_robust", fake_connect)
 
-        config = _make_consumer_config(binding_keys=("device.#", "policy.#"))
+        config = _make_consumer_config(binding_keys=("device.#", "profile.#"))
         consumer = RabbitMQConsumer(config=config, handler=AsyncMock())
         await consumer.start()
 
         assert mock_queue.bind.await_count == 2
 
 
-class TestProcessPolicyDeploymentMessage:
+class TestProcessProfileStatusMessage:
     @patch("app.messaging.consumer.async_session")
     @patch("app.messaging.consumer.send_validation_webhook", new_callable=AsyncMock)
-    @patch("app.notification.sse.notify_sse_server", new_callable=AsyncMock)
-    async def test_successful_deployment_by_device_id(
-        self, mock_sse, mock_webhook, mock_session_factory
+    async def test_successful_status_update_applied(
+        self, mock_webhook, mock_session_factory
     ) -> None:
-        from app.devices.models import Device
-        from app.policies.models import Policy
+        assignment = MagicMock()
+        assignment.profile_id = 5
+        assignment.device_id = 10
+        assignment.status = "PENDING"
 
-        device = MagicMock(spec=Device)
-        device.id = 10
-        device.serial_number = "SN001"
-        device.policies = []
-        device.connection_status = "Online"
-
-        policy = MagicMock(spec=Policy)
-        policy.id = 5
-
-        mock_device_result = MagicMock()
-        mock_device_result.scalar_one_or_none.return_value = device
-
-        mock_policy_result = MagicMock()
-        mock_policy_result.scalar_one_or_none.return_value = policy
+        mock_result = MagicMock()
+        mock_result.scalar_one_or_none.return_value = assignment
 
         mock_db = AsyncMock()
-        mock_db.execute = AsyncMock(side_effect=[mock_device_result, mock_policy_result])
+        mock_db.execute = AsyncMock(return_value=mock_result)
         mock_session_factory.return_value.__aenter__ = AsyncMock(return_value=mock_db)
         mock_session_factory.return_value.__aexit__ = AsyncMock(return_value=False)
 
-        await process_policy_deployment_message({
+        await process_profile_status_message({
+            "event_type": "profile.status.reported",
             "device_id": 10,
-            "policy_id": 5,
-            "device_name": "MacBook",
-            "policy_name": "Strict",
-            "policy_config": {"cameraDisabled": True},
+            "profile_id": 5,
+            "status": "APPLIED",
         })
 
-        assert policy in device.policies
-        assert device.connection_status == "configured"
-        mock_db.commit.assert_awaited_once()
-        mock_sse.assert_awaited_once()
-        mock_webhook.assert_awaited_once_with("SN001")
-
-    @patch("app.messaging.consumer.async_session")
-    async def test_device_not_found(self, mock_session_factory) -> None:
-        mock_device_result = MagicMock()
-        mock_device_result.scalar_one_or_none.return_value = None
-
-        mock_db = AsyncMock()
-        mock_db.execute = AsyncMock(return_value=mock_device_result)
-        mock_session_factory.return_value.__aenter__ = AsyncMock(return_value=mock_db)
-        mock_session_factory.return_value.__aexit__ = AsyncMock(return_value=False)
-
-        await process_policy_deployment_message({
-            "device_id": 999,
-            "policy_id": 5,
-        })
-
-        mock_db.commit.assert_not_called()
-
-    @patch("app.messaging.consumer.async_session")
-    async def test_policy_not_found(self, mock_session_factory) -> None:
-        from app.devices.models import Device
-
-        device = MagicMock(spec=Device)
-        device.id = 10
-        device.serial_number = "SN001"
-        device.policies = []
-
-        mock_device_result = MagicMock()
-        mock_device_result.scalar_one_or_none.return_value = device
-
-        mock_policy_result = MagicMock()
-        mock_policy_result.scalar_one_or_none.return_value = None
-
-        mock_db = AsyncMock()
-        mock_db.execute = AsyncMock(side_effect=[mock_device_result, mock_policy_result])
-        mock_session_factory.return_value.__aenter__ = AsyncMock(return_value=mock_db)
-        mock_session_factory.return_value.__aexit__ = AsyncMock(return_value=False)
-
-        await process_policy_deployment_message({
-            "device_id": 10,
-            "policy_id": 999,
-        })
-
-        mock_db.commit.assert_not_called()
-
-    async def test_invalid_message_missing_policy_id(self) -> None:
-        await process_policy_deployment_message({"device_id": 10})
-
-    async def test_invalid_message_no_device_info(self) -> None:
-        await process_policy_deployment_message({"policy_id": 5})
-
-    @patch("app.messaging.consumer.async_session")
-    @patch("app.messaging.consumer.send_validation_webhook", new_callable=AsyncMock)
-    @patch("app.notification.sse.notify_sse_server", new_callable=AsyncMock)
-    async def test_deployment_by_serial_number(
-        self, mock_sse, mock_webhook, mock_session_factory
-    ) -> None:
-        from app.devices.models import Device
-        from app.policies.models import Policy
-
-        device = MagicMock(spec=Device)
-        device.id = 10
-        device.serial_number = "SN001"
-        device.policies = []
-        device.connection_status = "Online"
-
-        policy = MagicMock(spec=Policy)
-        policy.id = 5
-
-        mock_device_result = MagicMock()
-        mock_device_result.scalar_one_or_none.return_value = device
-
-        mock_policy_result = MagicMock()
-        mock_policy_result.scalar_one_or_none.return_value = policy
-
-        mock_db = AsyncMock()
-        mock_db.execute = AsyncMock(side_effect=[mock_device_result, mock_policy_result])
-        mock_session_factory.return_value.__aenter__ = AsyncMock(return_value=mock_db)
-        mock_session_factory.return_value.__aexit__ = AsyncMock(return_value=False)
-
-        await process_policy_deployment_message({
-            "device_serial_number": "SN001",
-            "policy_id": 5,
-        })
-
-        assert policy in device.policies
-        mock_db.commit.assert_awaited_once()
-
-    @patch("app.messaging.consumer.async_session")
-    @patch("app.messaging.consumer.send_validation_webhook", new_callable=AsyncMock)
-    @patch("app.notification.sse.notify_sse_server", new_callable=AsyncMock)
-    async def test_sse_failure_does_not_nack(
-        self, mock_sse, mock_webhook, mock_session_factory
-    ) -> None:
-        from app.devices.models import Device
-        from app.policies.models import Policy
-
-        mock_sse.side_effect = RuntimeError("SSE down")
-
-        device = MagicMock(spec=Device)
-        device.id = 10
-        device.serial_number = "SN001"
-        device.policies = []
-
-        policy = MagicMock(spec=Policy)
-        policy.id = 5
-
-        mock_device_result = MagicMock()
-        mock_device_result.scalar_one_or_none.return_value = device
-        mock_policy_result = MagicMock()
-        mock_policy_result.scalar_one_or_none.return_value = policy
-
-        mock_db = AsyncMock()
-        mock_db.execute = AsyncMock(side_effect=[mock_device_result, mock_policy_result])
-        mock_session_factory.return_value.__aenter__ = AsyncMock(return_value=mock_db)
-        mock_session_factory.return_value.__aexit__ = AsyncMock(return_value=False)
-
-        await process_policy_deployment_message({
-            "device_id": 10,
-            "policy_id": 5,
-        })
-
+        assert assignment.status == "APPLIED"
+        assert assignment.applied_at is not None
         mock_db.commit.assert_awaited_once()
         mock_webhook.assert_awaited_once()
 
     @patch("app.messaging.consumer.async_session")
     @patch("app.messaging.consumer.send_validation_webhook", new_callable=AsyncMock)
-    @patch("app.notification.sse.notify_sse_server", new_callable=AsyncMock)
-    async def test_webhook_failure_does_not_nack(
-        self, mock_sse, mock_webhook, mock_session_factory
+    async def test_successful_status_update_pending(
+        self, mock_webhook, mock_session_factory
     ) -> None:
-        from app.devices.models import Device
-        from app.policies.models import Policy
+        assignment = MagicMock()
+        assignment.profile_id = 5
+        assignment.device_id = 10
+        assignment.status = "APPLIED"
 
-        mock_webhook.side_effect = RuntimeError("Webhook down")
-
-        device = MagicMock(spec=Device)
-        device.id = 10
-        device.serial_number = "SN001"
-        device.policies = []
-
-        policy = MagicMock(spec=Policy)
-        policy.id = 5
-
-        mock_device_result = MagicMock()
-        mock_device_result.scalar_one_or_none.return_value = device
-        mock_policy_result = MagicMock()
-        mock_policy_result.scalar_one_or_none.return_value = policy
+        mock_result = MagicMock()
+        mock_result.scalar_one_or_none.return_value = assignment
 
         mock_db = AsyncMock()
-        mock_db.execute = AsyncMock(side_effect=[mock_device_result, mock_policy_result])
+        mock_db.execute = AsyncMock(return_value=mock_result)
         mock_session_factory.return_value.__aenter__ = AsyncMock(return_value=mock_db)
         mock_session_factory.return_value.__aexit__ = AsyncMock(return_value=False)
 
-        await process_policy_deployment_message({
+        await process_profile_status_message({
+            "event_type": "profile.status.reported",
             "device_id": 10,
-            "policy_id": 5,
+            "profile_id": 5,
+            "status": "PENDING",
         })
 
+        assert assignment.status == "PENDING"
         mock_db.commit.assert_awaited_once()
-        mock_sse.assert_awaited_once()
+
+    @patch("app.messaging.consumer.async_session")
+    async def test_assignment_not_found(self, mock_session_factory) -> None:
+        mock_result = MagicMock()
+        mock_result.scalar_one_or_none.return_value = None
+
+        mock_db = AsyncMock()
+        mock_db.execute = AsyncMock(return_value=mock_result)
+        mock_session_factory.return_value.__aenter__ = AsyncMock(return_value=mock_db)
+        mock_session_factory.return_value.__aexit__ = AsyncMock(return_value=False)
+
+        await process_profile_status_message({
+            "event_type": "profile.status.reported",
+            "device_id": 999,
+            "profile_id": 5,
+            "status": "APPLIED",
+        })
+
+        mock_db.commit.assert_not_called()
+
+    async def test_invalid_message_missing_profile_id(self) -> None:
+        await process_profile_status_message({"event_type": "profile.status.reported", "device_id": 10})
+
+    async def test_invalid_message_no_device_info(self) -> None:
+        await process_profile_status_message({"event_type": "profile.status.reported", "profile_id": 5})
+
+    async def test_invalid_status_value(self) -> None:
+        await process_profile_status_message({
+            "event_type": "profile.status.reported",
+            "device_id": 10,
+            "profile_id": 5,
+            "status": "INVALID",
+        })
+
+    async def test_unknown_event_type_ignored(self) -> None:
+        await process_profile_status_message({"event_type": "unknown.event"})
 
     @patch("app.messaging.consumer.async_session")
     @patch("app.messaging.consumer.send_validation_webhook", new_callable=AsyncMock)
-    @patch("app.notification.sse.notify_sse_server", new_callable=AsyncMock)
-    async def test_policy_already_assigned_does_not_duplicate(
-        self, mock_sse, mock_webhook, mock_session_factory
+    async def test_webhook_failure_does_not_nack(
+        self, mock_webhook, mock_session_factory
     ) -> None:
-        from app.devices.models import Device
-        from app.policies.models import Policy
+        mock_webhook.side_effect = RuntimeError("Webhook down")
 
-        policy = MagicMock(spec=Policy)
-        policy.id = 5
+        assignment = MagicMock()
+        assignment.profile_id = 5
+        assignment.device_id = 10
+        assignment.status = "PENDING"
 
-        device = MagicMock(spec=Device)
-        device.id = 10
-        device.serial_number = "SN001"
-        device.policies = [policy]
-        device.connection_status = "Online"
-
-        mock_device_result = MagicMock()
-        mock_device_result.scalar_one_or_none.return_value = device
-        mock_policy_result = MagicMock()
-        mock_policy_result.scalar_one_or_none.return_value = policy
+        mock_result = MagicMock()
+        mock_result.scalar_one_or_none.return_value = assignment
 
         mock_db = AsyncMock()
-        mock_db.execute = AsyncMock(side_effect=[mock_device_result, mock_policy_result])
+        mock_db.execute = AsyncMock(return_value=mock_result)
         mock_session_factory.return_value.__aenter__ = AsyncMock(return_value=mock_db)
         mock_session_factory.return_value.__aexit__ = AsyncMock(return_value=False)
 
-        await process_policy_deployment_message({
+        await process_profile_status_message({
+            "event_type": "profile.status.reported",
             "device_id": 10,
-            "policy_id": 5,
+            "profile_id": 5,
+            "status": "APPLIED",
         })
 
-        assert len(device.policies) == 1
         mock_db.commit.assert_awaited_once()
+        mock_webhook.assert_awaited_once()

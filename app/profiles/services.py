@@ -136,16 +136,12 @@ class ProfileService:
                 device_ids_by_source.setdefault("SMART_GROUP", {}).setdefault(target_id, set()).update(ids)
 
             elif target_type == "STATIC_GROUP" and target_id is not None:
-                serial_stmt = select(StaticGroupDevice.device_serial_number).where(
+                sg_dev_stmt = select(StaticGroupDevice.device_id).where(
                     StaticGroupDevice.static_group_id == target_id
                 )
-                serial_result = await db.execute(serial_stmt)
-                serials = list(serial_result.scalars().all())
-                if serials:
-                    dev_stmt = select(Device.id).where(Device.serial_number.in_(serials))
-                    dev_result = await db.execute(dev_stmt)
-                    ids = {row[0] for row in dev_result.all()}
-                    device_ids_by_source.setdefault("STATIC_GROUP", {}).setdefault(target_id, set()).update(ids)
+                sg_dev_result = await db.execute(sg_dev_stmt)
+                dev_ids = {row[0] for row in sg_dev_result.all()}
+                device_ids_by_source.setdefault("STATIC_GROUP", {}).setdefault(target_id, set()).update(dev_ids)
 
             elif target_type == "DEVICE" and target_id is not None:
                 device_ids_by_source.setdefault("DIRECT", {}).setdefault(None, set()).add(target_id)

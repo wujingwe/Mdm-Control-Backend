@@ -1,8 +1,4 @@
-from sqlalchemy import select
-from sqlalchemy.orm import selectinload
-
 from app.static_groups.models import StaticGroup
-from app.policies.models import Policy
 from app.static_groups.repositories import StaticGroupRepository
 
 
@@ -30,16 +26,3 @@ class StaticGroupService:
 
     async def set_device_serial_numbers(self, group_id: int, serial_numbers: list[str]) -> None:
         await self.repo.set_device_serial_numbers(group_id, serial_numbers)
-
-    async def assign_policy(self, group_id: int, policy_id: int) -> StaticGroup | None:
-        db = self.repo.db
-        policy = await db.get(Policy, policy_id)
-        stmt = select(StaticGroup).where(StaticGroup.id == group_id).options(selectinload(StaticGroup.policies))
-        result = await db.execute(stmt)
-        group = result.scalar_one_or_none()
-        if not group or not policy:
-            return None
-        if policy not in group.policies:
-            group.policies.append(policy)
-            await db.commit()
-        return group

@@ -6,7 +6,7 @@ from app.devices.schemas import (
     Network,
     Wifi,
 )
-from app.policies.schemas import PolicyResponse
+from app.profiles.schemas import ProfileResponse
 from app.smart_groups.schemas import SmartGroupCreate, SmartGroupUpdate, SmartGroupResponse
 from app.users.schemas import UserResponse
 from app.common.schemas import Message
@@ -40,9 +40,9 @@ class TestDeviceSchemas:
         assert data.criteria[0]["field"] == "status"
 
     def test_optional_fields_default_to_none(self):
-        fields = {**_DEVICE_FIELDS, "policies": ["p1"]}
+        fields = {**_DEVICE_FIELDS, "profiles": ["p1"]}
         data = DeviceResponse(**fields)
-        assert data.policies == ["p1"]
+        assert data.profiles == ["p1"]
 
     def test_search_criteria_empty(self):
         data = DeviceSearchCriteria(criteria=[])
@@ -164,13 +164,13 @@ class TestCertificateInfo:
         assert loaded.common_name == "test.com"
         assert loaded.fingerprint == "12:34:56"
 
-class TestPolicySchemas:
+class TestProfileSchemas:
     def test_response(self):
-        data = PolicyResponse(
-            id=1, name="Policy A", version=1, scope="all",
-            rollout_state="Completed", target_devices=5, applied_devices=3,
+        data = ProfileResponse(
+            id=1, name="Profile A", version=1,
+            created_at=datetime.now(timezone.utc), created_by=1,
         )
-        assert data.name == "Policy A"
+        assert data.name == "Profile A"
         assert data.version == 1
 
 

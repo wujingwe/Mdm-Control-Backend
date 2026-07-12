@@ -2,7 +2,6 @@ from typing import Any
 
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 from sqlalchemy.exc import IntegrityError
 
 from app.smart_groups.models import SmartGroup
@@ -19,7 +18,7 @@ class SmartGroupRepository:
         return list(result.scalars().all())
 
     async def get_by_id(self, record_id: int) -> SmartGroup | None:
-        stmt = select(SmartGroup).where(SmartGroup.id == record_id).options(selectinload(SmartGroup.policies))
+        stmt = select(SmartGroup).where(SmartGroup.id == record_id)
         result = await self.db.execute(stmt)
         return result.scalar_one_or_none()
 

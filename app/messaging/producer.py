@@ -121,32 +121,42 @@ class RabbitMQProducer:
         )
         return published_message_id
 
-    async def publish_policy_deployment(
+    async def publish_profile_push(
         self,
         *,
         device_id: int | str,
-        policy_id: int,
-        policy_name: str,
-        policy_config: dict[str, Any],
-        deployment_id: int | None = None,
-        device_serial_number: str | None = None,
+        profile_id: int,
+        profile_config: dict[str, Any],
     ) -> str:
         payload: dict[str, Any] = {
-            "event_type": "policy.deployment.requested",
+            "event_type": "profile.push.requested",
             "device_id": device_id,
-            "policy_id": policy_id,
-            "policy_name": policy_name,
-            "policy_config": policy_config,
+            "profile_id": profile_id,
+            "profile_config": profile_config,
         }
-        if deployment_id is not None:
-            payload["deployment_id"] = deployment_id
-        if device_serial_number is not None:
-            payload["device_serial_number"] = device_serial_number
 
         return await self.publish_json(
             payload,
             routing_key=self.device_routing_key(device_id),
-            correlation_id=str(deployment_id or policy_id),
+            correlation_id=str(profile_id),
+        )
+
+    async def publish_profile_revoke(
+        self,
+        *,
+        device_id: int | str,
+        profile_id: int,
+    ) -> str:
+        payload: dict[str, Any] = {
+            "event_type": "profile.revoke.requested",
+            "device_id": device_id,
+            "profile_id": profile_id,
+        }
+
+        return await self.publish_json(
+            payload,
+            routing_key=self.device_routing_key(device_id),
+            correlation_id=str(profile_id),
         )
 
     def device_routing_key(self, device_id: int | str) -> str:

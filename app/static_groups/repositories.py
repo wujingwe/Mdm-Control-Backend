@@ -2,9 +2,9 @@ from typing import Any
 
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 from sqlalchemy.exc import IntegrityError
 
+from app.devices.models import Device
 from app.static_groups.models import StaticGroup
 from app.static_groups.static_group_device import StaticGroupDevice
 from app.core.exceptions import ConflictError
@@ -20,7 +20,7 @@ class StaticGroupRepository:
         return list(result.scalars().all())
 
     async def get_by_id(self, record_id: int) -> StaticGroup | None:
-        stmt = select(StaticGroup).where(StaticGroup.id == record_id).options(selectinload(StaticGroup.policies))
+        stmt = select(StaticGroup).where(StaticGroup.id == record_id)
         result = await self.db.execute(stmt)
         return result.scalar_one_or_none()
 
@@ -62,10 +62,18 @@ class StaticGroupRepository:
         result = await self.db.execute(stmt)
         return result.scalar_one()
 
-    async def get_device_serial_numbers(self, group_id: int) -> list[str]:
-        stmt = select(StaticGroupDevice.device_serial_number).where(
+    async def get_device_ids(self, group_id: int) -> list[int]:
+        stmt = select(StaticGroupDevice.device_id).where(
             StaticGroupDevice.static_group_id == group_id
         )
+        result = await self.db.execute(stmt)
+        return list(result.scalars().all())
+
+    async def get_device_serial_numbers(self, group_id: int) -> list[str]:
+        device_ids = await self.get_device_ids(group_id)
+        if not device_ids:
+            return []
+        stmt = select(Device.serial_number).where(Device.id.in_(device_ids))
         result = await self.db.execute(stmt)
         return list(result.scalars().all())
 
@@ -75,6 +83,10 @@ class StaticGroupRepository:
         existing = list(result.scalars().all())
         for device in existing:
             await self.db.delete(device)
-        for serial in serial_numbers:
-            self.db.add(StaticGroupDevice(static_group_id=group_id, device_serial_number=serial))
+        if serial_numbers:
+            dev_stmt = select(Device.id).where(Device.serial_number.in_(serial_numbers))
+            dev_result = await self.db.execute(dev_stmt)
+            device_ids = list(dev_result.scalars().all())
+            for dev_id in device_ids:
+                self.db.add(StaticGroupDevice(static_group_id=group_id, device_id=dev_id))
         await self.db.commit()

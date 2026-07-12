@@ -1,15 +1,10 @@
-import logging
-
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from app.dependencies import get_smart_group_service
-from app.common.schemas import Message, PaginatedResponse
+from app.common.schemas import PaginatedResponse
 from app.smart_groups.schemas import SmartGroupCreate, SmartGroupResponse, SmartGroupUpdate
 from app.smart_groups.services import SmartGroupService
-from app.notification.sse import notify_group_policy_assignment
 from app.webhook_client import revalidate
-
-logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/smart-groups", tags=["Smart Groups"])
 
@@ -78,35 +73,13 @@ async def update_smart_group(
     return SmartGroupResponse.model_validate(updated)
 
 
-@router.delete("/{group_id}", response_model=Message)
+@router.delete("/{group_id}")
 async def delete_smart_group(
     group_id: int,
     service: SmartGroupService = Depends(get_smart_group_service),
-) -> Message:
+) -> dict:
     deleted = await service.delete_group(group_id)
     if not deleted:
         raise HTTPException(status_code=404, detail="Smart group not found")
     await revalidate(["smart-groups"])
-    return Message(detail="Smart group deleted")
-
-
-@router.post("/{group_id}/policies", response_model=SmartGroupResponse, status_code=201)
-async def assign_policy_to_smart_group(
-    group_id: int,
-    policy_id: int = Query(...),
-    service: SmartGroupService = Depends(get_smart_group_service),
-) -> SmartGroupResponse:
-    group = await service.assign_policy(group_id, policy_id)
-    if not group:
-        raise HTTPException(status_code=404, detail="Smart group or policy not found")
-    try:
-        await notify_group_policy_assignment(
-            group_id=group.id,
-            group_name=group.name,
-            policy_id=policy_id,
-            policy_name=next((p.name for p in group.policies if p.id == policy_id), ""),
-        )
-    except Exception as e:
-        logger.error(f"SSE notification failed, continuing: {e}", exc_info=True)
-    await revalidate(["smart-groups", "policies"])
-    return SmartGroupResponse.model_validate(group)
+    return {"detail": "Smart group deleted"}

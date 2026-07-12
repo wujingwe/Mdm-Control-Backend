@@ -1,15 +1,10 @@
-import logging
-
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from app.dependencies import get_static_group_service
-from app.common.schemas import Message, PaginatedResponse
+from app.common.schemas import PaginatedResponse
 from app.static_groups.schemas import StaticGroupCreate, StaticGroupResponse, StaticGroupUpdate
 from app.static_groups.services import StaticGroupService
-from app.notification.sse import notify_group_policy_assignment
 from app.webhook_client import revalidate
-
-logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/static-groups", tags=["Static Groups"])
 
@@ -59,7 +54,7 @@ async def create_static_group(
         await service.set_device_serial_numbers(group.id, data.device_serial_numbers)
     await revalidate(["static-groups"])
     resp = StaticGroupResponse.model_validate(group)
-    resp.device_serial_numbers = data.device_serial_numbers
+    resp.device_serial_numbers = data.device_serial_numbers or []
     return resp
 
 
@@ -92,38 +87,13 @@ async def update_static_group(
     return resp
 
 
-@router.delete("/{group_id}", response_model=Message)
+@router.delete("/{group_id}")
 async def delete_static_group(
     group_id: int,
     service: StaticGroupService = Depends(get_static_group_service),
-) -> Message:
+) -> dict:
     deleted = await service.delete_group(group_id)
     if not deleted:
         raise HTTPException(status_code=404, detail="Static group not found")
     await revalidate(["static-groups"])
-    return Message(detail="Static group deleted")
-
-
-@router.post("/{group_id}/policies", response_model=StaticGroupResponse, status_code=201)
-async def assign_policy_to_static_group(
-    group_id: int,
-    policy_id: int = Query(...),
-    service: StaticGroupService = Depends(get_static_group_service),
-) -> StaticGroupResponse:
-    group = await service.assign_policy(group_id, policy_id)
-    if not group:
-        raise HTTPException(status_code=404, detail="Static group or policy not found")
-    try:
-        await notify_group_policy_assignment(
-            group_id=group.id,
-            group_name=group.name,
-            policy_id=policy_id,
-            policy_name=next((p.name for p in group.policies if p.id == policy_id), ""),
-        )
-    except Exception as e:
-        logger.error(f"SSE notification failed, continuing: {e}", exc_info=True)
-    await revalidate(["static-groups", "policies"])
-    serials = await service.get_device_serial_numbers(group_id)
-    resp = StaticGroupResponse.model_validate(group)
-    resp.device_serial_numbers = serials
-    return resp
+    return {"detail": "Static group deleted"}

@@ -1,19 +1,31 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
-from app.dependencies import get_device_service
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.dependencies import get_db
 from app.devices.models import Device
 from app.devices.schemas import DeviceResponse, DeviceSearchCriteria
 from app.common.schemas import PaginatedResponse
-from app.devices.services import DeviceService
-from app.webhook_client import revalidate
+from app.profiles.models import Profile
+from app.profiles.profile_assignment import ProfileAssignment
 
 router = APIRouter(prefix="/devices", tags=["Devices"])
 
 
-async def _policy_names(device: Device) -> list[str]:
-    return sorted([p.name for p in device.policies])
+async def _profile_names(db: AsyncSession, device: Device) -> list[str]:
+    stmt = (
+        select(Profile.name)
+        .join(ProfileAssignment, ProfileAssignment.profile_id == Profile.id)
+        .where(
+            ProfileAssignment.device_id == device.id,
+            ProfileAssignment.status != "REMOVED",
+        )
+    )
+    result = await db.execute(stmt)
+    return sorted([r[0] for r in result.all()])
 
 
-def _to_response(device: Device, policies: list[str]) -> DeviceResponse:
+def _to_response(device: Device, profiles: list[str]) -> DeviceResponse:
     return DeviceResponse(
         id=device.id,
         name=device.name,
@@ -31,7 +43,7 @@ def _to_response(device: Device, policies: list[str]) -> DeviceResponse:
         available_memory=device.available_memory,
         network=device.network,
         certificates=device.certificates,
-        policies=policies,
+        profiles=profiles,
     )
 
 
@@ -39,46 +51,45 @@ def _to_response(device: Device, policies: list[str]) -> DeviceResponse:
 async def list_devices(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=5000),
-    service: DeviceService = Depends(get_device_service),
+    db: AsyncSession = Depends(get_db),
 ) -> PaginatedResponse[DeviceResponse]:
+    from app.devices.repositories import DeviceRepository
+    from app.devices.services import DeviceService
+    repo = DeviceRepository(db)
+    service = DeviceService(repo)
     items, total = await service.list_devices(skip=skip, limit=limit)
     result = []
     for d in items:
-        result.append(_to_response(d, await _policy_names(d)))
+        result.append(_to_response(d, await _profile_names(db, d)))
     return PaginatedResponse(items=result, total=total, skip=skip, limit=limit)
 
 
 @router.get("/{device_id}", response_model=DeviceResponse)
 async def get_device(
     device_id: int,
-    service: DeviceService = Depends(get_device_service),
+    db: AsyncSession = Depends(get_db),
 ) -> DeviceResponse:
+    from app.devices.repositories import DeviceRepository
+    from app.devices.services import DeviceService
+    repo = DeviceRepository(db)
+    service = DeviceService(repo)
     device = await service.get_device(device_id)
     if not device:
         raise HTTPException(status_code=404, detail="Device not found")
-    return _to_response(device, await _policy_names(device))
+    return _to_response(device, await _profile_names(db, device))
 
 
 @router.post("/search", response_model=list[DeviceResponse])
 async def search_devices(
     criteria: DeviceSearchCriteria,
-    service: DeviceService = Depends(get_device_service),
+    db: AsyncSession = Depends(get_db),
 ) -> list[DeviceResponse]:
+    from app.devices.repositories import DeviceRepository
+    from app.devices.services import DeviceService
+    repo = DeviceRepository(db)
+    service = DeviceService(repo)
     devices = await service.search_devices(criteria)
     result = []
     for d in devices:
-        result.append(_to_response(d, await _policy_names(d)))
+        result.append(_to_response(d, await _profile_names(db, d)))
     return result
-
-
-@router.post("/{device_id}/policy", response_model=DeviceResponse)
-async def assign_policy(
-    device_id: int,
-    policy_id: int = Query(...),
-    service: DeviceService = Depends(get_device_service),
-) -> DeviceResponse:
-    device = await service.assign_policy(device_id, policy_id)
-    if not device:
-        raise HTTPException(status_code=404, detail="Device not found")
-    await revalidate(["devices"])
-    return _to_response(device, await _policy_names(device))

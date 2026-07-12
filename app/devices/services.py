@@ -5,13 +5,11 @@ from operator import and_, or_
 from typing import TYPE_CHECKING, Callable
 
 from sqlalchemy import select
-from sqlalchemy.orm import selectinload
 
 if TYPE_CHECKING:
     from sqlalchemy.sql.expression import BinaryExpression
 
 from app.devices.models import Device
-from app.policies.models import Policy
 from app.devices.repositories import DeviceRepository
 from app.devices.schemas import DeviceSearchCriteria
 
@@ -56,24 +54,11 @@ class DeviceService:
                 filters.append(builder(col, c.get("value", "")))
 
         if not filters:
-            stmt = select(Device).order_by(Device.id).options(selectinload(Device.policies))
+            stmt = select(Device).order_by(Device.id)
         else:
             combine = and_ if criteria.conjunction == "AND" else or_
             where = combine(*filters) if len(filters) > 1 else filters[0]
-            stmt = select(Device).where(where).order_by(Device.id).options(selectinload(Device.policies))
+            stmt = select(Device).where(where).order_by(Device.id)
 
         result = await db.execute(stmt)
         return list(result.scalars().all())
-
-    async def assign_policy(self, device_id: int, policy_id: int) -> Device | None:
-        db = self.repo.db
-        policy = await db.get(Policy, policy_id)
-        stmt = select(Device).where(Device.id == device_id).options(selectinload(Device.policies))
-        result = await db.execute(stmt)
-        device = result.scalar_one_or_none()
-        if not device or not policy:
-            return None
-        if policy not in device.policies:
-            device.policies.append(policy)
-            await db.commit()
-        return device

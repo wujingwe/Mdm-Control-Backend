@@ -148,295 +148,6 @@
         }
       }
     },
-    "/api/v1/devices/{device_id}/policy": {
-      "post": {
-        "tags": [
-          "Devices"
-        ],
-        "summary": "Assign Policy",
-        "operationId": "assign_policy_api_v1_devices__device_id__policy_post",
-        "parameters": [
-          {
-            "name": "device_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "title": "Device Id"
-            }
-          },
-          {
-            "name": "policy_id",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "title": "Policy Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/DeviceResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/policies": {
-      "get": {
-        "tags": [
-          "Policies"
-        ],
-        "summary": "List Policies",
-        "operationId": "list_policies_api_v1_policies_get",
-        "parameters": [
-          {
-            "name": "skip",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "minimum": 0,
-              "default": 0,
-              "title": "Skip"
-            }
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "maximum": 1000,
-              "minimum": 1,
-              "default": 100,
-              "title": "Limit"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PaginatedResponse_PolicyResponse_"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      },
-      "post": {
-        "tags": [
-          "Policies"
-        ],
-        "summary": "Create Policy",
-        "operationId": "create_policy_api_v1_policies_post",
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/PolicyCreate"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PolicyResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/policies/{policy_id}": {
-      "get": {
-        "tags": [
-          "Policies"
-        ],
-        "summary": "Get Policy",
-        "operationId": "get_policy_api_v1_policies__policy_id__get",
-        "parameters": [
-          {
-            "name": "policy_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "title": "Policy Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PolicyResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      },
-      "put": {
-        "tags": [
-          "Policies"
-        ],
-        "summary": "Update Policy",
-        "operationId": "update_policy_api_v1_policies__policy_id__put",
-        "parameters": [
-          {
-            "name": "policy_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "title": "Policy Id"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/PolicyUpdate"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PolicyResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/policies/{policy_id}/push": {
-      "post": {
-        "tags": [
-          "Policies"
-        ],
-        "summary": "Push Policy",
-        "operationId": "push_policy_api_v1_policies__policy_id__push_post",
-        "parameters": [
-          {
-            "name": "policy_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "title": "Policy Id"
-            }
-          },
-          {
-            "name": "device_id",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "title": "Device Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Message"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/v1/profiles": {
       "get": {
         "tags": [
@@ -1076,58 +787,9 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Message"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/smart-groups/{group_id}/policies": {
-      "post": {
-        "tags": [
-          "Smart Groups"
-        ],
-        "summary": "Assign Policy To Smart Group",
-        "operationId": "assign_policy_to_smart_group_api_v1_smart_groups__group_id__policies_post",
-        "parameters": [
-          {
-            "name": "group_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "title": "Group Id"
-            }
-          },
-          {
-            "name": "policy_id",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "title": "Policy Id"
-            }
-          }
-        ],
-        "responses": {
-          "201": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SmartGroupResponse"
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Delete Smart Group Api V1 Smart Groups  Group Id  Delete"
                 }
               }
             }
@@ -1354,58 +1016,9 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Message"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/static-groups/{group_id}/policies": {
-      "post": {
-        "tags": [
-          "Static Groups"
-        ],
-        "summary": "Assign Policy To Static Group",
-        "operationId": "assign_policy_to_static_group_api_v1_static_groups__group_id__policies_post",
-        "parameters": [
-          {
-            "name": "group_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "title": "Group Id"
-            }
-          },
-          {
-            "name": "policy_id",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "title": "Policy Id"
-            }
-          }
-        ],
-        "responses": {
-          "201": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/StaticGroupResponse"
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Delete Static Group Api V1 Static Groups  Group Id  Delete"
                 }
               }
             }
@@ -2534,12 +2147,12 @@
             ],
             "title": "Certificates"
           },
-          "policies": {
+          "profiles": {
             "items": {
               "type": "string"
             },
             "type": "array",
-            "title": "Policies",
+            "title": "Profiles",
             "default": []
           }
         },
@@ -2776,16 +2389,16 @@
             "type": "integer",
             "title": "Online Devices"
           },
-          "pending_policies": {
+          "pending_profiles": {
             "type": "integer",
-            "title": "Pending Policies"
+            "title": "Pending Profiles"
           }
         },
         "type": "object",
         "required": [
           "total_devices",
           "online_devices",
-          "pending_policies"
+          "pending_profiles"
         ],
         "title": "FleetMetricsResponse"
       },
@@ -3075,37 +2688,6 @@
         ],
         "title": "PaginatedResponse[InventorySearchResponse]"
       },
-      "PaginatedResponse_PolicyResponse_": {
-        "properties": {
-          "items": {
-            "items": {
-              "$ref": "#/components/schemas/PolicyResponse"
-            },
-            "type": "array",
-            "title": "Items"
-          },
-          "total": {
-            "type": "integer",
-            "title": "Total"
-          },
-          "skip": {
-            "type": "integer",
-            "title": "Skip"
-          },
-          "limit": {
-            "type": "integer",
-            "title": "Limit"
-          }
-        },
-        "type": "object",
-        "required": [
-          "items",
-          "total",
-          "skip",
-          "limit"
-        ],
-        "title": "PaginatedResponse[PolicyResponse]"
-      },
       "PaginatedResponse_ProfileResponse_": {
         "properties": {
           "items": {
@@ -3230,147 +2812,6 @@
         ],
         "title": "PaginatedResponse[UserResponse]"
       },
-      "PolicyCreate": {
-        "properties": {
-          "name": {
-            "type": "string",
-            "title": "Name"
-          },
-          "scope": {
-            "type": "string",
-            "title": "Scope"
-          },
-          "target_devices": {
-            "type": "integer",
-            "title": "Target Devices",
-            "default": 0
-          },
-          "settings": {
-            "anyOf": [
-              {
-                "additionalProperties": true,
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Settings"
-          }
-        },
-        "type": "object",
-        "required": [
-          "name",
-          "scope"
-        ],
-        "title": "PolicyCreate"
-      },
-      "PolicyResponse": {
-        "properties": {
-          "id": {
-            "type": "integer",
-            "title": "Id"
-          },
-          "name": {
-            "type": "string",
-            "title": "Name"
-          },
-          "version": {
-            "type": "integer",
-            "title": "Version"
-          },
-          "scope": {
-            "type": "string",
-            "title": "Scope"
-          },
-          "rollout_state": {
-            "type": "string",
-            "title": "Rollout State"
-          },
-          "target_devices": {
-            "type": "integer",
-            "title": "Target Devices"
-          },
-          "applied_devices": {
-            "type": "integer",
-            "title": "Applied Devices"
-          },
-          "description": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Description"
-          },
-          "settings": {
-            "anyOf": [
-              {
-                "additionalProperties": true,
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Settings"
-          }
-        },
-        "type": "object",
-        "required": [
-          "id",
-          "name",
-          "version",
-          "scope",
-          "rollout_state",
-          "target_devices",
-          "applied_devices"
-        ],
-        "title": "PolicyResponse"
-      },
-      "PolicyUpdate": {
-        "properties": {
-          "name": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Name"
-          },
-          "scope": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Scope"
-          },
-          "settings": {
-            "anyOf": [
-              {
-                "additionalProperties": true,
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Settings"
-          }
-        },
-        "type": "object",
-        "title": "PolicyUpdate"
-      },
       "ProfileCreate": {
         "properties": {
           "name": {
@@ -3387,6 +2828,11 @@
               }
             ],
             "title": "Description"
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version",
+            "default": 1
           },
           "settings": {
             "additionalProperties": true,
@@ -3426,6 +2872,11 @@
               }
             ],
             "title": "Description"
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version",
+            "default": 1
           },
           "settings": {
             "additionalProperties": true,
@@ -3508,6 +2959,17 @@
               }
             ],
             "title": "Description"
+          },
+          "version": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version"
           },
           "settings": {
             "anyOf": [

@@ -8,12 +8,10 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from sqlalchemy import select
-from sqlalchemy.orm import selectinload
 
 from app.config.settings import settings
 from app.database import async_session
-from app.devices.models import Device
-from app.policies.models import Policy
+from app.profiles.profile_assignment import ProfileAssignment
 from app.notification.webhook import send_validation_webhook
 
 try:
@@ -148,61 +146,51 @@ class RabbitMQConsumer:
         return self._connection is not None and not self._connection.is_closed
 
 
-async def process_policy_deployment_message(data: dict[str, Any]) -> None:
+async def process_profile_status_message(data: dict[str, Any]) -> None:
+    event_type = data.get("event_type", "")
     device_id = data.get("device_id")
-    device_serial = data.get("device_serial_number")
-    policy_id = data.get("policy_id")
+    profile_id = data.get("profile_id")
+    status = data.get("status")
 
-    if not policy_id or (device_id is None and device_serial is None):
-        logger.warning("Invalid policy deployment message: %s", data)
-        return
-
-    async with async_session() as db:
-        device_stmt = select(Device).options(selectinload(Device.policies))
-        if device_id is not None:
-            device_stmt = device_stmt.where(Device.id == int(device_id))
-        else:
-            device_stmt = device_stmt.where(Device.serial_number == device_serial)
-
-        device_result = await db.execute(device_stmt)
-        device = device_result.scalar_one_or_none()
-
-        if not device:
-            logger.warning("Device %s not found, skipping deployment", device_id or device_serial)
+    if event_type == "profile.status.reported":
+        if not profile_id or device_id is None:
+            logger.warning("Invalid profile status message: %s", data)
             return
 
-        policy_stmt = select(Policy).where(Policy.id == policy_id)
-        policy_result = await db.execute(policy_stmt)
-        policy = policy_result.scalar_one_or_none()
-
-        if not policy:
-            logger.warning("Policy %s not found, skipping deployment", policy_id)
+        if status not in ("PENDING", "APPLIED", "FAILED"):
+            logger.warning("Invalid status '%s' in profile status message", status)
             return
 
-        if policy not in device.policies:
-            device.policies.append(policy)
-        device.connection_status = "configured"
-        await db.commit()
+        async with async_session() as db:
+            stmt = select(ProfileAssignment).where(
+                ProfileAssignment.profile_id == int(profile_id),
+                ProfileAssignment.device_id == int(device_id),
+            )
+            result = await db.execute(stmt)
+            assignment = result.scalar_one_or_none()
 
-    logger.info("Device %s updated with policy %s", device.id, policy_id)
+            if assignment:
+                assignment.status = status
+                if status == "APPLIED":
+                    from datetime import datetime, timezone
+                    assignment.applied_at = datetime.now(timezone.utc)
+                await db.commit()
+                logger.info(
+                    "Profile %s assignment for device %s updated to %s",
+                    profile_id, device_id, status,
+                )
+            else:
+                logger.warning(
+                    "No assignment found for profile %s and device %s",
+                    profile_id, device_id,
+                )
 
-    try:
-        from app.notification.sse import notify_sse_server
-
-        await notify_sse_server(
-            device_serial=device.serial_number,
-            device_name=data.get("device_name"),
-            policy_id=policy_id,
-            policy_name=data.get("policy_name"),
-            policy_config=data.get("policy_config"),
-        )
-    except Exception:  # noqa: BLE001 — side-effect failure must not nack the message
-        logger.exception("Failed to notify SSE server for device %s", device.id)
-
-    try:
-        await send_validation_webhook(device.serial_number)
-    except Exception:  # noqa: BLE001 — side-effect failure must not nack the message
-        logger.exception("Failed to send validation webhook for device %s", device.id)
+        try:
+            await send_validation_webhook(str(device_id))
+        except Exception:  # noqa: BLE001 — side-effect failure must not nack the message
+            logger.exception("Failed to send validation webhook for device %s", device_id)
+    else:
+        logger.debug("Ignoring event_type=%s", event_type)
 
 
 rabbitmq_consumer = RabbitMQConsumer(
@@ -215,5 +203,5 @@ rabbitmq_consumer = RabbitMQConsumer(
         prefetch_count=settings.rabbitmq_prefetch_count,
         requeue_on_error=settings.rabbitmq_requeue_on_error,
     ),
-    handler=process_policy_deployment_message,
+    handler=process_profile_status_message,
 )

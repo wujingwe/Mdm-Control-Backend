@@ -10,8 +10,6 @@ from datetime import datetime, timezone
 
 from app.database import async_session, engine
 from app.devices.models import Device
-from app.policies.device_policy import DevicePolicy
-from app.policies.models import Policy
 from app.smart_groups.models import SmartGroup
 from app.static_groups.models import StaticGroup
 from app.users.models import User
@@ -151,109 +149,9 @@ STATIC_GROUPS = [
     ),
     StaticGroup(
         name="Alpha Test Group",
-        description="Initial test group for policy rollout",
+        description="Initial test group for profile rollout",
         created_by=1,
     ),
-]
-
-POLICIES = [
-    Policy(
-        name="Base Security Policy",
-        version=2, scope="All Devices",
-        rollout_state="Applied", target_devices=15, applied_devices=12,
-        description="Baseline security configuration for all managed devices",
-        settings={
-            "cameraDisabled": False,
-            "bluetoothDisabled": False,
-            "debuggingFeaturesAllowed": False,
-            "encryptionPolicy": "ENCRYPTION_REQUIRED",
-            "passwordPolicy": {
-                "minimumLength": 6,
-                "quality": "ALPHABETIC",
-                "maximumFailedPasswordsForWipe": 10,
-            },
-            "systemUpdate": {"type": "AUTOMATIC"},
-        },
-    ),
-    Policy(
-        name="Strict Compliance Policy",
-        version=1, scope="Non-compliant Devices",
-        rollout_state="Pushing", target_devices=3, applied_devices=1,
-        description="Strict policy for non-compliant devices to enforce security standards",
-        settings={
-            "cameraDisabled": True,
-            "bluetoothDisabled": True,
-            "debuggingFeaturesAllowed": False,
-            "screenCaptureDisabled": True,
-            "encryptionPolicy": "ENCRYPTION_REQUIRED",
-            "passwordPolicy": {
-                "minimumLength": 8,
-                "quality": "NUMERIC",
-                "maximumFailedPasswordsForWipe": 5,
-            },
-        },
-    ),
-    Policy(
-        name="Kiosk Mode Policy",
-        version=3, scope="Point-of-Sale Devices",
-        rollout_state="Applied", target_devices=4, applied_devices=4,
-        description="Locks devices into kiosk mode for POS use cases",
-        settings={
-            "kioskCustomization": {
-                "systemNavigation": "DISABLED",
-                "statusBar": "DISABLED",
-                "powerButtonActions": "POWER_OFF_MENU_ONLY",
-            },
-            "statusBarDisabled": True,
-            "wifiConfigDisabled": True,
-            "networkEscapeHatchEnabled": False,
-        },
-    ),
-    Policy(
-        name="BYOD Lightweight Policy",
-        version=1, scope="Bring Your Own Device",
-        rollout_state="Pending", target_devices=8, applied_devices=0,
-        description="Minimal security policy for BYOD devices",
-        settings={
-            "cameraDisabled": False,
-            "microphoneDisabled": False,
-            "debuggingFeaturesAllowed": True,
-            "encryptionPolicy": "ENCRYPTION_REQUIRED",
-            "passwordPolicy": {
-                "minimumLength": 4,
-                "quality": "SIMPLE",
-                "maximumFailedPasswordsForWipe": 15,
-            },
-            "playStoreMode": "ALLOWLIST",
-        },
-    ),
-    Policy(
-        name="Data Protection Policy",
-        version=1, scope="Executive Devices",
-        rollout_state="Applied", target_devices=2, applied_devices=2,
-        description="Enhanced data protection for executive devices",
-        settings={
-            "cameraDisabled": True,
-            "bluetoothDisabled": False,
-            "screenCaptureDisabled": True,
-            "outgoingCallsDisabled": False,
-            "encryptionPolicy": "ENCRYPTION_REQUIRED",
-            "passwordPolicy": {
-                "minimumLength": 10,
-                "quality": "COMPLEX",
-                "maximumFailedPasswordsForWipe": 3,
-            },
-            "permissionPolicy": "DENY",
-        },
-    ),
-]
-
-DEVICE_POLICIES = [
-    (1, 1), (2, 1), (3, 1), (4, 1), (6, 1), (7, 1), (8, 1), (10, 1), (13, 1), (15, 1),
-    (5, 2), (9, 2), (12, 2),
-    (11, 3),
-    (14, 4),
-    (1, 5), (14, 5),
 ]
 
 
@@ -286,16 +184,11 @@ async def seed():
         session.add_all(STATIC_GROUPS)
         await session.flush()
 
-        session.add_all(POLICIES)
-        await session.flush()
-
-        for device_id, policy_id in DEVICE_POLICIES:
-            session.add(DevicePolicy(device_id=device_id, policy_id=policy_id))
         await session.commit()
 
     await engine.dispose()
     print("Database seeded:")
-    print("  3 users, 15 devices, 3 smart groups, 2 static groups, 5 policies, 17 assignments")
+    print("  3 users, 15 devices, 3 smart groups, 2 static groups")
 
 
 if __name__ == "__main__":

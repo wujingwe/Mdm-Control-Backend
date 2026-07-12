@@ -8,18 +8,14 @@ from sqlalchemy.ext.asyncio import create_async_engine
 from app.config.settings import settings
 from app.base import Base
 from app.devices.models import Device  # noqa: F401
-from app.policies.device_policy import DevicePolicy  # noqa: F401
 from app.extension_attributes.models import ExtensionAttribute  # noqa: F401
 from app.inventory_search.models import InventorySearch  # noqa: F401
-from app.policies.models import Policy  # noqa: F401
 from app.profiles.models import Profile  # noqa: F401
 from app.profiles.profile_assignment import ProfileAssignment  # noqa: F401
 from app.profiles.profile_scope import ProfileScope  # noqa: F401
 from app.smart_groups.models import SmartGroup  # noqa: F401
-from app.smart_groups.smart_group_policy import SmartGroupPolicy  # noqa: F401
 from app.static_groups.models import StaticGroup  # noqa: F401
 from app.static_groups.static_group_device import StaticGroupDevice  # noqa: F401
-from app.static_groups.static_group_policy import StaticGroupPolicy  # noqa: F401
 from app.users.models import User  # noqa: F401
 
 config = context.config

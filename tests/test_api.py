@@ -1,5 +1,3 @@
-from app.smart_groups.repositories import SmartGroupRepository
-from app.policies.repositories import PolicyRepository
 from app.devices.schemas import Certificate, Network, Wifi
 
 
@@ -45,33 +43,6 @@ class TestDevicesAPI:
         assert body["network"]["wifi"]["ssid"] == "Office"
         assert body["certificates"][0]["common_name"] == "example.com"
 
-class TestDevicePolicyAssignment:
-    async def test_assign_policy_device_not_found(self, client):
-        resp = await client.post("/api/v1/devices/999/policy", params={"policy_id": 1})
-        assert resp.status_code == 404
-
-    async def test_assign_policy_missing_param(self, client):
-        resp = await client.post("/api/v1/devices/999/policy")
-        assert resp.status_code == 422
-
-
-class TestPoliciesAPI:
-    async def test_list_empty(self, client):
-        resp = await client.get("/api/v1/policies")
-        assert resp.status_code == 200
-        data = resp.json()
-        assert data["items"] == []
-
-    async def test_get_policy_not_found(self, client):
-        resp = await client.get("/api/v1/policies/999")
-        assert resp.status_code == 404
-
-    async def test_list_and_count(self, client):
-        resp = await client.get("/api/v1/policies")
-        data = resp.json()
-        assert "total" in data
-        assert "items" in data
-
 
 class TestSmartGroupsAPI:
     BASE = "/api/v1/smart-groups"
@@ -116,7 +87,15 @@ class TestSmartGroupsAPI:
 class TestStaticGroupsAPI:
     BASE = "/api/v1/static-groups"
 
-    async def test_crud_flow(self, client):
+    async def test_crud_flow(self, client, db_session):
+        from app.devices.models import Device
+
+        dev1 = Device(name="D1", serial_number="SN001", os_version="14", connection_status="Online", enrollment_status="Compliant")
+        dev2 = Device(name="D2", serial_number="SN002", os_version="14", connection_status="Online", enrollment_status="Compliant")
+        dev3 = Device(name="D3", serial_number="SN003", os_version="14", connection_status="Online", enrollment_status="Compliant")
+        db_session.add_all([dev1, dev2, dev3])
+        await db_session.commit()
+
         create = await client.post(self.BASE, json={
             "name": "Static Group A",
             "description": "desc",
@@ -125,12 +104,12 @@ class TestStaticGroupsAPI:
         assert create.status_code == 201
         gid = create.json()["id"]
         assert create.json()["name"] == "Static Group A"
-        assert create.json()["device_serial_numbers"] == ["SN001", "SN002"]
+        assert set(create.json()["device_serial_numbers"]) == {"SN001", "SN002"}
 
         get = await client.get(f"{self.BASE}/{gid}")
         assert get.status_code == 200
         assert get.json()["name"] == "Static Group A"
-        assert get.json()["device_serial_numbers"] == ["SN001", "SN002"]
+        assert set(get.json()["device_serial_numbers"]) == {"SN001", "SN002"}
 
         update = await client.put(f"{self.BASE}/{gid}", json={
             "name": "Static Group B",
@@ -175,37 +154,6 @@ class TestUsersAPI:
     async def test_get_by_email_not_found(self, client):
         resp = await client.get("/api/v1/users/by-email/nobody@example.com")
         assert resp.status_code == 404
-
-
-class TestGroupPolicyAssignment:
-    BASE = "/api/v1/smart-groups"
-
-    async def test_assign_policy_success(self, client, db_session):
-        repo = SmartGroupRepository(db_session)
-        group = await repo.create({"name": "Test Group", "created_by": 1})
-        policy = await PolicyRepository(db_session).create({
-            "name": "Test Policy", "version": 1, "scope": "all",
-            "rollout_state": "Completed", "target_devices": 0, "applied_devices": 0,
-        })
-        resp = await client.post(f"{self.BASE}/{group.id}/policies", params={"policy_id": policy.id})
-        assert resp.status_code == 201
-        data = resp.json()
-        assert data["id"] == group.id
-        assert data["name"] == "Test Group"
-
-    async def test_assign_policy_group_not_found(self, client):
-        resp = await client.post(f"{self.BASE}/999/policies", params={"policy_id": 1})
-        assert resp.status_code == 404
-
-    async def test_assign_policy_policy_not_found(self, client, db_session):
-        repo = SmartGroupRepository(db_session)
-        group = await repo.create({"name": "Test Group", "created_by": 1})
-        resp = await client.post(f"{self.BASE}/{group.id}/policies", params={"policy_id": 999})
-        assert resp.status_code == 404
-
-    async def test_assign_policy_missing_param(self, client):
-        resp = await client.post(f"{self.BASE}/1/policies")
-        assert resp.status_code == 422
 
 
 class TestHealth:

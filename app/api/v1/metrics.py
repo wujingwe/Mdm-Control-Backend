@@ -3,7 +3,7 @@ from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.dependencies import get_db
 from app.devices.models import Device
-from app.policies.models import Policy
+from app.profiles.profile_assignment import ProfileAssignment
 from pydantic import BaseModel
 
 router = APIRouter(prefix="/metrics", tags=["Metrics"])
@@ -12,7 +12,7 @@ router = APIRouter(prefix="/metrics", tags=["Metrics"])
 class FleetMetricsResponse(BaseModel):
     total_devices: int
     online_devices: int
-    pending_policies: int
+    pending_profiles: int
 
 
 @router.get("/fleet", response_model=FleetMetricsResponse)
@@ -26,12 +26,14 @@ async def fleet_metrics(db: AsyncSession = Depends(get_db)) -> FleetMetricsRespo
     online_devices = online.scalar() or 0
 
     pending = await db.execute(
-        select(func.count(Policy.id)).where(Policy.rollout_state == "Pending"),
+        select(func.count(ProfileAssignment.id)).where(
+            ProfileAssignment.status == "PENDING",
+        ),
     )
-    pending_policies = pending.scalar() or 0
+    pending_profiles = pending.scalar() or 0
 
     return FleetMetricsResponse(
         total_devices=total_devices,
         online_devices=online_devices,
-        pending_policies=pending_policies,
+        pending_profiles=pending_profiles,
     )

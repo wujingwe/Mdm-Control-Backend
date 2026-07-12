@@ -2,7 +2,6 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from app.devices.services import DeviceService
 from app.smart_groups.services import SmartGroupService
-from app.policies.services import PolicyService
 from app.profiles.services import ProfileService
 from app.users.services import UserService
 from app.extension_attributes.services import ExtensionAttributeService
@@ -71,59 +70,6 @@ class TestDeviceService:
         assert len(result) == 1
         assert result[0].name == "MacBook"
 
-    async def test_assign_policy(self, repo):
-        policy = MagicMock()
-        device = MagicMock()
-        device.id = 1
-        device.policies = []
-        repo.db.get = AsyncMock(return_value=policy)
-        mock_result = MagicMock()
-        mock_result.scalar_one_or_none.return_value = device
-        repo.db.execute = AsyncMock(return_value=mock_result)
-
-        svc = DeviceService(repo)
-        result = await svc.assign_policy(1, 10)
-        assert result is not None
-        assert policy in device.policies
-        repo.db.commit.assert_awaited_once()
-
-    async def test_assign_policy_device_not_found(self, repo):
-        repo.db.get = AsyncMock(return_value=MagicMock())
-        mock_result = MagicMock()
-        mock_result.scalar_one_or_none.return_value = None
-        repo.db.execute = AsyncMock(return_value=mock_result)
-        svc = DeviceService(repo)
-        result = await svc.assign_policy(999, 1)
-        assert result is None
-
-
-class TestPolicyService:
-    @pytest.fixture
-    def repo(self):
-        m = MagicMock()
-        m.list_all = AsyncMock(return_value=[])
-        m.count = AsyncMock(return_value=0)
-        m.get_by_id = AsyncMock(return_value=None)
-        return m
-
-    async def test_list_policies(self, repo):
-        svc = PolicyService(repo)
-        items, total = await svc.list_policies()
-        repo.list_all.assert_called_once_with(skip=0, limit=100)
-        repo.count.assert_called_once()
-
-    async def test_get_policy(self, repo):
-        fake = MagicMock()
-        repo.get_by_id = AsyncMock(return_value=fake)
-        svc = PolicyService(repo)
-        result = await svc.get_policy(1)
-        assert result is fake
-
-    async def test_get_policy_not_found(self, repo):
-        svc = PolicyService(repo)
-        result = await svc.get_policy(999)
-        assert result is None
-
 
 class TestSmartGroupService:
     @pytest.fixture
@@ -137,57 +83,6 @@ class TestSmartGroupService:
         m.count = AsyncMock()
         m.db = AsyncMock()
         return m
-
-    async def test_assign_policy(self, repo):
-        policy = MagicMock()
-        group = MagicMock()
-        group.id = 1
-        group.policies = []
-        repo.db.get = AsyncMock(return_value=policy)
-        mock_result = MagicMock()
-        mock_result.scalar_one_or_none.return_value = group
-        repo.db.execute = AsyncMock(return_value=mock_result)
-
-        svc = SmartGroupService(repo)
-        result = await svc.assign_policy(1, 10)
-        assert result is not None
-        assert policy in group.policies
-        repo.db.commit.assert_awaited_once()
-
-    async def test_assign_policy_already_assigned(self, repo):
-        policy = MagicMock()
-        policy.id = 10
-        group = MagicMock()
-        group.id = 1
-        group.policies = [policy]
-        repo.db.get = AsyncMock(return_value=policy)
-        mock_result = MagicMock()
-        mock_result.scalar_one_or_none.return_value = group
-        repo.db.execute = AsyncMock(return_value=mock_result)
-
-        svc = SmartGroupService(repo)
-        result = await svc.assign_policy(1, 10)
-        assert result is not None
-        assert len(group.policies) == 1
-        repo.db.commit.assert_not_called()
-
-    async def test_assign_policy_group_not_found(self, repo):
-        repo.db.get = AsyncMock(return_value=MagicMock())
-        mock_result = MagicMock()
-        mock_result.scalar_one_or_none.return_value = None
-        repo.db.execute = AsyncMock(return_value=mock_result)
-        svc = SmartGroupService(repo)
-        result = await svc.assign_policy(999, 1)
-        assert result is None
-
-    async def test_assign_policy_policy_not_found(self, repo):
-        repo.db.get = AsyncMock(return_value=None)
-        mock_result = MagicMock()
-        mock_result.scalar_one_or_none.return_value = None
-        repo.db.execute = AsyncMock(return_value=mock_result)
-        svc = SmartGroupService(repo)
-        result = await svc.assign_policy(1, 999)
-        assert result is None
 
     async def test_list_groups(self, repo):
         svc = SmartGroupService(repo)
@@ -620,63 +515,6 @@ class TestStaticGroupService:
         await svc.set_device_serial_numbers(1, ["SN001", "SN002"])
         repo.set_device_serial_numbers.assert_called_once_with(1, ["SN001", "SN002"])
 
-    async def test_assign_policy_success(self, repo):
-        from app.policies.models import Policy
-        from app.static_groups.models import StaticGroup
-
-        policy = MagicMock(spec=Policy)
-        policy.id = 10
-        group = MagicMock(spec=StaticGroup)
-        group.id = 1
-        group.policies = []
-
-        repo.db.get = AsyncMock(return_value=policy)
-        mock_result = MagicMock()
-        mock_result.scalar_one_or_none.return_value = group
-        repo.db.execute = AsyncMock(return_value=mock_result)
-
-        svc = StaticGroupService(repo)
-        result = await svc.assign_policy(1, 10)
-        assert result is not None
-        assert policy in group.policies
-        repo.db.commit.assert_awaited_once()
-
-    async def test_assign_policy_already_assigned(self, repo):
-        policy = MagicMock()
-        policy.id = 10
-        group = MagicMock()
-        group.id = 1
-        group.policies = [policy]
-
-        repo.db.get = AsyncMock(return_value=policy)
-        mock_result = MagicMock()
-        mock_result.scalar_one_or_none.return_value = group
-        repo.db.execute = AsyncMock(return_value=mock_result)
-
-        svc = StaticGroupService(repo)
-        result = await svc.assign_policy(1, 10)
-        assert result is not None
-        assert len(group.policies) == 1
-        repo.db.commit.assert_not_called()
-
-    async def test_assign_policy_group_not_found(self, repo):
-        repo.db.get = AsyncMock(return_value=MagicMock())
-        mock_result = MagicMock()
-        mock_result.scalar_one_or_none.return_value = None
-        repo.db.execute = AsyncMock(return_value=mock_result)
-        svc = StaticGroupService(repo)
-        result = await svc.assign_policy(999, 1)
-        assert result is None
-
-    async def test_assign_policy_policy_not_found(self, repo):
-        repo.db.get = AsyncMock(return_value=None)
-        mock_result = MagicMock()
-        mock_result.scalar_one_or_none.return_value = None
-        repo.db.execute = AsyncMock(return_value=mock_result)
-        svc = StaticGroupService(repo)
-        result = await svc.assign_policy(1, 999)
-        assert result is None
-
 
 class TestProfileServiceRecalculate:
     @pytest.fixture
@@ -772,12 +610,10 @@ class TestProfileServiceRecalculate:
         scope_entry.target_id = 5
         repo.get_scope = AsyncMock(return_value=[scope_entry])
 
-        serial_result = MagicMock()
-        serial_result.scalars.return_value.all.return_value = ["SN001"]
-        device_result = MagicMock()
-        device_result.all.return_value = [(10,)]
+        sg_dev_result = MagicMock()
+        sg_dev_result.all.return_value = [(10,)]
 
-        repo.db.execute = AsyncMock(side_effect=[serial_result, device_result])
+        repo.db.execute = AsyncMock(return_value=sg_dev_result)
 
         svc = ProfileService(repo)
         await svc._recalculate_assignments(1)
@@ -801,7 +637,7 @@ class TestProfileServiceRecalculate:
         repo.get_scope = AsyncMock(return_value=[scope_entry])
 
         serial_result = MagicMock()
-        serial_result.scalars.return_value.all.return_value = []
+        serial_result.all.return_value = []
         repo.db.execute = AsyncMock(return_value=serial_result)
 
         svc = ProfileService(repo)

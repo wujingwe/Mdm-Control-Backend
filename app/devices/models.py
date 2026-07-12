@@ -1,20 +1,19 @@
 from datetime import datetime
-from typing import TYPE_CHECKING
 
-from sqlalchemy import String, Integer, DateTime
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy import String, Integer, DateTime, Index
+from sqlalchemy.orm import Mapped, mapped_column
 
 from app.base import Base, utcnow
-from app.policies.models import DevicePolicy  # noqa: F401
 from app.types import CertificateListType, NetworkInfoType
 from app.devices.schemas import Certificate, Network
-
-if TYPE_CHECKING:
-    from app.policies.models import Policy
 
 
 class Device(Base):
     __tablename__ = "devices"
+    __table_args__ = (
+        Index("ix_devices_connection_status", "connection_status"),
+        Index("ix_devices_enrollment_status", "enrollment_status"),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String(100))
@@ -23,7 +22,7 @@ class Device(Base):
     connection_status: Mapped[str] = mapped_column(String(20))
     enrollment_status: Mapped[str] = mapped_column(String(20))
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, onupdate=utcnow)
     last_enrolled_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
     battery_status: Mapped[int | None] = mapped_column(Integer, nullable=True)
     total_storage: Mapped[int | None] = mapped_column(Integer, nullable=True)
@@ -32,8 +31,3 @@ class Device(Base):
     available_memory: Mapped[int | None] = mapped_column(Integer, nullable=True)
     network: Mapped[Network | None] = mapped_column(NetworkInfoType, nullable=True)
     certificates: Mapped[list[Certificate] | None] = mapped_column(CertificateListType, nullable=True)
-
-    policies: Mapped[list["Policy"]] = relationship(
-        secondary="device_policies",
-        back_populates="devices",
-    )
