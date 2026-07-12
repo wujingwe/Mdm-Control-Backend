@@ -4,6 +4,7 @@ from sqlalchemy import ForeignKey, Index, Integer, String, Text, DateTime, JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.base import Base, utcnow
+from app.users.models import User
 
 
 class Profile(Base):
@@ -19,4 +20,4 @@ class Profile(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, onupdate=utcnow)
 
-    creator = relationship("User", foreign_keys=[created_by])
+    creator = relationship(User, foreign_keys=[created_by])
