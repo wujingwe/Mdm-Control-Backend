@@ -16,7 +16,6 @@ class TestDeviceService:
         m.list_all = AsyncMock(return_value=[])
         m.count = AsyncMock(return_value=0)
         m.get_by_id = AsyncMock(return_value=None)
-        m.get_by_ids = AsyncMock(return_value=[])
         m.db = AsyncMock()
         return m
 

@@ -27,7 +27,6 @@ class ScopeTarget(BaseModel):
 class ProfileCreate(BaseModel):
     name: str
     description: str | None = None
-    version: int = 1
     settings: dict = {}
     created_by: int = 1
 
@@ -35,7 +34,6 @@ class ProfileCreate(BaseModel):
 class ProfileUpdate(BaseModel):
     name: str | None = None
     description: str | None = None
-    version: int | None = None
     settings: dict | None = None
 
 

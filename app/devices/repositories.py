@@ -11,11 +11,6 @@ class DeviceRepository:
     def __init__(self, db: AsyncSession) -> None:
         self.db = db
 
-    async def list_all_simple(self, skip: int = 0, limit: int = 100) -> list[Device]:
-        stmt = select(Device).offset(skip).limit(limit)
-        result = await self.db.execute(stmt)
-        return list(result.scalars().all())
-
     async def list_all(self, skip: int = 0, limit: int = 100) -> list[Device]:
         stmt = select(Device).offset(skip).limit(limit)
         result = await self.db.execute(stmt)
@@ -25,16 +20,6 @@ class DeviceRepository:
         stmt = select(Device).where(Device.id == record_id)
         result = await self.db.execute(stmt)
         return result.scalar_one_or_none()
-
-    async def get_by_serial(self, serial: str) -> Device | None:
-        stmt = select(Device).where(Device.serial_number == serial)
-        result = await self.db.execute(stmt)
-        return result.scalar_one_or_none()
-
-    async def get_by_ids(self, ids: list[int]) -> list[Device]:
-        stmt = select(Device).where(Device.id.in_(ids)).order_by(Device.id)
-        result = await self.db.execute(stmt)
-        return list(result.scalars().all())
 
     async def create(self, data: dict[str, Any]) -> Device:
         instance = Device(**data)

@@ -21,30 +21,12 @@ def _make_device_data(serial: str = "SN001", name: str = "Test Device") -> dict:
 
 
 class TestDeviceRepository:
-    async def test_list_empty(self, db_session):
-        repo = DeviceRepository(db_session)
-        assert await repo.list_all_simple() == []
-
     async def test_create(self, db_session):
         repo = DeviceRepository(db_session)
         device = await repo.create(_make_device_data())
         assert device.id is not None
         assert device.serial_number == "SN001"
         assert device.name == "Test Device"
-
-    async def test_list(self, db_session):
-        repo = DeviceRepository(db_session)
-        await repo.create(_make_device_data("SN001", "D1"))
-        await repo.create(_make_device_data("SN002", "D2"))
-        items = await repo.list_all_simple()
-        assert len(items) == 2
-
-    async def test_list_with_pagination(self, db_session):
-        repo = DeviceRepository(db_session)
-        for i in range(5):
-            await repo.create(_make_device_data(f"SN{i:03d}", f"D{i}"))
-        items = await repo.list_all_simple(skip=2, limit=2)
-        assert len(items) == 2
 
     async def test_get_by_id(self, db_session):
         repo = DeviceRepository(db_session)
@@ -56,17 +38,6 @@ class TestDeviceRepository:
     async def test_get_by_id_not_found(self, db_session):
         repo = DeviceRepository(db_session)
         assert await repo.get_by_id(999) is None
-
-    async def test_get_by_serial(self, db_session):
-        repo = DeviceRepository(db_session)
-        await repo.create(_make_device_data())
-        found = await repo.get_by_serial("SN001")
-        assert found is not None
-        assert found.name == "Test Device"
-
-    async def test_get_by_serial_not_found(self, db_session):
-        repo = DeviceRepository(db_session)
-        assert await repo.get_by_serial("NONEXIST") is None
 
     async def test_update(self, db_session):
         repo = DeviceRepository(db_session)
