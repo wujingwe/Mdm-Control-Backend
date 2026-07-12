@@ -55,8 +55,8 @@ class DeviceResponse(BaseModel):
     available_storage: int | None = None
     total_memory: int | None = None
     available_memory: int | None = None
-    network: Network | None = None
-    certificates: list[Certificate] | None = None
+    network: Network | dict | None = None
+    certificates: list[Certificate] | list | None = None
     profiles: list[str] = []
 
     model_config = {"from_attributes": True}

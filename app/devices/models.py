@@ -4,8 +4,8 @@ from sqlalchemy import String, Integer, DateTime, Index
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.base import Base, utcnow
+from app.common.enums import ConnectionStatus, EnrollmentStatus
 from app.types import CertificateListType, NetworkInfoType
-from app.devices.schemas import Certificate, Network
 
 
 class Device(Base):
@@ -13,14 +13,15 @@ class Device(Base):
     __table_args__ = (
         Index("ix_devices_connection_status", "connection_status"),
         Index("ix_devices_enrollment_status", "enrollment_status"),
+        Index("ix_devices_os_version", "os_version"),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String(100))
     serial_number: Mapped[str] = mapped_column(String(30), unique=True)
     os_version: Mapped[str] = mapped_column(String(20))
-    connection_status: Mapped[str] = mapped_column(String(20))
-    enrollment_status: Mapped[str] = mapped_column(String(20))
+    connection_status: Mapped[str] = mapped_column(ConnectionStatus)
+    enrollment_status: Mapped[str] = mapped_column(EnrollmentStatus)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, onupdate=utcnow)
     last_enrolled_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
@@ -29,5 +30,5 @@ class Device(Base):
     available_storage: Mapped[int | None] = mapped_column(Integer, nullable=True)
     total_memory: Mapped[int | None] = mapped_column(Integer, nullable=True)
     available_memory: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    network: Mapped[Network | None] = mapped_column(NetworkInfoType, nullable=True)
-    certificates: Mapped[list[Certificate] | None] = mapped_column(CertificateListType, nullable=True)
+    network: Mapped[dict | None] = mapped_column(NetworkInfoType, nullable=True)
+    certificates: Mapped[list | None] = mapped_column(CertificateListType, nullable=True)

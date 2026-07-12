@@ -11,6 +11,13 @@ class TargetType(str, Enum):
     DEVICE = "DEVICE"
 
 
+class AssignmentSource(str, Enum):
+    DIRECT = "DIRECT"
+    SMART_GROUP = "SMART_GROUP"
+    STATIC_GROUP = "STATIC_GROUP"
+    ALL_DEVICES = "ALL_DEVICES"
+
+
 class AssignmentStatus(str, Enum):
     PENDING = "PENDING"
     APPLIED = "APPLIED"
@@ -21,7 +28,7 @@ class AssignmentStatus(str, Enum):
 
 class ScopeTarget(BaseModel):
     target_type: TargetType
-    target_id: int | None = None
+    target_id: int = 0
 
 
 class ProfileCreate(BaseModel):
@@ -44,7 +51,7 @@ class ProfileResponse(BaseModel):
     version: int = 1
     settings: dict = {}
     created_at: datetime
-    created_by: int
+    created_by: int | None = None
     updated_at: datetime | None = None
 
     model_config = {"from_attributes": True}
@@ -59,7 +66,7 @@ class AssignmentResponse(BaseModel):
     id: int
     profile_id: int
     device_id: int
-    source: str
+    source: AssignmentSource
     source_id: int | None = None
     status: AssignmentStatus
     profile_version: int

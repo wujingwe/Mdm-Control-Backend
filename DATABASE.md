@@ -184,8 +184,8 @@ When `target_type` is `SMART_GROUP` or `STATIC_GROUP`, `target_id` references th
 
 ```
 ┌──────────────┐       ┌────────────────────────┐
-│  static_groups│──────<│  static_group_devices  │
-│              │       │  CASCADE on both FKs    │
+│ static_groups│──────<│  static_group_devices  │
+│              │       │  CASCADE on both FKs   │
 └──────────────┘       └────────────────────────┘
        │                         │
        │                         v
@@ -215,13 +215,13 @@ When `target_type` is `SMART_GROUP` or `STATIC_GROUP`, `target_id` references th
 └──────────────┘                        │
                                         v
                                ┌─────────────────┐
-                               │ profile_scope    │
-                               │ (as target)      │
+                               │ profile_scope   │
+                               │ (as target)     │
                                └─────────────────┘
 
 ┌─────────────────────┐  ┌──────────────────┐  ┌─────────────────────┐
-│ extension_attributes│  │ inventory_searches│  │       users         │
-│ FK → users.id       │  │ FK → users.id     │  │                     │
+│ extension_attributes│  │inventory_searches│  │       users         │
+│ FK → users.id       │  │FK → users.id     │  │                     │
 └─────────────────────┘  └──────────────────┘  └─────────────────────┘
 ```
 

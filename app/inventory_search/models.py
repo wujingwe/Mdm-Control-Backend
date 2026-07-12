@@ -18,8 +18,8 @@ class InventorySearch(Base):
     name: Mapped[str] = mapped_column(String(100))
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     criteria: Mapped[dict | None] = mapped_column(JSON, nullable=True)
-    created_by: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"))
+    created_by: Mapped[int | None] = mapped_column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, onupdate=utcnow)
 
-    creator = relationship(User, foreign_keys=[created_by])
+    creator: Mapped[User | None] = relationship(User, foreign_keys=[created_by], back_populates="inventory_searches")

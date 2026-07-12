@@ -1,3 +1,5 @@
+from collections import defaultdict
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -12,17 +14,22 @@ from app.profiles.profile_assignment import ProfileAssignment
 router = APIRouter(prefix="/devices", tags=["Devices"])
 
 
-async def _profile_names(db: AsyncSession, device: Device) -> list[str]:
+async def _batch_profile_names(db: AsyncSession, device_ids: list[int]) -> dict[int, list[str]]:
+    if not device_ids:
+        return {}
     stmt = (
-        select(Profile.name)
-        .join(ProfileAssignment, ProfileAssignment.profile_id == Profile.id)
+        select(ProfileAssignment.device_id, Profile.name)
+        .join(Profile, ProfileAssignment.profile_id == Profile.id)
         .where(
-            ProfileAssignment.device_id == device.id,
+            ProfileAssignment.device_id.in_(device_ids),
             ProfileAssignment.status != "REMOVED",
         )
     )
     result = await db.execute(stmt)
-    return sorted([r[0] for r in result.all()])
+    profiles_by_device: dict[int, list[str]] = defaultdict(list)
+    for device_id, profile_name in result.all():
+        profiles_by_device[device_id].append(profile_name)
+    return dict(profiles_by_device)
 
 
 def _to_response(device: Device, profiles: list[str]) -> DeviceResponse:
@@ -43,7 +50,7 @@ def _to_response(device: Device, profiles: list[str]) -> DeviceResponse:
         available_memory=device.available_memory,
         network=device.network,
         certificates=device.certificates,
-        profiles=profiles,
+        profiles=sorted(profiles),
     )
 
 
@@ -58,10 +65,13 @@ async def list_devices(
     repo = DeviceRepository(db)
     service = DeviceService(repo)
     items, total = await service.list_devices(skip=skip, limit=limit)
-    result = []
-    for d in items:
-        result.append(_to_response(d, await _profile_names(db, d)))
-    return PaginatedResponse(items=result, total=total, skip=skip, limit=limit)
+    profiles_map = await _batch_profile_names(db, [d.id for d in items])
+    return PaginatedResponse(
+        items=[_to_response(d, profiles_map.get(d.id, [])) for d in items],
+        total=total,
+        skip=skip,
+        limit=limit,
+    )
 
 
 @router.get("/{device_id}", response_model=DeviceResponse)
@@ -76,7 +86,8 @@ async def get_device(
     device = await service.get_device(device_id)
     if not device:
         raise HTTPException(status_code=404, detail="Device not found")
-    return _to_response(device, await _profile_names(db, device))
+    profiles_map = await _batch_profile_names(db, [device.id])
+    return _to_response(device, profiles_map.get(device.id, []))
 
 
 @router.post("/search", response_model=list[DeviceResponse])
@@ -89,7 +100,5 @@ async def search_devices(
     repo = DeviceRepository(db)
     service = DeviceService(repo)
     devices = await service.search_devices(criteria)
-    result = []
-    for d in devices:
-        result.append(_to_response(d, await _profile_names(db, d)))
-    return result
+    profiles_map = await _batch_profile_names(db, [d.id for d in devices])
+    return [_to_response(d, profiles_map.get(d.id, [])) for d in devices]

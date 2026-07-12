@@ -93,7 +93,7 @@ class ProfileService:
             await self.repo.delete_non_direct_assignments(profile_id)
             return
 
-        device_ids_by_source: dict[str, dict[int | None, set[int]]] = {}
+        device_ids_by_source: dict[str, dict[int, set[int]]] = {}
 
         for entry in scope:
             target_type = entry.target_type
@@ -103,7 +103,7 @@ class ProfileService:
                 stmt = select(Device.id)
                 result = await db.execute(stmt)
                 ids = {row[0] for row in result.all()}
-                device_ids_by_source.setdefault("SMART_GROUP", {}).setdefault(None, set()).update(ids)
+                device_ids_by_source.setdefault("ALL_DEVICES", {}).setdefault(0, set()).update(ids)
 
             elif target_type == "SMART_GROUP" and target_id is not None:
                 from app.smart_groups.models import SmartGroup
@@ -140,7 +140,7 @@ class ProfileService:
                 device_ids_by_source.setdefault("STATIC_GROUP", {}).setdefault(target_id, set()).update(dev_ids)
 
             elif target_type == "DEVICE" and target_id is not None:
-                device_ids_by_source.setdefault("DIRECT", {}).setdefault(None, set()).add(target_id)
+                device_ids_by_source.setdefault("DIRECT", {}).setdefault(0, set()).add(target_id)
 
         await self.repo.delete_non_direct_assignments(profile_id)
 
@@ -151,7 +151,7 @@ class ProfileService:
                         "profile_id": profile_id,
                         "device_id": dev_id,
                         "source": source,
-                        "source_id": source_id,
+                        "source_id": source_id if source_id else None,
                         "status": "PENDING",
-                        "profile_version": 1,
+                        "profile_version": profile.version,
                     })
