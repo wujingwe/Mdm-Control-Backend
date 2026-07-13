@@ -16,6 +16,20 @@ class UserUpdate(BaseModel):
     permissions: frozenset[str] | None = None
 
 
+class UserCreateDB(BaseModel):
+    email: str
+    name: str
+    password_hash: str
+    permissions: frozenset[str] = frozenset({"viewer"})
+
+
+class UserUpdateDB(BaseModel):
+    email: str | None = None
+    name: str | None = None
+    password_hash: str | None = None
+    permissions: frozenset[str] | None = None
+
+
 class UserResponse(BaseModel):
     id: int
     email: str

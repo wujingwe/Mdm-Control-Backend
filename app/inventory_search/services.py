@@ -16,10 +16,10 @@ class InventorySearchService:
         return await self.repo.get_by_id(search_id)
 
     async def create_search(self, data: InventorySearchCreate) -> InventorySearch:
-        return await self.repo.create(data.model_dump())
+        return await self.repo.create(data)
 
     async def update_search(self, search_id: int, data: InventorySearchUpdate) -> InventorySearch | None:
-        return await self.repo.update(search_id, data.model_dump(exclude_unset=True))
+        return await self.repo.update(search_id, data)
 
     async def delete_search(self, search_id: int) -> bool:
         return await self.repo.delete(search_id)

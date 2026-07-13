@@ -1,6 +1,6 @@
 from app.static_groups.models import StaticGroup
 from app.static_groups.repositories import StaticGroupRepository
-from app.static_groups.schemas import StaticGroupCreate, StaticGroupUpdate
+from app.static_groups.schemas import StaticGroupCreate, StaticGroupCreateDB, StaticGroupUpdate
 
 
 class StaticGroupService:
@@ -15,17 +15,18 @@ class StaticGroupService:
 
     async def create_group(self, data: StaticGroupCreate) -> StaticGroup:
         serial_numbers = data.device_serial_numbers
-        group = await self.repo.create({
-            "name": data.name,
-            "description": data.description,
-            "created_by": data.created_by,
-        })
+        db_data = StaticGroupCreateDB(
+            name=data.name,
+            description=data.description,
+            created_by=data.created_by,
+        )
+        group = await self.repo.create(db_data)
         if serial_numbers:
             await self.repo.set_device_serial_numbers(group.id, serial_numbers)
         return group
 
     async def update_group(self, group_id: int, data: StaticGroupUpdate) -> StaticGroup | None:
-        return await self.repo.update(group_id, data.model_dump(exclude_unset=True))
+        return await self.repo.update(group_id, data)
 
     async def delete_group(self, group_id: int) -> bool:
         return await self.repo.delete(group_id)

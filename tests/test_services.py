@@ -8,11 +8,12 @@ from app.extension_attributes.services import ExtensionAttributeService
 from app.inventory_search.services import InventorySearchService
 from app.static_groups.services import StaticGroupService
 from app.smart_groups.schemas import SmartGroupCreate, SmartGroupUpdate
-from app.profiles.schemas import ProfileCreate, ProfileUpdate
+from app.profiles.schemas import ProfileCreate, ProfileUpdate, ScopeTarget, AssignmentUpsert
 from app.users.schemas import UserCreate, UserUpdate
 from app.extension_attributes.schemas import ExtensionAttributeCreate, ExtensionAttributeUpdate
 from app.inventory_search.schemas import InventorySearchCreate, InventorySearchUpdate
 from app.static_groups.schemas import StaticGroupCreate, StaticGroupUpdate
+from app.common.enums import TargetType
 
 
 class TestDeviceService:
@@ -200,8 +201,9 @@ class TestProfileService:
         repo.get_by_id = AsyncMock(return_value=MagicMock(version=1))
         repo.get_scope = AsyncMock(return_value=[])
         svc = ProfileService(repo)
-        await svc.set_scope(1, [{"target_type": "ALL_DEVICES"}])
-        repo.set_scope.assert_called_once_with(1, [{"target_type": "ALL_DEVICES"}])
+        targets = [ScopeTarget(target_type=TargetType.ALL_DEVICES)]
+        await svc.set_scope(1, targets)
+        repo.set_scope.assert_called_once_with(1, targets)
         repo.delete_non_direct_assignments.assert_awaited_once_with(1)
 
     async def test_get_assignments(self, repo):
@@ -222,9 +224,10 @@ class TestProfileService:
         svc = ProfileService(repo)
         result = await svc.update_assignment_status(1, 10, "APPLIED")
         assert result is updated
-        call_kwargs = repo.upsert_assignment.call_args[0][0]
-        assert call_kwargs["status"] == "APPLIED"
-        assert call_kwargs["applied_at"] is not None
+        upsert_data = repo.upsert_assignment.call_args[0][0]
+        assert isinstance(upsert_data, AssignmentUpsert)
+        assert upsert_data.status == "APPLIED"
+        assert upsert_data.applied_at is not None
 
     async def test_update_assignment_status_revoked(self, repo):
         assignment = MagicMock(
@@ -237,9 +240,10 @@ class TestProfileService:
         svc = ProfileService(repo)
         result = await svc.update_assignment_status(1, 10, "REVOKED")
         assert result is updated
-        call_kwargs = repo.upsert_assignment.call_args[0][0]
-        assert call_kwargs["status"] == "REVOKED"
-        assert call_kwargs["revoked_at"] is not None
+        upsert_data = repo.upsert_assignment.call_args[0][0]
+        assert isinstance(upsert_data, AssignmentUpsert)
+        assert upsert_data.status == "REVOKED"
+        assert upsert_data.revoked_at is not None
 
     async def test_update_assignment_status_not_found(self, repo):
         repo.get_assignment = AsyncMock(return_value=None)
@@ -288,10 +292,9 @@ class TestUserService:
         svc = UserService(repo)
         result = await svc.create_user(UserCreate(email="a@b.com", name="test", password="secret123"))
         assert result is fake
-        create_args = repo.create.call_args[0][0]
-        assert create_args["email"] == "a@b.com"
-        assert "password" not in create_args
-        assert "password_hash" in create_args
+        create_arg = repo.create.call_args[0][0]
+        assert create_arg.email == "a@b.com"
+        assert create_arg.password_hash is not None
 
     async def test_update_user_with_password(self, repo):
         fake = MagicMock()
@@ -299,9 +302,8 @@ class TestUserService:
         svc = UserService(repo)
         result = await svc.update_user(1, UserUpdate(password="newpass"))
         assert result is fake
-        update_args = repo.update.call_args[0][1]
-        assert "password" not in update_args
-        assert "password_hash" in update_args
+        update_arg = repo.update.call_args[0][1]
+        assert update_arg.password_hash is not None
 
     async def test_update_user_without_password(self, repo):
         fake = MagicMock()
@@ -309,8 +311,9 @@ class TestUserService:
         svc = UserService(repo)
         result = await svc.update_user(1, UserUpdate(name="new name"))
         assert result is fake
-        update_args = repo.update.call_args[0][1]
-        assert update_args == {"name": "new name"}
+        update_arg = repo.update.call_args[0][1]
+        assert update_arg.name == "new name"
+        assert update_arg.password_hash is None
 
     async def test_update_user_empty_data(self, repo):
         svc = UserService(repo)
@@ -599,9 +602,9 @@ class TestProfileServiceRecalculate:
 
         repo.delete_non_direct_assignments.assert_awaited_once_with(1)
         repo.upsert_assignment.assert_awaited_once()
-        call_kwargs = repo.upsert_assignment.call_args[0][0]
-        assert call_kwargs["device_id"] == 42
-        assert call_kwargs["source"] == "DIRECT"
+        upsert_data = repo.upsert_assignment.call_args[0][0]
+        assert upsert_data.device_id == 42
+        assert upsert_data.source.value == "DIRECT"
 
     async def test_recalculate_static_group_scope(self, repo):
         from app.profiles.profile_scope import ProfileScope
@@ -625,9 +628,9 @@ class TestProfileServiceRecalculate:
 
         repo.delete_non_direct_assignments.assert_awaited_once_with(1)
         repo.upsert_assignment.assert_awaited_once()
-        call_kwargs = repo.upsert_assignment.call_args[0][0]
-        assert call_kwargs["source"] == "STATIC_GROUP"
-        assert call_kwargs["source_id"] == 5
+        upsert_data = repo.upsert_assignment.call_args[0][0]
+        assert upsert_data.source.value == "STATIC_GROUP"
+        assert upsert_data.source_id == 5
 
     async def test_recalculate_static_group_empty_serials(self, repo):
         from app.profiles.profile_scope import ProfileScope
@@ -702,9 +705,9 @@ class TestProfileServiceRecalculate:
 
         repo.delete_non_direct_assignments.assert_awaited_once_with(1)
         assert repo.upsert_assignment.await_count == 2
-        call_kwargs = repo.upsert_assignment.call_args[0][0]
-        assert call_kwargs["source"] == "SMART_GROUP"
-        assert call_kwargs["source_id"] == 3
+        upsert_data = repo.upsert_assignment.call_args[0][0]
+        assert upsert_data.source.value == "SMART_GROUP"
+        assert upsert_data.source_id == 3
 
     async def test_recalculate_smart_group_nonexistent_group(self, repo):
         from app.profiles.profile_scope import ProfileScope

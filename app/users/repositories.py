@@ -1,9 +1,9 @@
-from typing import Any
-from sqlalchemy import select, func
+from sqlalchemy import select, func, update, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
 
 from app.users.models import User
+from app.users.schemas import UserCreateDB, UserUpdateDB
 from app.core.exceptions import ConflictError
 
 
@@ -21,8 +21,8 @@ class UserRepository:
         result = await self.db.execute(stmt)
         return result.scalar_one_or_none()
 
-    async def create(self, data: dict[str, Any]) -> User:
-        instance = User(**data)
+    async def create(self, data: UserCreateDB) -> User:
+        instance = User(**data.model_dump())
         self.db.add(instance)
         try:
             await self.db.commit()
@@ -32,27 +32,24 @@ class UserRepository:
             raise ConflictError("Resource already exists") from err  # noqa: TRY003, EM101
         return instance
 
-    async def update(self, record_id: int, data: dict[str, Any]) -> User | None:
-        instance = await self.get_by_id(record_id)
-        if not instance:
-            return None
-        for key, value in data.items():
-            setattr(instance, key, value)
+    async def update(self, record_id: int, data: UserUpdateDB) -> User | None:
+        values = data.model_dump(exclude_unset=True)
+        if not values:
+            return await self.get_by_id(record_id)
+        stmt = update(User).where(User.id == record_id).values(**values).returning(User)
+        result = await self.db.execute(stmt)
         try:
             await self.db.commit()
-            await self.db.refresh(instance)
         except IntegrityError as err:
             await self.db.rollback()
             raise ConflictError("Resource already exists") from err  # noqa: TRY003, EM101
-        return instance
+        return result.scalars().one_or_none()
 
     async def delete(self, record_id: int) -> bool:
-        instance = await self.get_by_id(record_id)
-        if not instance:
-            return False
-        await self.db.delete(instance)
+        stmt = delete(User).where(User.id == record_id).returning(User.id)
+        result = await self.db.execute(stmt)
         await self.db.commit()
-        return True
+        return result.scalar_one_or_none() is not None
 
     async def count(self) -> int:
         stmt = select(func.count()).select_from(User)

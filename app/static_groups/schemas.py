@@ -10,6 +10,12 @@ class StaticGroupCreate(BaseModel):
     created_by: int = 1
 
 
+class StaticGroupCreateDB(BaseModel):
+    name: str
+    description: str | None = None
+    created_by: int = 1
+
+
 class StaticGroupUpdate(BaseModel):
     name: str | None = None
     description: str | None = None

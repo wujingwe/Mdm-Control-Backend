@@ -10,7 +10,7 @@ from app.devices.models import Device
 from app.profiles.models import Profile
 from app.profiles.profile_assignment import ProfileAssignment
 from app.profiles.profile_scope import ProfileScope
-from app.profiles.schemas import ProfileCreate, ProfileUpdate
+from app.profiles.schemas import ProfileCreate, ProfileUpdate, ScopeTarget, AssignmentUpsert
 from app.static_groups.static_group_device import StaticGroupDevice
 from app.profiles.repositories import ProfileRepository
 
@@ -43,10 +43,10 @@ class ProfileService:
         return await self.repo.get_by_id(profile_id)
 
     async def create_profile(self, data: ProfileCreate) -> Profile:
-        return await self.repo.create(data.model_dump())
+        return await self.repo.create(data)
 
     async def update_profile(self, profile_id: int, data: ProfileUpdate) -> Profile | None:
-        return await self.repo.update(profile_id, data.model_dump(exclude_unset=True))
+        return await self.repo.update(profile_id, data)
 
     async def delete_profile(self, profile_id: int) -> bool:
         return await self.repo.delete(profile_id)
@@ -54,7 +54,7 @@ class ProfileService:
     async def get_scope(self, profile_id: int) -> list[ProfileScope]:
         return await self.repo.get_scope(profile_id)
 
-    async def set_scope(self, profile_id: int, targets: list[dict]) -> None:
+    async def set_scope(self, profile_id: int, targets: list[ScopeTarget]) -> None:
         await self.repo.set_scope(profile_id, targets)
         await self._recalculate_assignments(profile_id)
 
@@ -69,20 +69,18 @@ class ProfileService:
         assignment = await self.repo.get_assignment(profile_id, device_id)
         if not assignment:
             return None
-        update: dict = {"status": status}
         now = datetime.now(timezone.utc)
-        if status == AssignmentStatus.APPLIED:
-            update["applied_at"] = now
-        elif status == AssignmentStatus.REVOKED:
-            update["revoked_at"] = now
-        return await self.repo.upsert_assignment({
-            "profile_id": assignment.profile_id,
-            "device_id": assignment.device_id,
-            "source": assignment.source,
-            "source_id": assignment.source_id,
-            "profile_version": assignment.profile_version,
-            **update,
-        })
+        status_enum = AssignmentStatus(status)
+        return await self.repo.upsert_assignment(AssignmentUpsert(
+            profile_id=assignment.profile_id,
+            device_id=assignment.device_id,
+            source=AssignmentSource(assignment.source),
+            source_id=assignment.source_id,
+            profile_version=assignment.profile_version,
+            status=status_enum,
+            applied_at=now if status_enum == AssignmentStatus.APPLIED else None,
+            revoked_at=now if status_enum == AssignmentStatus.REVOKED else None,
+        ))
 
     async def _recalculate_assignments(self, profile_id: int) -> None:
         db = self.repo.db
@@ -149,11 +147,11 @@ class ProfileService:
         for source, groups in device_ids_by_source.items():
             for source_id, dev_ids in groups.items():
                 for dev_id in dev_ids:
-                    await self.repo.upsert_assignment({
-                        "profile_id": profile_id,
-                        "device_id": dev_id,
-                        "source": source,
-                        "source_id": source_id if source_id else None,
-                        "status": AssignmentStatus.PENDING,
-                        "profile_version": profile.version,
-                    })
+                    await self.repo.upsert_assignment(AssignmentUpsert(
+                        profile_id=profile_id,
+                        device_id=dev_id,
+                        source=AssignmentSource(source),
+                        source_id=source_id if source_id else None,
+                        status=AssignmentStatus.PENDING,
+                        profile_version=profile.version,
+                    ))

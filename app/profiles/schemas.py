@@ -58,3 +58,14 @@ class AssignmentResponse(BaseModel):
 
 class StatusUpdate(BaseModel):
     status: AssignmentStatus
+
+
+class AssignmentUpsert(BaseModel):
+    profile_id: int
+    device_id: int
+    source: AssignmentSource
+    source_id: int | None = None
+    status: AssignmentStatus
+    profile_version: int
+    applied_at: datetime | None = None
+    revoked_at: datetime | None = None

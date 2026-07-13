@@ -2,7 +2,7 @@ from passlib.context import CryptContext
 
 from app.users.models import User
 from app.users.repositories import UserRepository
-from app.users.schemas import UserCreate, UserUpdate
+from app.users.schemas import UserCreate, UserCreateDB, UserUpdate, UserUpdateDB
 
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -19,18 +19,24 @@ class UserService:
         return await self.repo.get_by_id(user_id)
 
     async def create_user(self, data: UserCreate) -> User:
-        user_data = data.model_dump()
-        password = user_data.pop("password")
-        user_data["password_hash"] = pwd_context.hash(password)
-        return await self.repo.create(user_data)
+        db_data = UserCreateDB(
+            email=data.email,
+            name=data.name,
+            password_hash=pwd_context.hash(data.password),
+            permissions=data.permissions,
+        )
+        return await self.repo.create(db_data)
 
     async def update_user(self, user_id: int, data: UserUpdate) -> User | None:
-        user_data = data.model_dump(exclude_unset=True)
-        if "password" in user_data:
-            user_data["password_hash"] = pwd_context.hash(user_data.pop("password"))
-        if not user_data:
+        db_data = UserUpdateDB(
+            email=data.email,
+            name=data.name,
+            password_hash=pwd_context.hash(data.password) if data.password else None,
+            permissions=data.permissions,
+        )
+        if not any(v is not None for v in db_data.model_dump().values()):
             return None
-        return await self.repo.update(user_id, user_data)
+        return await self.repo.update(user_id, db_data)
 
     async def delete_user(self, user_id: int) -> bool:
         return await self.repo.delete(user_id)

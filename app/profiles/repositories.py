@@ -1,6 +1,4 @@
-from typing import Any
-
-from sqlalchemy import select, func
+from sqlalchemy import select, func, update, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
 
@@ -8,6 +6,7 @@ from app.common.enums import AssignmentSource
 from app.profiles.models import Profile
 from app.profiles.profile_scope import ProfileScope
 from app.profiles.profile_assignment import ProfileAssignment
+from app.profiles.schemas import ProfileCreate, ProfileUpdate, ScopeTarget, AssignmentUpsert
 from app.core.exceptions import ConflictError
 
 
@@ -25,8 +24,8 @@ class ProfileRepository:
         result = await self.db.execute(stmt)
         return result.scalar_one_or_none()
 
-    async def create(self, data: dict[str, Any]) -> Profile:
-        instance = Profile(**data)
+    async def create(self, data: ProfileCreate) -> Profile:
+        instance = Profile(**data.model_dump())
         self.db.add(instance)
         try:
             await self.db.commit()
@@ -36,27 +35,24 @@ class ProfileRepository:
             raise ConflictError("Profile with this name already exists") from err  # noqa: TRY003, EM101
         return instance
 
-    async def update(self, record_id: int, data: dict[str, Any]) -> Profile | None:
-        instance = await self.get_by_id(record_id)
-        if not instance:
-            return None
-        for key, value in data.items():
-            setattr(instance, key, value)
+    async def update(self, record_id: int, data: ProfileUpdate) -> Profile | None:
+        values = data.model_dump(exclude_unset=True)
+        if not values:
+            return await self.get_by_id(record_id)
+        stmt = update(Profile).where(Profile.id == record_id).values(**values).returning(Profile)
+        result = await self.db.execute(stmt)
         try:
             await self.db.commit()
-            await self.db.refresh(instance)
         except IntegrityError as err:
             await self.db.rollback()
             raise ConflictError("Profile with this name already exists") from err  # noqa: TRY003, EM101
-        return instance
+        return result.scalars().one_or_none()
 
     async def delete(self, record_id: int) -> bool:
-        instance = await self.get_by_id(record_id)
-        if not instance:
-            return False
-        await self.db.delete(instance)
+        stmt = delete(Profile).where(Profile.id == record_id).returning(Profile.id)
+        result = await self.db.execute(stmt)
         await self.db.commit()
-        return True
+        return result.scalar_one_or_none() is not None
 
     async def count(self) -> int:
         stmt = select(func.count()).select_from(Profile)
@@ -68,13 +64,13 @@ class ProfileRepository:
         result = await self.db.execute(stmt)
         return list(result.scalars().all())
 
-    async def set_scope(self, profile_id: int, targets: list[dict[str, Any]]) -> None:
+    async def set_scope(self, profile_id: int, targets: list[ScopeTarget]) -> None:
         stmt = select(ProfileScope).where(ProfileScope.profile_id == profile_id)
         result = await self.db.execute(stmt)
         for existing in result.scalars().all():
             await self.db.delete(existing)
         for t in targets:
-            self.db.add(ProfileScope(profile_id=profile_id, **t))
+            self.db.add(ProfileScope(profile_id=profile_id, target_type=t.target_type, target_id=t.target_id))
         await self.db.commit()
 
     async def get_assignments(self, profile_id: int) -> list[ProfileAssignment]:
@@ -90,15 +86,15 @@ class ProfileRepository:
         result = await self.db.execute(stmt)
         return result.scalar_one_or_none()
 
-    async def upsert_assignment(self, data: dict[str, Any]) -> ProfileAssignment:
-        existing = await self.get_assignment(data["profile_id"], data["device_id"])
+    async def upsert_assignment(self, data: AssignmentUpsert) -> ProfileAssignment:
+        existing = await self.get_assignment(data.profile_id, data.device_id)
         if existing:
-            for key, value in data.items():
+            for key, value in data.model_dump(exclude_unset=True).items():
                 setattr(existing, key, value)
             await self.db.commit()
             await self.db.refresh(existing)
             return existing
-        instance = ProfileAssignment(**data)
+        instance = ProfileAssignment(**data.model_dump())
         self.db.add(instance)
         await self.db.commit()
         await self.db.refresh(instance)

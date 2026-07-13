@@ -102,8 +102,7 @@ async def set_profile_scope(
     profile = await service.get_profile(profile_id)
     if not profile:
         raise HTTPException(status_code=404, detail="Profile not found")
-    targets = [{"target_type": s.target_type.value, "target_id": s.target_id} for s in scope]
-    await service.set_scope(profile_id, targets)
+    await service.set_scope(profile_id, scope)
     await revalidate(["profiles"])
     updated_scope = await service.get_scope(profile_id)
     return ProfileScopeResponse(
