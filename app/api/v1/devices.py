@@ -5,6 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.dependencies import get_db
+from app.common.enums import AssignmentStatus
 from app.devices.models import Device
 from app.devices.schemas import DeviceResponse, DeviceSearchCriteria
 from app.common.schemas import PaginatedResponse
@@ -22,7 +23,7 @@ async def _batch_profile_names(db: AsyncSession, device_ids: list[int]) -> dict[
         .join(Profile, ProfileAssignment.profile_id == Profile.id)
         .where(
             ProfileAssignment.device_id.in_(device_ids),
-            ProfileAssignment.status != "REMOVED",
+            ProfileAssignment.status != AssignmentStatus.REMOVED,
         )
     )
     result = await db.execute(stmt)

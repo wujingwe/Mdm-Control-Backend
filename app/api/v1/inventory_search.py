@@ -42,13 +42,7 @@ async def create_inventory_search(
     data: InventorySearchCreate,
     service: InventorySearchService = Depends(get_inventory_search_service),
 ) -> InventorySearchResponse:
-    criteria_dicts = [c.model_dump() for c in data.criteria]
-    search = await service.create_search({
-        "name": data.name,
-        "description": data.description,
-        "criteria": criteria_dicts,
-        "created_by": data.created_by,
-    })
+    search = await service.create_search(data)
     await revalidate(["inventory-search"])
     return InventorySearchResponse.model_validate(search)
 
@@ -62,16 +56,7 @@ async def update_inventory_search(
     existing = await service.get_search(search_id)
     if not existing:
         raise HTTPException(status_code=404, detail="Inventory search not found")
-    update: dict = {}
-    if data.name is not None:
-        update["name"] = data.name
-    if data.description is not None:
-        update["description"] = data.description
-    if data.criteria is not None:
-        update["criteria"] = [c.model_dump() for c in data.criteria]
-    if not update:
-        raise HTTPException(status_code=400, detail="No fields to update")
-    updated = await service.update_search(search_id, update)
+    updated = await service.update_search(search_id, data)
     await revalidate(["inventory-search"])
     return InventorySearchResponse.model_validate(updated)
 

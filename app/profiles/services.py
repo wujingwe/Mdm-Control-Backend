@@ -5,10 +5,12 @@ from operator import and_
 from sqlalchemy import select
 from sqlalchemy.sql.expression import BinaryExpression
 
+from app.common.enums import AssignmentSource, AssignmentStatus, TargetType
 from app.devices.models import Device
 from app.profiles.models import Profile
 from app.profiles.profile_assignment import ProfileAssignment
 from app.profiles.profile_scope import ProfileScope
+from app.profiles.schemas import ProfileCreate, ProfileUpdate
 from app.static_groups.static_group_device import StaticGroupDevice
 from app.profiles.repositories import ProfileRepository
 
@@ -40,11 +42,11 @@ class ProfileService:
     async def get_profile(self, profile_id: int) -> Profile | None:
         return await self.repo.get_by_id(profile_id)
 
-    async def create_profile(self, data: dict) -> Profile:
-        return await self.repo.create(data)
+    async def create_profile(self, data: ProfileCreate) -> Profile:
+        return await self.repo.create(data.model_dump())
 
-    async def update_profile(self, profile_id: int, data: dict) -> Profile | None:
-        return await self.repo.update(profile_id, data)
+    async def update_profile(self, profile_id: int, data: ProfileUpdate) -> Profile | None:
+        return await self.repo.update(profile_id, data.model_dump(exclude_unset=True))
 
     async def delete_profile(self, profile_id: int) -> bool:
         return await self.repo.delete(profile_id)
@@ -69,9 +71,9 @@ class ProfileService:
             return None
         update: dict = {"status": status}
         now = datetime.now(timezone.utc)
-        if status == "APPLIED":
+        if status == AssignmentStatus.APPLIED:
             update["applied_at"] = now
-        elif status == "REVOKED":
+        elif status == AssignmentStatus.REVOKED:
             update["revoked_at"] = now
         return await self.repo.upsert_assignment({
             "profile_id": assignment.profile_id,
@@ -99,13 +101,13 @@ class ProfileService:
             target_type = entry.target_type
             target_id = entry.target_id
 
-            if target_type == "ALL_DEVICES":
+            if target_type == TargetType.ALL_DEVICES:
                 stmt = select(Device.id)
                 result = await db.execute(stmt)
                 ids = {row[0] for row in result.all()}
-                device_ids_by_source.setdefault("ALL_DEVICES", {}).setdefault(0, set()).update(ids)
+                device_ids_by_source.setdefault(AssignmentSource.ALL_DEVICES, {}).setdefault(0, set()).update(ids)
 
-            elif target_type == "SMART_GROUP" and target_id is not None:
+            elif target_type == TargetType.SMART_GROUP and target_id is not None:
                 from app.smart_groups.models import SmartGroup
 
                 sg_stmt = select(SmartGroup).where(SmartGroup.id == target_id)
@@ -129,18 +131,18 @@ class ProfileService:
                     dev_stmt = select(Device.id)
                 dev_result = await db.execute(dev_stmt)
                 ids = {row[0] for row in dev_result.all()}
-                device_ids_by_source.setdefault("SMART_GROUP", {}).setdefault(target_id, set()).update(ids)
+                device_ids_by_source.setdefault(AssignmentSource.SMART_GROUP, {}).setdefault(target_id, set()).update(ids)
 
-            elif target_type == "STATIC_GROUP" and target_id is not None:
+            elif target_type == TargetType.STATIC_GROUP and target_id is not None:
                 sg_dev_stmt = select(StaticGroupDevice.device_id).where(
                     StaticGroupDevice.static_group_id == target_id
                 )
                 sg_dev_result = await db.execute(sg_dev_stmt)
                 dev_ids = {row[0] for row in sg_dev_result.all()}
-                device_ids_by_source.setdefault("STATIC_GROUP", {}).setdefault(target_id, set()).update(dev_ids)
+                device_ids_by_source.setdefault(AssignmentSource.STATIC_GROUP, {}).setdefault(target_id, set()).update(dev_ids)
 
-            elif target_type == "DEVICE" and target_id is not None:
-                device_ids_by_source.setdefault("DIRECT", {}).setdefault(0, set()).add(target_id)
+            elif target_type == TargetType.DEVICE and target_id is not None:
+                device_ids_by_source.setdefault(AssignmentSource.DIRECT, {}).setdefault(0, set()).add(target_id)
 
         await self.repo.delete_non_direct_assignments(profile_id)
 
@@ -152,6 +154,6 @@ class ProfileService:
                         "device_id": dev_id,
                         "source": source,
                         "source_id": source_id if source_id else None,
-                        "status": "PENDING",
+                        "status": AssignmentStatus.PENDING,
                         "profile_version": profile.version,
                     })

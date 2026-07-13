@@ -7,6 +7,12 @@ from app.users.services import UserService
 from app.extension_attributes.services import ExtensionAttributeService
 from app.inventory_search.services import InventorySearchService
 from app.static_groups.services import StaticGroupService
+from app.smart_groups.schemas import SmartGroupCreate, SmartGroupUpdate
+from app.profiles.schemas import ProfileCreate, ProfileUpdate
+from app.users.schemas import UserCreate, UserUpdate
+from app.extension_attributes.schemas import ExtensionAttributeCreate, ExtensionAttributeUpdate
+from app.inventory_search.schemas import InventorySearchCreate, InventorySearchUpdate
+from app.static_groups.schemas import StaticGroupCreate, StaticGroupUpdate
 
 
 class TestDeviceService:
@@ -99,14 +105,14 @@ class TestSmartGroupService:
         fake = MagicMock()
         repo.create = AsyncMock(return_value=fake)
         svc = SmartGroupService(repo)
-        result = await svc.create_group({"name": "G"})
+        result = await svc.create_group(SmartGroupCreate(name="G", criteria=[], created_by=1))
         assert result is fake
 
     async def test_update_group(self, repo):
         fake = MagicMock()
         repo.update = AsyncMock(return_value=fake)
         svc = SmartGroupService(repo)
-        result = await svc.update_group(1, {"name": "G2"})
+        result = await svc.update_group(1, SmartGroupUpdate(name="G2"))
         assert result is fake
 
     async def test_delete_group(self, repo):
@@ -164,17 +170,17 @@ class TestProfileService:
         fake = MagicMock()
         repo.create = AsyncMock(return_value=fake)
         svc = ProfileService(repo)
-        result = await svc.create_profile({"name": "P"})
+        result = await svc.create_profile(ProfileCreate(name="P", created_by=1))
         assert result is fake
-        repo.create.assert_called_once_with({"name": "P"})
+        repo.create.assert_called_once()
 
     async def test_update_profile(self, repo):
         fake = MagicMock()
         repo.update = AsyncMock(return_value=fake)
         svc = ProfileService(repo)
-        result = await svc.update_profile(1, {"name": "P2"})
+        result = await svc.update_profile(1, ProfileUpdate(name="P2"))
         assert result is fake
-        repo.update.assert_called_once_with(1, {"name": "P2"})
+        repo.update.assert_called_once()
 
     async def test_delete_profile(self, repo):
         repo.delete = AsyncMock(return_value=True)
@@ -280,7 +286,7 @@ class TestUserService:
         fake = MagicMock()
         repo.create = AsyncMock(return_value=fake)
         svc = UserService(repo)
-        result = await svc.create_user({"email": "a@b.com", "name": "test", "password": "secret123"})
+        result = await svc.create_user(UserCreate(email="a@b.com", name="test", password="secret123"))
         assert result is fake
         create_args = repo.create.call_args[0][0]
         assert create_args["email"] == "a@b.com"
@@ -291,7 +297,7 @@ class TestUserService:
         fake = MagicMock()
         repo.update = AsyncMock(return_value=fake)
         svc = UserService(repo)
-        result = await svc.update_user(1, {"password": "newpass"})
+        result = await svc.update_user(1, UserUpdate(password="newpass"))
         assert result is fake
         update_args = repo.update.call_args[0][1]
         assert "password" not in update_args
@@ -301,13 +307,14 @@ class TestUserService:
         fake = MagicMock()
         repo.update = AsyncMock(return_value=fake)
         svc = UserService(repo)
-        result = await svc.update_user(1, {"name": "new name"})
+        result = await svc.update_user(1, UserUpdate(name="new name"))
         assert result is fake
-        repo.update.assert_called_once_with(1, {"name": "new name"})
+        update_args = repo.update.call_args[0][1]
+        assert update_args == {"name": "new name"}
 
     async def test_update_user_empty_data(self, repo):
         svc = UserService(repo)
-        result = await svc.update_user(1, {})
+        result = await svc.update_user(1, UserUpdate())
         assert result is None
         repo.update.assert_not_called()
 
@@ -364,15 +371,14 @@ class TestExtensionAttributeService:
         fake = MagicMock()
         repo.create = AsyncMock(return_value=fake)
         svc = ExtensionAttributeService(repo)
-        result = await svc.create_attribute({"name": "ext1"})
+        result = await svc.create_attribute(ExtensionAttributeCreate(name="ext1", data_type="string", input_type="Text field", created_by=1))
         assert result is fake
-        repo.create.assert_called_once_with({"name": "ext1"})
 
     async def test_update_attribute(self, repo):
         fake = MagicMock()
         repo.update = AsyncMock(return_value=fake)
         svc = ExtensionAttributeService(repo)
-        result = await svc.update_attribute(1, {"name": "ext2"})
+        result = await svc.update_attribute(1, ExtensionAttributeUpdate(name="ext2"))
         assert result is fake
 
     async def test_delete_attribute(self, repo):
@@ -425,14 +431,14 @@ class TestInventorySearchService:
         fake = MagicMock()
         repo.create = AsyncMock(return_value=fake)
         svc = InventorySearchService(repo)
-        result = await svc.create_search({"name": "s1"})
+        result = await svc.create_search(InventorySearchCreate(name="s1", created_by=1))
         assert result is fake
 
     async def test_update_search(self, repo):
         fake = MagicMock()
         repo.update = AsyncMock(return_value=fake)
         svc = InventorySearchService(repo)
-        result = await svc.update_search(1, {"name": "s2"})
+        result = await svc.update_search(1, InventorySearchUpdate(name="s2"))
         assert result is fake
 
     async def test_delete_search(self, repo):
@@ -488,14 +494,14 @@ class TestStaticGroupService:
         fake = MagicMock()
         repo.create = AsyncMock(return_value=fake)
         svc = StaticGroupService(repo)
-        result = await svc.create_group({"name": "G"})
+        result = await svc.create_group(StaticGroupCreate(name="G", created_by=1))
         assert result is fake
 
     async def test_update_group(self, repo):
         fake = MagicMock()
         repo.update = AsyncMock(return_value=fake)
         svc = StaticGroupService(repo)
-        result = await svc.update_group(1, {"name": "G2"})
+        result = await svc.update_group(1, StaticGroupUpdate(name="G2"))
         assert result is fake
 
     async def test_delete_group(self, repo):

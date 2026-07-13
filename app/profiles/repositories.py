@@ -4,6 +4,7 @@ from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
 
+from app.common.enums import AssignmentSource
 from app.profiles.models import Profile
 from app.profiles.profile_scope import ProfileScope
 from app.profiles.profile_assignment import ProfileAssignment
@@ -106,7 +107,7 @@ class ProfileRepository:
     async def delete_non_direct_assignments(self, profile_id: int) -> None:
         stmt = select(ProfileAssignment).where(
             ProfileAssignment.profile_id == profile_id,
-            ProfileAssignment.source != "DIRECT",
+            ProfileAssignment.source != AssignmentSource.DIRECT,
         )
         result = await self.db.execute(stmt)
         for assignment in result.scalars().all():

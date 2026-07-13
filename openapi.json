@@ -1,3 +1,4 @@
+warning: No `requires-python` value found in the workspace. Defaulting to `>=3.13`.
 {
   "openapi": "3.1.0",
   "info": {
@@ -1717,8 +1718,7 @@
             "title": "Device Id"
           },
           "source": {
-            "type": "string",
-            "title": "Source"
+            "$ref": "#/components/schemas/AssignmentSource"
           },
           "source_id": {
             "anyOf": [
@@ -1779,6 +1779,16 @@
           "assigned_at"
         ],
         "title": "AssignmentResponse"
+      },
+      "AssignmentSource": {
+        "type": "string",
+        "enum": [
+          "DIRECT",
+          "SMART_GROUP",
+          "STATIC_GROUP",
+          "ALL_DEVICES"
+        ],
+        "title": "AssignmentSource"
       },
       "AssignmentStatus": {
         "type": "string",
@@ -1971,6 +1981,15 @@
         "type": "object",
         "title": "Certificate"
       },
+      "ConnectionStatus": {
+        "type": "string",
+        "enum": [
+          "Online",
+          "Offline",
+          "Pending"
+        ],
+        "title": "ConnectionStatus"
+      },
       "CriteriaSchema": {
         "properties": {
           "criteria": {
@@ -2018,15 +2037,6 @@
         ],
         "title": "CriteriaType"
       },
-      "DataType": {
-        "type": "string",
-        "enum": [
-          "string",
-          "integer",
-          "date"
-        ],
-        "title": "DataType"
-      },
       "DeviceResponse": {
         "properties": {
           "id": {
@@ -2046,12 +2056,10 @@
             "title": "Os Version"
           },
           "connection_status": {
-            "type": "string",
-            "title": "Connection Status"
+            "$ref": "#/components/schemas/ConnectionStatus"
           },
           "enrollment_status": {
-            "type": "string",
-            "title": "Enrollment Status"
+            "$ref": "#/components/schemas/EnrollmentStatus"
           },
           "created_at": {
             "type": "string",
@@ -2129,9 +2137,14 @@
                 "$ref": "#/components/schemas/Network"
               },
               {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
                 "type": "null"
               }
-            ]
+            ],
+            "title": "Network"
           },
           "certificates": {
             "anyOf": [
@@ -2139,6 +2152,10 @@
                 "items": {
                   "$ref": "#/components/schemas/Certificate"
                 },
+                "type": "array"
+              },
+              {
+                "items": {},
                 "type": "array"
               },
               {
@@ -2192,6 +2209,18 @@
         ],
         "title": "DeviceSearchCriteria"
       },
+      "EnrollmentStatus": {
+        "type": "string",
+        "enum": [
+          "Compliant",
+          "Non-compliant",
+          "Needs attention",
+          "Enrolled",
+          "Pending",
+          "Unknown"
+        ],
+        "title": "EnrollmentStatus"
+      },
       "ExtensionAttributeCreate": {
         "properties": {
           "name": {
@@ -2210,10 +2239,10 @@
             "title": "Description"
           },
           "data_type": {
-            "$ref": "#/components/schemas/DataType"
+            "$ref": "#/components/schemas/ExtensionDataType"
           },
           "input_type": {
-            "$ref": "#/components/schemas/InputType"
+            "$ref": "#/components/schemas/ExtensionInputType"
           },
           "popup_choices": {
             "anyOf": [
@@ -2265,10 +2294,10 @@
             "title": "Description"
           },
           "data_type": {
-            "$ref": "#/components/schemas/DataType"
+            "$ref": "#/components/schemas/ExtensionDataType"
           },
           "input_type": {
-            "$ref": "#/components/schemas/InputType"
+            "$ref": "#/components/schemas/ExtensionInputType"
           },
           "popup_choices": {
             "anyOf": [
@@ -2344,7 +2373,7 @@
           "data_type": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/DataType"
+                "$ref": "#/components/schemas/ExtensionDataType"
               },
               {
                 "type": "null"
@@ -2354,7 +2383,7 @@
           "input_type": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/InputType"
+                "$ref": "#/components/schemas/ExtensionInputType"
               },
               {
                 "type": "null"
@@ -2378,6 +2407,23 @@
         },
         "type": "object",
         "title": "ExtensionAttributeUpdate"
+      },
+      "ExtensionDataType": {
+        "type": "string",
+        "enum": [
+          "string",
+          "integer",
+          "date"
+        ],
+        "title": "ExtensionDataType"
+      },
+      "ExtensionInputType": {
+        "type": "string",
+        "enum": [
+          "Text field",
+          "Pop-up menu"
+        ],
+        "title": "ExtensionInputType"
       },
       "FleetMetricsResponse": {
         "properties": {
@@ -2414,14 +2460,6 @@
         },
         "type": "object",
         "title": "HTTPValidationError"
-      },
-      "InputType": {
-        "type": "string",
-        "enum": [
-          "Text field",
-          "Pop-up menu"
-        ],
-        "title": "InputType"
       },
       "InventorySearchCreate": {
         "properties": {
@@ -2829,11 +2867,6 @@
             ],
             "title": "Description"
           },
-          "version": {
-            "type": "integer",
-            "title": "Version",
-            "default": 1
-          },
           "settings": {
             "additionalProperties": true,
             "type": "object",
@@ -2890,7 +2923,14 @@
             "title": "Created At"
           },
           "created_by": {
-            "type": "integer",
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Created By"
           },
           "updated_at": {
@@ -2910,8 +2950,7 @@
         "required": [
           "id",
           "name",
-          "created_at",
-          "created_by"
+          "created_at"
         ],
         "title": "ProfileResponse"
       },
@@ -2960,17 +2999,6 @@
             ],
             "title": "Description"
           },
-          "version": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Version"
-          },
           "settings": {
             "anyOf": [
               {
@@ -2993,15 +3021,9 @@
             "$ref": "#/components/schemas/TargetType"
           },
           "target_id": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Target Id"
+            "type": "integer",
+            "title": "Target Id",
+            "default": 0
           }
         },
         "type": "object",

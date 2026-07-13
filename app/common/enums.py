@@ -1,23 +1,49 @@
-import sqlalchemy as sa
+from enum import Enum
 
 
-# Profile scope target types
-TargetType = sa.Enum("ALL_DEVICES", "SMART_GROUP", "STATIC_GROUP", "DEVICE", name="target_type", native_enum=False, length=20)
+class TargetType(str, Enum):
+    ALL_DEVICES = "ALL_DEVICES"
+    SMART_GROUP = "SMART_GROUP"
+    STATIC_GROUP = "STATIC_GROUP"
+    DEVICE = "DEVICE"
 
-# Profile assignment source
-AssignmentSource = sa.Enum("DIRECT", "SMART_GROUP", "STATIC_GROUP", "ALL_DEVICES", name="assignment_source", native_enum=False, length=20)
 
-# Profile assignment status
-AssignmentStatus = sa.Enum("PENDING", "APPLIED", "FAILED", "REVOKED", "REMOVED", name="assignment_status", native_enum=False, length=20)
+class AssignmentSource(str, Enum):
+    DIRECT = "DIRECT"
+    SMART_GROUP = "SMART_GROUP"
+    STATIC_GROUP = "STATIC_GROUP"
+    ALL_DEVICES = "ALL_DEVICES"
 
-# Device connection status
-ConnectionStatus = sa.Enum("Online", "Offline", "Pending", name="connection_status", native_enum=False, length=20)
 
-# Device enrollment status
-EnrollmentStatus = sa.Enum("Compliant", "Non-compliant", "Needs attention", "Enrolled", "Pending", "Unknown", name="enrollment_status", native_enum=False, length=20)
+class AssignmentStatus(str, Enum):
+    PENDING = "PENDING"
+    APPLIED = "APPLIED"
+    FAILED = "FAILED"
+    REVOKED = "REVOKED"
+    REMOVED = "REMOVED"
 
-# Extension attribute data type
-ExtensionDataType = sa.Enum("string", "integer", "date", name="extension_data_type", native_enum=False, length=20)
 
-# Extension attribute input type
-ExtensionInputType = sa.Enum("Text field", "Pop-up menu", name="extension_input_type", native_enum=False, length=20)
+class ConnectionStatus(str, Enum):
+    ONLINE = "Online"
+    OFFLINE = "Offline"
+    PENDING = "Pending"
+
+
+class EnrollmentStatus(str, Enum):
+    COMPLIANT = "Compliant"
+    NON_COMPLIANT = "Non-compliant"
+    NEEDS_ATTENTION = "Needs attention"
+    ENROLLED = "Enrolled"
+    PENDING = "Pending"
+    UNKNOWN = "Unknown"
+
+
+class ExtensionDataType(str, Enum):
+    STRING = "string"
+    INTEGER = "integer"
+    DATE = "date"
+
+
+class ExtensionInputType(str, Enum):
+    TEXT_FIELD = "Text field"
+    POPUP_MENU = "Pop-up menu"

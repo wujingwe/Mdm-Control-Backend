@@ -1,5 +1,6 @@
 from app.extension_attributes.models import ExtensionAttribute
 from app.extension_attributes.repositories import ExtensionAttributeRepository
+from app.extension_attributes.schemas import ExtensionAttributeCreate, ExtensionAttributeUpdate
 
 
 class ExtensionAttributeService:
@@ -14,11 +15,11 @@ class ExtensionAttributeService:
     async def get_attribute(self, attribute_id: int) -> ExtensionAttribute | None:
         return await self.repo.get_by_id(attribute_id)
 
-    async def create_attribute(self, data: dict) -> ExtensionAttribute:
-        return await self.repo.create(data)
+    async def create_attribute(self, data: ExtensionAttributeCreate) -> ExtensionAttribute:
+        return await self.repo.create(data.model_dump())
 
-    async def update_attribute(self, attribute_id: int, data: dict) -> ExtensionAttribute | None:
-        return await self.repo.update(attribute_id, data)
+    async def update_attribute(self, attribute_id: int, data: ExtensionAttributeUpdate) -> ExtensionAttribute | None:
+        return await self.repo.update(attribute_id, data.model_dump(exclude_unset=True))
 
     async def delete_attribute(self, attribute_id: int) -> bool:
         return await self.repo.delete(attribute_id)

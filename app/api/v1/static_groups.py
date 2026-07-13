@@ -45,13 +45,7 @@ async def create_static_group(
     data: StaticGroupCreate,
     service: StaticGroupService = Depends(get_static_group_service),
 ) -> StaticGroupResponse:
-    group = await service.create_group({
-        "name": data.name,
-        "description": data.description,
-        "created_by": data.created_by,
-    })
-    if data.device_serial_numbers:
-        await service.set_device_serial_numbers(group.id, data.device_serial_numbers)
+    group = await service.create_group(data)
     await revalidate(["static-groups"])
     resp = StaticGroupResponse.model_validate(group)
     resp.device_serial_numbers = data.device_serial_numbers or []
@@ -67,17 +61,7 @@ async def update_static_group(
     existing = await service.get_group(group_id)
     if not existing:
         raise HTTPException(status_code=404, detail="Static group not found")
-    update: dict = {}
-    if data.name is not None:
-        update["name"] = data.name
-    if data.description is not None:
-        update["description"] = data.description
-    if not update and data.device_serial_numbers is None:
-        raise HTTPException(status_code=400, detail="No fields to update")
-    if update:
-        updated = await service.update_group(group_id, update)
-    else:
-        updated = existing
+    updated = await service.update_group(group_id, data)
     if data.device_serial_numbers is not None:
         await service.set_device_serial_numbers(group_id, data.device_serial_numbers)
     await revalidate(["static-groups"])

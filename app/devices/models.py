@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import String, Integer, DateTime, Index
+from sqlalchemy import Enum, String, Integer, DateTime, Index
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.base import Base, utcnow
@@ -20,8 +20,8 @@ class Device(Base):
     name: Mapped[str] = mapped_column(String(100))
     serial_number: Mapped[str] = mapped_column(String(30), unique=True)
     os_version: Mapped[str] = mapped_column(String(20))
-    connection_status: Mapped[str] = mapped_column(ConnectionStatus)
-    enrollment_status: Mapped[str] = mapped_column(EnrollmentStatus)
+    connection_status: Mapped[ConnectionStatus] = mapped_column(Enum(ConnectionStatus, native_enum=False, length=20))
+    enrollment_status: Mapped[EnrollmentStatus] = mapped_column(Enum(EnrollmentStatus, native_enum=False, length=20))
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, onupdate=utcnow)
     last_enrolled_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)

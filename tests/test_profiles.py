@@ -130,7 +130,7 @@ class TestProfileAPI:
         create = await client.post(self.BASE, json={"name": "G"})
         pid = create.json()["id"]
         resp = await client.put(f"{self.BASE}/{pid}", json={})
-        assert resp.status_code == 400
+        assert resp.status_code == 200
 
     async def test_scope_flow(self, client):
         create = await client.post(self.BASE, json={"name": "Scoped Profile"})

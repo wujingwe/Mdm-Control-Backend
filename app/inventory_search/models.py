@@ -22,4 +22,4 @@ class InventorySearch(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, onupdate=utcnow)
 
-    creator: Mapped[User | None] = relationship(User, foreign_keys=[created_by], back_populates="inventory_searches")
+    creator: Mapped[User | None] = relationship(User, foreign_keys=[created_by])

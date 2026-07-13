@@ -39,13 +39,7 @@ async def create_smart_group(
     data: SmartGroupCreate,
     service: SmartGroupService = Depends(get_smart_group_service),
 ) -> SmartGroupResponse:
-    criteria_dicts = [c.model_dump() for c in data.criteria]
-    group = await service.create_group({
-        "name": data.name,
-        "description": data.description,
-        "criteria": criteria_dicts,
-        "created_by": data.created_by,
-    })
+    group = await service.create_group(data)
     await revalidate(["smart-groups"])
     return SmartGroupResponse.model_validate(group)
 
@@ -59,16 +53,7 @@ async def update_smart_group(
     existing = await service.get_group(group_id)
     if not existing:
         raise HTTPException(status_code=404, detail="Smart group not found")
-    update: dict = {}
-    if data.name is not None:
-        update["name"] = data.name
-    if data.description is not None:
-        update["description"] = data.description
-    if data.criteria is not None:
-        update["criteria"] = [c.model_dump() for c in data.criteria]
-    if not update:
-        raise HTTPException(status_code=400, detail="No fields to update")
-    updated = await service.update_group(group_id, update)
+    updated = await service.update_group(group_id, data)
     await revalidate(["smart-groups"])
     return SmartGroupResponse.model_validate(updated)
 

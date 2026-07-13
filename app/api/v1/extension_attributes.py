@@ -42,14 +42,7 @@ async def create_extension_attribute(
     data: ExtensionAttributeCreate,
     service: ExtensionAttributeService = Depends(get_extension_attribute_service),
 ) -> ExtensionAttributeResponse:
-    attr = await service.create_attribute({
-        "name": data.name,
-        "description": data.description,
-        "data_type": data.data_type.value,
-        "input_type": data.input_type.value,
-        "popup_choices": data.popup_choices,
-        "created_by": data.created_by,
-    })
+    attr = await service.create_attribute(data)
     await revalidate(["extension-attributes"])
     return ExtensionAttributeResponse.model_validate(attr)
 
@@ -63,20 +56,7 @@ async def update_extension_attribute(
     existing = await service.get_attribute(attribute_id)
     if not existing:
         raise HTTPException(status_code=404, detail="Extension attribute not found")
-    update: dict = {}
-    if data.name is not None:
-        update["name"] = data.name
-    if data.description is not None:
-        update["description"] = data.description
-    if data.data_type is not None:
-        update["data_type"] = data.data_type.value
-    if data.input_type is not None:
-        update["input_type"] = data.input_type.value
-    if data.popup_choices is not None:
-        update["popup_choices"] = data.popup_choices
-    if not update:
-        raise HTTPException(status_code=400, detail="No fields to update")
-    updated = await service.update_attribute(attribute_id, update)
+    updated = await service.update_attribute(attribute_id, data)
     await revalidate(["extension-attributes"])
     return ExtensionAttributeResponse.model_validate(updated)
 

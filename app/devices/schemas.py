@@ -2,6 +2,8 @@ from datetime import datetime
 from typing import Any
 from pydantic import BaseModel
 
+from app.common.enums import ConnectionStatus, EnrollmentStatus
+
 
 class Wifi(BaseModel):
     ssid: str | None = None
@@ -45,8 +47,8 @@ class DeviceResponse(BaseModel):
     name: str
     serial_number: str
     os_version: str
-    connection_status: str
-    enrollment_status: str
+    connection_status: ConnectionStatus
+    enrollment_status: EnrollmentStatus
     created_at: datetime
     updated_at: datetime
     last_enrolled_at: datetime

@@ -81,7 +81,7 @@ class TestSmartGroupsAPI:
         create = await client.post(self.BASE, json={"name": "G"})
         gid = create.json()["id"]
         resp = await client.put(f"{self.BASE}/{gid}", json={})
-        assert resp.status_code == 400
+        assert resp.status_code == 200
 
 
 class TestStaticGroupsAPI:
@@ -137,7 +137,7 @@ class TestStaticGroupsAPI:
         create = await client.post(self.BASE, json={"name": "G"})
         gid = create.json()["id"]
         resp = await client.put(f"{self.BASE}/{gid}", json={})
-        assert resp.status_code == 400
+        assert resp.status_code == 200
 
 
 class TestUsersAPI:

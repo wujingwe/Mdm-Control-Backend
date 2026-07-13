@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 
 from app.dependencies import get_profile_service
 from app.common.schemas import Message, PaginatedResponse
+from app.common.enums import TargetType
 from app.profiles.schemas import (
     AssignmentResponse,
     ProfileCreate,
@@ -10,7 +11,6 @@ from app.profiles.schemas import (
     ProfileUpdate,
     ScopeTarget,
     StatusUpdate,
-    TargetType,
 )
 from app.profiles.services import ProfileService
 from app.webhook_client import revalidate
@@ -47,12 +47,7 @@ async def create_profile(
     data: ProfileCreate,
     service: ProfileService = Depends(get_profile_service),
 ) -> ProfileResponse:
-    profile = await service.create_profile({
-        "name": data.name,
-        "description": data.description,
-        "settings": data.settings,
-        "created_by": data.created_by,
-    })
+    profile = await service.create_profile(data)
     await revalidate(["profiles"])
     return ProfileResponse.model_validate(profile)
 
@@ -66,16 +61,7 @@ async def update_profile(
     existing = await service.get_profile(profile_id)
     if not existing:
         raise HTTPException(status_code=404, detail="Profile not found")
-    update: dict = {}
-    if data.name is not None:
-        update["name"] = data.name
-    if data.description is not None:
-        update["description"] = data.description
-    if data.settings is not None:
-        update["settings"] = data.settings
-    if not update:
-        raise HTTPException(status_code=400, detail="No fields to update")
-    updated = await service.update_profile(profile_id, update)
+    updated = await service.update_profile(profile_id, data)
     await revalidate(["profiles"])
     return ProfileResponse.model_validate(updated)
 

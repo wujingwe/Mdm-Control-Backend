@@ -19,4 +19,4 @@ class SmartGroup(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, onupdate=utcnow)
     criteria: Mapped[list | None] = mapped_column(JSON, nullable=True)
 
-    creator: Mapped[User | None] = relationship(User, foreign_keys=[created_by], back_populates="smart_groups")
+    creator: Mapped[User | None] = relationship(User, foreign_keys=[created_by])

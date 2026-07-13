@@ -9,6 +9,7 @@ from typing import Any
 
 from sqlalchemy import select
 
+from app.common.enums import AssignmentStatus
 from app.config.settings import settings
 from app.database import async_session
 from app.profiles.profile_assignment import ProfileAssignment
@@ -157,7 +158,7 @@ async def process_profile_status_message(data: dict[str, Any]) -> None:
             logger.warning("Invalid profile status message: %s", data)
             return
 
-        if status not in ("PENDING", "APPLIED", "FAILED"):
+        if status not in (AssignmentStatus.PENDING, AssignmentStatus.APPLIED, AssignmentStatus.FAILED):
             logger.warning("Invalid status '%s' in profile status message", status)
             return
 
@@ -171,7 +172,7 @@ async def process_profile_status_message(data: dict[str, Any]) -> None:
 
             if assignment:
                 assignment.status = status
-                if status == "APPLIED":
+                if status == AssignmentStatus.APPLIED:
                     from datetime import datetime, timezone
                     assignment.applied_at = datetime.now(timezone.utc)
                 await db.commit()

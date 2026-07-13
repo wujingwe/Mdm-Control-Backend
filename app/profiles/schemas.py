@@ -1,29 +1,8 @@
 from datetime import datetime
-from enum import Enum
 
 from pydantic import BaseModel
 
-
-class TargetType(str, Enum):
-    ALL_DEVICES = "ALL_DEVICES"
-    SMART_GROUP = "SMART_GROUP"
-    STATIC_GROUP = "STATIC_GROUP"
-    DEVICE = "DEVICE"
-
-
-class AssignmentSource(str, Enum):
-    DIRECT = "DIRECT"
-    SMART_GROUP = "SMART_GROUP"
-    STATIC_GROUP = "STATIC_GROUP"
-    ALL_DEVICES = "ALL_DEVICES"
-
-
-class AssignmentStatus(str, Enum):
-    PENDING = "PENDING"
-    APPLIED = "APPLIED"
-    FAILED = "FAILED"
-    REVOKED = "REVOKED"
-    REMOVED = "REMOVED"
+from app.common.enums import AssignmentSource, AssignmentStatus, TargetType
 
 
 class ScopeTarget(BaseModel):

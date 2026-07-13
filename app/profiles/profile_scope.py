@@ -1,4 +1,4 @@
-from sqlalchemy import Integer, ForeignKey, UniqueConstraint, Index
+from sqlalchemy import Enum, Integer, ForeignKey, UniqueConstraint, Index
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.base import Base
@@ -14,5 +14,5 @@ class ProfileScope(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     profile_id: Mapped[int] = mapped_column(Integer, ForeignKey("profiles.id", ondelete="CASCADE"))
-    target_type: Mapped[str] = mapped_column(TargetType)
+    target_type: Mapped[str] = mapped_column(Enum(TargetType, native_enum=False, length=20))
     target_id: Mapped[int] = mapped_column(Integer, default=0)

@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.dependencies import get_db
+from app.common.enums import AssignmentStatus, ConnectionStatus
 from app.devices.models import Device
 from app.profiles.profile_assignment import ProfileAssignment
 from pydantic import BaseModel
@@ -21,13 +22,13 @@ async def fleet_metrics(db: AsyncSession = Depends(get_db)) -> FleetMetricsRespo
     total_devices = total.scalar() or 0
 
     online = await db.execute(
-        select(func.count(Device.id)).where(Device.connection_status == "Online"),
+        select(func.count(Device.id)).where(Device.connection_status == ConnectionStatus.ONLINE),
     )
     online_devices = online.scalar() or 0
 
     pending = await db.execute(
         select(func.count(ProfileAssignment.id)).where(
-            ProfileAssignment.status == "PENDING",
+            ProfileAssignment.status == AssignmentStatus.PENDING,
         ),
     )
     pending_profiles = pending.scalar() or 0
