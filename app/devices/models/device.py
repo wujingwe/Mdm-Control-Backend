@@ -8,7 +8,7 @@ from app.common.enums import ConnectionStatus, EnrollmentStatus
 from app.types import CertificateListType, NetworkInfoType
 from app.profiles.models import Profile
 from app.profiles.models import ProfileAssignment
-from app.extension_attributes.models import DeviceExtensionAttribute
+from app.devices.models.device_attribute import DeviceExtensionAttribute
 
 
 class Device(Base):
