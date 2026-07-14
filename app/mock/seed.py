@@ -10,10 +10,10 @@ from app.devices.models import Device
 from app.extension_attributes.models import ExtensionAttribute
 from app.inventory_search.models import InventorySearch
 from app.profiles.models import Profile
-from app.profiles.profile_scope import ProfileScope
+from app.profiles.models import ProfileScope
 from app.smart_groups.models import SmartGroup
 from app.static_groups.models import StaticGroup
-from app.static_groups.static_group_device import StaticGroupDevice
+from app.static_groups.models import StaticGroupDevice
 from app.users.models import User
 from app.devices.schemas import Network, Wifi
 

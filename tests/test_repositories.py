@@ -5,7 +5,7 @@ from app.smart_groups.repositories import SmartGroupRepository
 from app.smart_groups.schemas import SmartGroupCreate, SmartGroupUpdate
 from app.static_groups.repositories import StaticGroupRepository
 from app.static_groups.schemas import StaticGroupCreateDB, StaticGroupUpdate
-from app.static_groups.static_group_device import StaticGroupDevice
+from app.static_groups.models import StaticGroupDevice
 from app.users.repositories import UserRepository
 from app.users.schemas import UserCreateDB, UserUpdateDB
 from app.extension_attributes.repositories import ExtensionAttributeRepository

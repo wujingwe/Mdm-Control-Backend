@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app.dependencies import get_extension_attribute_service
 from app.common.schemas import Message, PaginatedResponse
@@ -22,7 +22,9 @@ async def list_extension_attributes(
     items, total = await service.list_attributes(skip=skip, limit=limit)
     return PaginatedResponse(
         items=[ExtensionAttributeResponse.model_validate(a) for a in items],
-        total=total, skip=skip, limit=limit,
+        total=total,
+        skip=skip,
+        limit=limit,
     )
 
 
@@ -33,7 +35,7 @@ async def get_extension_attribute(
 ) -> ExtensionAttributeResponse:
     attr = await service.get_attribute(attribute_id)
     if not attr:
-        raise HTTPException(status_code=404, detail="Extension attribute not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Extension attribute not found")
     return ExtensionAttributeResponse.model_validate(attr)
 
 
@@ -53,10 +55,10 @@ async def update_extension_attribute(
     data: ExtensionAttributeUpdate,
     service: ExtensionAttributeService = Depends(get_extension_attribute_service),
 ) -> ExtensionAttributeResponse:
-    existing = await service.get_attribute(attribute_id)
-    if not existing:
-        raise HTTPException(status_code=404, detail="Extension attribute not found")
     updated = await service.update_attribute(attribute_id, data)
+    if not updated:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Extension attribute not found")
+
     await revalidate(["extension-attributes"])
     return ExtensionAttributeResponse.model_validate(updated)
 
@@ -68,6 +70,7 @@ async def delete_extension_attribute(
 ) -> Message:
     deleted = await service.delete_attribute(attribute_id)
     if not deleted:
-        raise HTTPException(status_code=404, detail="Extension attribute not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Extension attribute not found")
+
     await revalidate(["extension-attributes"])
     return Message(detail="Extension attribute deleted")

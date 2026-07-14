@@ -40,9 +40,10 @@ class TestDeviceSchemas:
         assert data.criteria[0]["field"] == "status"
 
     def test_optional_fields_default_to_none(self):
-        fields = {**_DEVICE_FIELDS, "profiles": ["p1"]}
-        data = DeviceResponse(**fields)
-        assert data.profiles == ["p1"]
+        data = DeviceResponse(**_DEVICE_FIELDS)
+        assert data.battery_status is None
+        assert data.network is None
+        assert data.certificates is None
 
     def test_search_criteria_empty(self):
         data = DeviceSearchCriteria(criteria=[])

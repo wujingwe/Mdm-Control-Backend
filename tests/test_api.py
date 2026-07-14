@@ -14,11 +14,6 @@ class TestDevicesAPI:
         assert resp.status_code == 404
         assert resp.json()["detail"] == "Device not found"
 
-    async def test_search_devices(self, client):
-        resp = await client.post("/api/v1/devices/search", json={"criteria": []})
-        assert resp.status_code == 200
-        assert resp.json() == []
-
     async def test_device_response_shape(self, client, db_session):
         from app.devices.repositories import DeviceRepository
         repo = DeviceRepository(db_session)

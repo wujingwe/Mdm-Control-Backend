@@ -1,11 +1,14 @@
 from datetime import datetime
 
 from sqlalchemy import Enum, String, Integer, DateTime, Index
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.base import Base, utcnow
 from app.common.enums import ConnectionStatus, EnrollmentStatus
 from app.types import CertificateListType, NetworkInfoType
+from app.profiles.models import Profile
+from app.profiles.models import ProfileAssignment
+from app.extension_attributes.models import DeviceExtensionAttribute
 
 
 class Device(Base):
@@ -32,3 +35,11 @@ class Device(Base):
     available_memory: Mapped[int | None] = mapped_column(Integer, nullable=True)
     network: Mapped[dict | None] = mapped_column(NetworkInfoType, nullable=True)
     certificates: Mapped[list | None] = mapped_column(CertificateListType, nullable=True)
+
+    assignments: Mapped[list["ProfileAssignment"]] = relationship(viewonly=True)
+    profiles: Mapped[list["Profile"]] = relationship(
+        secondary="profile_assignments", viewonly=True,
+        primaryjoin="Device.id == ProfileAssignment.device_id",
+        secondaryjoin="ProfileAssignment.profile_id == Profile.id",
+    )
+    extension_attributes: Mapped[list["DeviceExtensionAttribute"]] = relationship(viewonly=True)

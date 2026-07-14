@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app.dependencies import get_profile_service
 from app.common.schemas import Message, PaginatedResponse
@@ -38,11 +38,11 @@ async def get_profile(
 ) -> ProfileResponse:
     profile = await service.get_profile(profile_id)
     if not profile:
-        raise HTTPException(status_code=404, detail="Profile not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Profile not found")
     return ProfileResponse.model_validate(profile)
 
 
-@router.post("", response_model=ProfileResponse, status_code=201)
+@router.post("", response_model=ProfileResponse, status_code=status.HTTP_201_CREATED)
 async def create_profile(
     data: ProfileCreate,
     service: ProfileService = Depends(get_profile_service),
@@ -58,10 +58,9 @@ async def update_profile(
     data: ProfileUpdate,
     service: ProfileService = Depends(get_profile_service),
 ) -> ProfileResponse:
-    existing = await service.get_profile(profile_id)
-    if not existing:
-        raise HTTPException(status_code=404, detail="Profile not found")
     updated = await service.update_profile(profile_id, data)
+    if not updated:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Profile not found")
     await revalidate(["profiles"])
     return ProfileResponse.model_validate(updated)
 
@@ -73,7 +72,7 @@ async def delete_profile(
 ) -> Message:
     deleted = await service.delete_profile(profile_id)
     if not deleted:
-        raise HTTPException(status_code=404, detail="Profile not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Profile not found")
     await revalidate(["profiles"])
     return Message(detail="Profile deleted")
 
@@ -83,9 +82,6 @@ async def get_profile_scope(
     profile_id: int,
     service: ProfileService = Depends(get_profile_service),
 ) -> ProfileScopeResponse:
-    profile = await service.get_profile(profile_id)
-    if not profile:
-        raise HTTPException(status_code=404, detail="Profile not found")
     scope = await service.get_scope(profile_id)
     return ProfileScopeResponse(
         profile_id=profile_id,
@@ -99,9 +95,6 @@ async def set_profile_scope(
     scope: list[ScopeTarget],
     service: ProfileService = Depends(get_profile_service),
 ) -> ProfileScopeResponse:
-    profile = await service.get_profile(profile_id)
-    if not profile:
-        raise HTTPException(status_code=404, detail="Profile not found")
     await service.set_scope(profile_id, scope)
     await revalidate(["profiles"])
     updated_scope = await service.get_scope(profile_id)
@@ -116,9 +109,6 @@ async def list_assignments(
     profile_id: int,
     service: ProfileService = Depends(get_profile_service),
 ) -> list[AssignmentResponse]:
-    profile = await service.get_profile(profile_id)
-    if not profile:
-        raise HTTPException(status_code=404, detail="Profile not found")
     assignments = await service.get_assignments(profile_id)
     return [AssignmentResponse.model_validate(a) for a in assignments]
 
@@ -130,11 +120,8 @@ async def update_assignment_status(
     data: StatusUpdate,
     service: ProfileService = Depends(get_profile_service),
 ) -> AssignmentResponse:
-    profile = await service.get_profile(profile_id)
-    if not profile:
-        raise HTTPException(status_code=404, detail="Profile not found")
     assignment = await service.update_assignment_status(profile_id, device_id, data.status.value)
     if not assignment:
-        raise HTTPException(status_code=404, detail="Assignment not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Assignment not found")
     await revalidate(["profiles"])
     return AssignmentResponse.model_validate(assignment)

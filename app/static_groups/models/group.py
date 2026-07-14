@@ -4,7 +4,6 @@ from sqlalchemy import ForeignKey, Index, String, Integer, DateTime, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.base import Base, utcnow
-from app.static_groups.static_group_device import StaticGroupDevice  # noqa: F401
 from app.users.models import User
 
 

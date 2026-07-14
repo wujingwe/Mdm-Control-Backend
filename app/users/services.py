@@ -15,8 +15,14 @@ class UserService:
     async def list_users(self, skip: int = 0, limit: int = 100) -> list[User]:
         return await self.repo.list_all(skip=skip, limit=limit)
 
+    async def count_users(self) -> int:
+        return await self.repo.count()
+
     async def get_user(self, user_id: int) -> User | None:
         return await self.repo.get_by_id(user_id)
+
+    async def get_user_by_email(self, email: str) -> User | None:
+        return await self.repo.get_by_email(email)
 
     async def create_user(self, data: UserCreate) -> User:
         db_data = UserCreateDB(

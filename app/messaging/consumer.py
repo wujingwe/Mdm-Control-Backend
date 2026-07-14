@@ -12,7 +12,7 @@ from sqlalchemy import select
 from app.common.enums import AssignmentStatus
 from app.config.settings import settings
 from app.database import async_session
-from app.profiles.profile_assignment import ProfileAssignment
+from app.profiles.models import ProfileAssignment
 from app.notification.webhook import send_validation_webhook
 
 try:

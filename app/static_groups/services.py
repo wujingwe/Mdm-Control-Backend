@@ -7,8 +7,10 @@ class StaticGroupService:
     def __init__(self, repo: StaticGroupRepository) -> None:
         self.repo = repo
 
-    async def list_groups(self, skip: int = 0, limit: int = 100) -> list[StaticGroup]:
-        return await self.repo.list_all(skip=skip, limit=limit)
+    async def list_groups(self, skip: int = 0, limit: int = 100) -> tuple[list[StaticGroup], int]:
+        items = await self.repo.list_all(skip=skip, limit=limit)
+        total = await self.repo.count()
+        return items, total
 
     async def get_group(self, group_id: int) -> StaticGroup | None:
         return await self.repo.get_by_id(group_id)

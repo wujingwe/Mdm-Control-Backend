@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.dependencies import get_db
 from app.common.enums import AssignmentStatus, ConnectionStatus
 from app.devices.models import Device
-from app.profiles.profile_assignment import ProfileAssignment
+from app.profiles.models import ProfileAssignment
 from pydantic import BaseModel
 
 router = APIRouter(prefix="/metrics", tags=["Metrics"])

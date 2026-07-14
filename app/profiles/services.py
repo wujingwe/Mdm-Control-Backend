@@ -8,10 +8,10 @@ from sqlalchemy.sql.expression import BinaryExpression
 from app.common.enums import AssignmentSource, AssignmentStatus, TargetType
 from app.devices.models import Device
 from app.profiles.models import Profile
-from app.profiles.profile_assignment import ProfileAssignment
-from app.profiles.profile_scope import ProfileScope
+from app.profiles.models import ProfileAssignment
+from app.profiles.models import ProfileScope
 from app.profiles.schemas import ProfileCreate, ProfileUpdate, ScopeTarget, AssignmentUpsert
-from app.static_groups.static_group_device import StaticGroupDevice
+from app.static_groups.models import StaticGroupDevice
 from app.profiles.repositories import ProfileRepository
 
 logger = logging.getLogger(__name__)

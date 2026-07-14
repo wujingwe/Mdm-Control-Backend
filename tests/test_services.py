@@ -473,8 +473,9 @@ class TestStaticGroupService:
     async def test_list_groups(self, repo):
         svc = StaticGroupService(repo)
         result = await svc.list_groups()
-        assert result == []
+        assert result == ([], 0)
         repo.list_all.assert_called_once_with(skip=0, limit=100)
+        repo.count.assert_awaited_once()
 
     async def test_list_groups_paginated(self, repo):
         svc = StaticGroupService(repo)
@@ -559,7 +560,7 @@ class TestProfileServiceRecalculate:
         repo.delete_non_direct_assignments.assert_awaited_once_with(1)
 
     async def test_recalculate_all_devices_scope(self, repo):
-        from app.profiles.profile_scope import ProfileScope
+        from app.profiles.models import ProfileScope
 
         profile = MagicMock()
         profile.version = 1
@@ -586,7 +587,7 @@ class TestProfileServiceRecalculate:
         assert repo.upsert_assignment.await_count == 2
 
     async def test_recalculate_device_scope(self, repo):
-        from app.profiles.profile_scope import ProfileScope
+        from app.profiles.models import ProfileScope
 
         profile = MagicMock()
         profile.version = 1
@@ -607,7 +608,7 @@ class TestProfileServiceRecalculate:
         assert upsert_data.source.value == "DIRECT"
 
     async def test_recalculate_static_group_scope(self, repo):
-        from app.profiles.profile_scope import ProfileScope
+        from app.profiles.models import ProfileScope
 
         profile = MagicMock()
         profile.version = 1
@@ -633,7 +634,7 @@ class TestProfileServiceRecalculate:
         assert upsert_data.source_id == 5
 
     async def test_recalculate_static_group_empty_serials(self, repo):
-        from app.profiles.profile_scope import ProfileScope
+        from app.profiles.models import ProfileScope
 
         profile = MagicMock()
         profile.version = 1
@@ -655,7 +656,7 @@ class TestProfileServiceRecalculate:
         repo.upsert_assignment.assert_not_called()
 
     async def test_recalculate_smart_group_scope_no_criteria(self, repo):
-        from app.profiles.profile_scope import ProfileScope
+        from app.profiles.models import ProfileScope
 
         profile = MagicMock()
         profile.version = 1
@@ -679,7 +680,7 @@ class TestProfileServiceRecalculate:
         repo.upsert_assignment.assert_not_called()
 
     async def test_recalculate_smart_group_scope_with_criteria(self, repo):
-        from app.profiles.profile_scope import ProfileScope
+        from app.profiles.models import ProfileScope
 
         profile = MagicMock()
         profile.version = 1
@@ -710,7 +711,7 @@ class TestProfileServiceRecalculate:
         assert upsert_data.source_id == 3
 
     async def test_recalculate_smart_group_nonexistent_group(self, repo):
-        from app.profiles.profile_scope import ProfileScope
+        from app.profiles.models import ProfileScope
 
         profile = MagicMock()
         profile.version = 1
@@ -732,7 +733,7 @@ class TestProfileServiceRecalculate:
         repo.upsert_assignment.assert_not_called()
 
     async def test_recalculate_smart_group_empty_criteria_list(self, repo):
-        from app.profiles.profile_scope import ProfileScope
+        from app.profiles.models import ProfileScope
 
         profile = MagicMock()
         profile.version = 1
@@ -756,7 +757,7 @@ class TestProfileServiceRecalculate:
         repo.upsert_assignment.assert_not_called()
 
     async def test_recalculate_mixed_scopes(self, repo):
-        from app.profiles.profile_scope import ProfileScope
+        from app.profiles.models import ProfileScope
 
         profile = MagicMock()
         profile.version = 1

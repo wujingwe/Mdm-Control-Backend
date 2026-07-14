@@ -4,6 +4,8 @@ from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import async_session
+from app.devices.repositories import DeviceRepository
+from app.devices.services import DeviceService
 from app.extension_attributes.repositories import ExtensionAttributeRepository
 from app.inventory_search.repositories import InventorySearchRepository
 from app.profiles.repositories import ProfileRepository
@@ -14,11 +16,16 @@ from app.inventory_search.services import InventorySearchService
 from app.profiles.services import ProfileService
 from app.smart_groups.services import SmartGroupService
 from app.static_groups.services import StaticGroupService
+from app.users.repositories import UserRepository
+from app.users.services import UserService
 
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
     async with async_session() as session:
         yield session
+
+def get_device_service(db: AsyncSession = Depends(get_db)) -> DeviceService:
+    return DeviceService(DeviceRepository(db))
 
 
 def get_smart_group_service(db: AsyncSession = Depends(get_db)) -> SmartGroupService:
@@ -39,3 +46,7 @@ def get_extension_attribute_service(db: AsyncSession = Depends(get_db)) -> Exten
 
 def get_profile_service(db: AsyncSession = Depends(get_db)) -> ProfileService:
     return ProfileService(ProfileRepository(db))
+
+
+def get_user_service(db: AsyncSession = Depends(get_db)) -> UserService:
+    return UserService(UserRepository(db))

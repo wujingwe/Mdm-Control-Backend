@@ -4,8 +4,8 @@ from sqlalchemy.exc import IntegrityError
 
 from app.common.enums import AssignmentSource
 from app.profiles.models import Profile
-from app.profiles.profile_scope import ProfileScope
-from app.profiles.profile_assignment import ProfileAssignment
+from app.profiles.models import ProfileScope
+from app.profiles.models import ProfileAssignment
 from app.profiles.schemas import ProfileCreate, ProfileUpdate, ScopeTarget, AssignmentUpsert
 from app.core.exceptions import ConflictError
 

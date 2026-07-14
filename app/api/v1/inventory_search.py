@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app.dependencies import get_inventory_search_service
 from app.common.schemas import Message, PaginatedResponse
@@ -33,11 +33,11 @@ async def get_inventory_search(
 ) -> InventorySearchResponse:
     search = await service.get_search(search_id)
     if not search:
-        raise HTTPException(status_code=404, detail="Inventory search not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Inventory search not found")
     return InventorySearchResponse.model_validate(search)
 
 
-@router.post("", response_model=InventorySearchResponse, status_code=201)
+@router.post("", response_model=InventorySearchResponse, status_code=status.HTTP_201_CREATED)
 async def create_inventory_search(
     data: InventorySearchCreate,
     service: InventorySearchService = Depends(get_inventory_search_service),
@@ -53,10 +53,9 @@ async def update_inventory_search(
     data: InventorySearchUpdate,
     service: InventorySearchService = Depends(get_inventory_search_service),
 ) -> InventorySearchResponse:
-    existing = await service.get_search(search_id)
-    if not existing:
-        raise HTTPException(status_code=404, detail="Inventory search not found")
     updated = await service.update_search(search_id, data)
+    if not updated:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Inventory search not found")
     await revalidate(["inventory-search"])
     return InventorySearchResponse.model_validate(updated)
 
@@ -68,6 +67,6 @@ async def delete_inventory_search(
 ) -> Message:
     deleted = await service.delete_search(search_id)
     if not deleted:
-        raise HTTPException(status_code=404, detail="Inventory search not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Inventory search not found")
     await revalidate(["inventory-search"])
     return Message(detail="Inventory search deleted")

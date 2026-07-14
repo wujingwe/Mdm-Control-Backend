@@ -4,7 +4,7 @@ from sqlalchemy.exc import IntegrityError
 
 from app.devices.models import Device
 from app.static_groups.models import StaticGroup
-from app.static_groups.static_group_device import StaticGroupDevice
+from app.static_groups.models import StaticGroupDevice
 from app.static_groups.schemas import StaticGroupCreateDB, StaticGroupUpdate
 from app.core.exceptions import ConflictError
 
