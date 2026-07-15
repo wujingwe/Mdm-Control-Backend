@@ -16,6 +16,8 @@ from app.inventory_search.services import InventorySearchService
 from app.profiles.services import ProfileService
 from app.smart_groups.services import SmartGroupService
 from app.static_groups.services import StaticGroupService
+from app.commands.repositories import CommandRepository
+from app.commands.services import CommandService
 from app.users.repositories import UserRepository
 from app.users.services import UserService
 
@@ -50,3 +52,7 @@ def get_profile_service(db: AsyncSession = Depends(get_db)) -> ProfileService:
 
 def get_user_service(db: AsyncSession = Depends(get_db)) -> UserService:
     return UserService(UserRepository(db))
+
+
+def get_command_service(db: AsyncSession = Depends(get_db)) -> CommandService:
+    return CommandService(CommandRepository(db))

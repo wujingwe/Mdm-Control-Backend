@@ -159,6 +159,29 @@ class RabbitMQProducer:
             correlation_id=str(profile_id),
         )
 
+    async def publish_device_command(
+        self,
+        *,
+        device_id: int | str,
+        command_id: int,
+        command_type: str,
+        parameters: dict[str, Any],
+        event_type: str,
+    ) -> str:
+        payload: dict[str, Any] = {
+            "event_type": event_type,
+            "device_id": device_id,
+            "command_id": command_id,
+            "command_type": command_type,
+            "parameters": parameters,
+        }
+
+        return await self.publish_json(
+            payload,
+            routing_key=self.device_routing_key(device_id),
+            correlation_id=str(command_id),
+        )
+
     def device_routing_key(self, device_id: int | str) -> str:
         return f"{self._config.device_routing_key_prefix}.{device_id}"
 

@@ -9,7 +9,8 @@ from typing import Any
 
 from sqlalchemy import select
 
-from app.common.enums import AssignmentStatus
+from app.commands.models import DeviceCommand
+from app.common.enums import AssignmentStatus, CommandStatus
 from app.config.settings import settings
 from app.database import async_session
 from app.profiles.models import ProfileAssignment
@@ -194,6 +195,55 @@ async def process_profile_status_message(data: dict[str, Any]) -> None:
         logger.debug("Ignoring event_type=%s", event_type)
 
 
+async def process_device_command_status(data: dict[str, Any]) -> None:
+    event_type = data.get("event_type", "")
+    command_id = data.get("command_id")
+    result_message = data.get("result_message")
+
+    if not command_id:
+        logger.warning("Missing command_id in device command status: %s", data)
+        return
+
+    valid_transitions = {
+        "device.command.acknowledged": CommandStatus.ACKNOWLEDGED,
+        "device.command.in_progress": CommandStatus.IN_PROGRESS,
+        "device.command.completed": CommandStatus.COMPLETED,
+        "device.command.failed": CommandStatus.FAILED,
+    }
+
+    target_status = valid_transitions.get(event_type)
+    if target_status is None:
+        logger.debug("Ignoring event_type=%s", event_type)
+        return
+
+    async with async_session() as db:
+        cmd = await db.get(DeviceCommand, int(command_id))
+        if not cmd:
+            logger.warning("Command %s not found", command_id)
+            return
+        cmd.status = target_status
+        if result_message is not None:
+            cmd.result_message = result_message
+        from datetime import datetime, timezone
+        now = datetime.now(timezone.utc)
+        if target_status == CommandStatus.COMPLETED:
+            cmd.completed_at = now
+        elif target_status == CommandStatus.ACKNOWLEDGED:
+            cmd.acknowledged_at = now
+        await db.commit()
+        logger.info("Command %s updated to %s", command_id, target_status.value)
+
+
+async def composite_handler(data: dict[str, Any]) -> None:
+    event_type = data.get("event_type", "")
+    if event_type.startswith("profile."):
+        await process_profile_status_message(data)
+    elif event_type.startswith("device.command."):
+        await process_device_command_status(data)
+    else:
+        logger.debug("Ignoring unknown event_type=%s", event_type)
+
+
 rabbitmq_consumer = RabbitMQConsumer(
     config=RabbitMQConsumerConfig(
         url=settings.rabbitmq_url,
@@ -204,5 +254,5 @@ rabbitmq_consumer = RabbitMQConsumer(
         prefetch_count=settings.rabbitmq_prefetch_count,
         requeue_on_error=settings.rabbitmq_requeue_on_error,
     ),
-    handler=process_profile_status_message,
+    handler=composite_handler,
 )

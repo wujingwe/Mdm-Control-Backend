@@ -47,3 +47,24 @@ class ExtensionDataType(str, Enum):
 class ExtensionInputType(str, Enum):
     TEXT_FIELD = "Text field"
     POPUP_MENU = "Pop-up menu"
+
+
+class CommandType(str, Enum):
+    CHECK_IN = "CHECK_IN"
+    UPDATE_INVENTORY = "UPDATE_INVENTORY"
+    LOCK = "LOCK"
+    UNLOCK = "UNLOCK"
+    WIPE = "WIPE"
+    RESTART = "RESTART"
+    SHUTDOWN = "SHUTDOWN"
+    LOST_MODE = "LOST_MODE"
+
+
+class CommandStatus(str, Enum):
+    PENDING = "PENDING"
+    SENT = "SENT"
+    ACKNOWLEDGED = "ACKNOWLEDGED"
+    IN_PROGRESS = "IN_PROGRESS"
+    COMPLETED = "COMPLETED"
+    FAILED = "FAILED"
+    CANCELLED = "CANCELLED"

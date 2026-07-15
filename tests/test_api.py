@@ -151,6 +151,51 @@ class TestUsersAPI:
         assert resp.status_code == 404
 
 
+class TestCommandsAPI:
+    async def test_list_empty(self, client):
+        resp = await client.get("/api/v1/devices/1/commands")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["items"] == []
+        assert data["total"] == 0
+
+    async def test_trigger_and_get(self, client):
+        create_resp = await client.post(
+            "/api/v1/devices/1/commands",
+            json={"command_type": "LOCK"},
+        )
+        assert create_resp.status_code == 201
+        cmd = create_resp.json()
+        assert cmd["command_type"] == "LOCK"
+        assert cmd["status"] == "PENDING"
+        command_id = cmd["id"]
+
+        get_resp = await client.get(f"/api/v1/devices/1/commands/{command_id}")
+        assert get_resp.status_code == 200
+        assert get_resp.json()["id"] == command_id
+
+    async def test_get_not_found(self, client):
+        resp = await client.get("/api/v1/devices/1/commands/999")
+        assert resp.status_code == 404
+
+    async def test_cancel_pending(self, client):
+        create_resp = await client.post(
+            "/api/v1/devices/1/commands",
+            json={"command_type": "LOCK"},
+        )
+        command_id = create_resp.json()["id"]
+
+        cancel_resp = await client.delete(f"/api/v1/devices/1/commands/{command_id}")
+        assert cancel_resp.status_code == 200
+
+    async def test_list_device_commands(self, client):
+        await client.post("/api/v1/devices/1/commands", json={"command_type": "LOCK"})
+        await client.post("/api/v1/devices/1/commands", json={"command_type": "UNLOCK"})
+        resp = await client.get("/api/v1/devices/1/commands")
+        data = resp.json()
+        assert data["total"] == 2
+
+
 class TestHealth:
     async def test_liveness(self, client):
         resp = await client.get("/health/live")
