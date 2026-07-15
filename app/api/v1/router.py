@@ -1,5 +1,4 @@
 from fastapi import APIRouter
-from app.api.v1.commands import router as commands_router
 from app.api.v1.devices import router as devices_router
 from app.api.v1.profiles import router as profiles_router
 from app.api.v1.smart_groups import router as smart_groups_router
@@ -10,7 +9,6 @@ from app.api.v1.inventory_search import router as inventory_search_router
 from app.api.v1.extension_attributes import router as extension_attributes_router
 
 router = APIRouter(prefix="/v1")
-router.include_router(commands_router)
 router.include_router(devices_router)
 router.include_router(profiles_router)
 router.include_router(smart_groups_router)
