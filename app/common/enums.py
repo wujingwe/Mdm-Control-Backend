@@ -50,6 +50,8 @@ class ExtensionInputType(str, Enum):
 
 
 class CommandType(str, Enum):
+    """Types of commands that can be sent to a device."""
+
     CHECK_IN = "CHECK_IN"
     UPDATE_INVENTORY = "UPDATE_INVENTORY"
     LOCK = "LOCK"
@@ -61,10 +63,16 @@ class CommandType(str, Enum):
 
 
 class CommandStatus(str, Enum):
-    PENDING = "PENDING"
-    SENT = "SENT"
-    ACKNOWLEDGED = "ACKNOWLEDGED"
-    IN_PROGRESS = "IN_PROGRESS"
-    COMPLETED = "COMPLETED"
-    FAILED = "FAILED"
-    CANCELLED = "CANCELLED"
+    """Lifecycle states of a device command.
+
+    Flow: PENDING → SENT → ACKNOWLEDGED → IN_PROGRESS → COMPLETED/FAILED
+          CANCELLED can be reached from PENDING or SENT.
+    """
+
+    PENDING = "PENDING"  # Created, waiting to be sent to device
+    SENT = "SENT"  # Published to RabbitMQ, delivered to device queue
+    ACKNOWLEDGED = "ACKNOWLEDGED"  # Device received the command
+    IN_PROGRESS = "IN_PROGRESS"  # Device is executing the command
+    COMPLETED = "COMPLETED"  # Device finished successfully
+    FAILED = "FAILED"  # Device encountered an error
+    CANCELLED = "CANCELLED"  # Admin cancelled before device executed

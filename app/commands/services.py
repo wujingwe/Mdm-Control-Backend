@@ -35,7 +35,7 @@ class CommandService:
             if updated is not None:
                 return {"command": updated, "message_id": message_id}
             return {"command": command, "message_id": message_id}
-        except Exception:  # noqa: BLE001
+        except Exception:
             logger.exception("Failed to publish command %s", command.id)
             return {"command": command, "message_id": None}
 
