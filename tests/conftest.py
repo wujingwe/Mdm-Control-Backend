@@ -1,8 +1,10 @@
+import re
 from collections.abc import AsyncGenerator
 
 import jwt
 import pytest_asyncio
 from httpx import AsyncClient, ASGITransport
+from sqlalchemy import event
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 
 from app.main import app
@@ -12,6 +14,16 @@ from app.base import Base
 TEST_DB_URL = "sqlite+aiosqlite:///:memory:"
 
 test_engine = create_async_engine(TEST_DB_URL, echo=False)
+
+
+@event.listens_for(test_engine.sync_engine, "connect")
+def _register_sqlite_regexp(dbapi_conn, _connection_record) -> None:
+    dbapi_conn.create_function(
+        "regexp", 2,
+        lambda pattern, string: 1 if re.search(pattern, string or "") else 0,
+    )
+
+
 test_async_session = async_sessionmaker(test_engine, class_=AsyncSession, expire_on_commit=False)
 
 

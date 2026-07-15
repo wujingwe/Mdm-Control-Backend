@@ -257,6 +257,7 @@ class TestUserService:
     def repo(self):
         m = MagicMock()
         m.list_all = AsyncMock(return_value=[])
+        m.count = AsyncMock(return_value=0)
         m.get_by_id = AsyncMock(return_value=None)
         m.create = AsyncMock()
         m.update = AsyncMock()
@@ -265,9 +266,11 @@ class TestUserService:
 
     async def test_list_users(self, repo):
         svc = UserService(repo)
-        result = await svc.list_users()
-        assert result == []
+        items, total = await svc.list_users()
+        assert items == []
+        assert total == 0
         repo.list_all.assert_called_once_with(skip=0, limit=100)
+        repo.count.assert_called_once()
 
     async def test_list_users_paginated(self, repo):
         svc = UserService(repo)
