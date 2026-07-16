@@ -1,6 +1,7 @@
 from sqlalchemy import select, func, update, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import selectinload
 
 from app.static_groups.models import StaticGroup, StaticGroupDevice
 from app.static_groups.schemas import StaticGroupCreate, StaticGroupUpdate
@@ -17,7 +18,7 @@ class StaticGroupRepository:
         return list(result.scalars().all())
 
     async def get_by_id(self, record_id: int) -> StaticGroup | None:
-        stmt = select(StaticGroup).where(StaticGroup.id == record_id)
+        stmt = select(StaticGroup).options(selectinload(StaticGroup.devices)).where(StaticGroup.id == record_id)
         result = await self.db.execute(stmt)
         return result.scalar_one_or_none()
 
@@ -65,10 +66,16 @@ class StaticGroupRepository:
                 raise ConflictError("Resource already exists") from err  # noqa: TRY003, EM101
 
         if data.device_serial_numbers is not None:
-            del_stmt = delete(StaticGroupDevice).where(
-                StaticGroupDevice.static_group_id == record_id,
+            existing = list(
+                (await self.db.execute(
+                    select(StaticGroupDevice).where(
+                        StaticGroupDevice.static_group_id == record_id,
+                    )
+                )).scalars().all()
             )
-            await self.db.execute(del_stmt)
+            for obj in existing:
+                await self.db.delete(obj)
+
             for serial in data.device_serial_numbers:
                 self.db.add(StaticGroupDevice(
                     static_group_id=record_id,
@@ -82,6 +89,9 @@ class StaticGroupRepository:
                 await self.db.rollback()
                 raise ConflictError("Resource already exists") from err  # noqa: TRY003, EM101
 
+        inst = await self.db.get(StaticGroup, record_id)
+        if inst is not None:
+            self.db.expire(inst)
         return await self.get_by_id(record_id)
 
     async def delete(self, record_id: int) -> bool:
