@@ -264,8 +264,8 @@ class TestStaticGroupRepository:
         dev2 = Device(name="D2", serial_number="SN002", os_version="14", connection_status="Online", enrollment_status="Compliant")
         db_session.add_all([dev1, dev2])
         await db_session.commit()
-        db_session.add(StaticGroupDevice(static_group_id=group.id, device_id=dev1.id))
-        db_session.add(StaticGroupDevice(static_group_id=group.id, device_id=dev2.id))
+        db_session.add(StaticGroupDevice(static_group_id=group.id, device_serial_number=dev1.serial_number))
+        db_session.add(StaticGroupDevice(static_group_id=group.id, device_serial_number=dev2.serial_number))
         await db_session.commit()
         serials = await repo.get_device_serial_numbers(group.id)
         assert set(serials) == {"SN001", "SN002"}
