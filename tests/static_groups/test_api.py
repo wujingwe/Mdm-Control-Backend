@@ -18,12 +18,12 @@ class TestStaticGroupsAPI:
         assert create.status_code == 201
         gid = create.json()["id"]
         assert create.json()["name"] == "Static Group A"
-        assert set(create.json()["device_serial_numbers"]) == {"SN001", "SN002"}
+        assert {d["serial_number"] for d in create.json()["devices"]} == {"SN001", "SN002"}
 
         get = await client.get(f"{self.BASE}/{gid}")
         assert get.status_code == 200
         assert get.json()["name"] == "Static Group A"
-        assert set(get.json()["device_serial_numbers"]) == {"SN001", "SN002"}
+        assert {d["serial_number"] for d in get.json()["devices"]} == {"SN001", "SN002"}
 
         update = await client.put(f"{self.BASE}/{gid}", json={
             "name": "Static Group B",
@@ -31,7 +31,7 @@ class TestStaticGroupsAPI:
         })
         assert update.status_code == 200
         assert update.json()["name"] == "Static Group B"
-        assert update.json()["device_serial_numbers"] == ["SN003"]
+        assert [d["serial_number"] for d in update.json()["devices"]] == ["SN003"]
 
         delete = await client.delete(f"{self.BASE}/{gid}")
         assert delete.status_code == 200

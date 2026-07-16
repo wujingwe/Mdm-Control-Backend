@@ -13,7 +13,13 @@ class StaticGroupRepository:
         self.db = db
 
     async def list_all(self, skip: int = 0, limit: int = 100) -> list[StaticGroup]:
-        stmt = select(StaticGroup).order_by(StaticGroup.id).offset(skip).limit(limit)
+        stmt = (
+            select(StaticGroup)
+            .options(selectinload(StaticGroup.devices))
+            .order_by(StaticGroup.id)
+            .offset(skip)
+            .limit(limit)
+        )
         result = await self.db.execute(stmt)
         return list(result.scalars().all())
 
@@ -46,15 +52,15 @@ class StaticGroupRepository:
         except IntegrityError as err:
             await self.db.rollback()
             raise ConflictError("Resource already exists") from err  # noqa: TRY003, EM101
-        await self.db.refresh(instance)
-        return instance
+        group_id = instance.id
+        self.db.expire(instance)
+        return await self.get_by_id(group_id)  # type: ignore[return-value]
 
     async def update(self, record_id: int, data: StaticGroupUpdate) -> StaticGroup | None:
         has_changes = False
 
         # 1. Update scalar fields
-        values = data.model_dump(exclude_unset=True)
-        values.pop("device_serial_numbers", None)
+        values = data.model_dump(exclude_unset=True, exclude={"device_serial_numbers"})
         if values:
             stmt = (
                 update(StaticGroup)
@@ -70,7 +76,21 @@ class StaticGroupRepository:
 
         # 2. Replace device collection
         if data.device_serial_numbers is not None:
-            await self._replace_devices(record_id, data.device_serial_numbers)
+            existing = (
+                await self.db.execute(
+                    select(StaticGroupDevice).where(
+                        StaticGroupDevice.static_group_id == record_id,
+                    )
+                )
+            ).scalars().all()
+            for obj in existing:
+                await self.db.delete(obj)
+
+            for serial in data.device_serial_numbers:
+                self.db.add(StaticGroupDevice(
+                    static_group_id=record_id,
+                    device_serial_number=serial,
+                ))
             has_changes = True
 
         # 3. Commit and return fresh state
@@ -79,28 +99,12 @@ class StaticGroupRepository:
                 await self.db.commit()
             except IntegrityError as err:
                 await self.db.rollback()
-                raise ConflictError("Resource already exists") from err  # noqa: TRY003, EM101
-            inst = await self.db.get(StaticGroup, record_id)
-            if inst is not None:
-                self.db.expire(inst)
+                raise ConflictError("Resource already exists") from err
+            instance = await self.db.get(StaticGroup, record_id)
+            if instance is not None:
+                self.db.expire(instance)
 
         return await self.get_by_id(record_id)
-
-    async def _replace_devices(self, group_id: int, serial_numbers: list[str]) -> None:
-        existing = (
-            await self.db.execute(
-                select(StaticGroupDevice).where(
-                    StaticGroupDevice.static_group_id == group_id,
-                )
-            )
-        ).scalars().all()
-        for obj in existing:
-            await self.db.delete(obj)
-        for serial in serial_numbers:
-            self.db.add(StaticGroupDevice(
-                static_group_id=group_id,
-                device_serial_number=serial,
-            ))
 
     async def delete(self, record_id: int) -> bool:
         stmt = delete(StaticGroup).where(StaticGroup.id == record_id).returning(StaticGroup.id)

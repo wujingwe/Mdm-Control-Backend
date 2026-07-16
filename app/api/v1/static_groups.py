@@ -32,9 +32,7 @@ async def get_static_group(
     group = await service.get_group(group_id)
     if not group:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Static group not found")
-    serials = await service.get_device_serial_numbers(group.id)
     resp = StaticGroupResponse.model_validate(group)
-    resp.device_serial_numbers = serials
     return resp
 
 
@@ -45,9 +43,7 @@ async def create_static_group(
 ) -> StaticGroupResponse:
     group = await service.create_group(data)
     await revalidate(["static-groups"])
-    resp = StaticGroupResponse.model_validate(group)
-    resp.device_serial_numbers = data.device_serial_numbers or []
-    return resp
+    return StaticGroupResponse.model_validate(group)
 
 
 @router.put("/{group_id}", response_model=StaticGroupResponse)
@@ -60,10 +56,7 @@ async def update_static_group(
     if not updated:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Static group not found")
     await revalidate(["static-groups"])
-    serials = await service.get_device_serial_numbers(group_id)
-    resp = StaticGroupResponse.model_validate(updated)
-    resp.device_serial_numbers = serials
-    return resp
+    return StaticGroupResponse.model_validate(updated)
 
 
 @router.delete("/{group_id}", response_model=Message)
