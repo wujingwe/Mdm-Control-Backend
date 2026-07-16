@@ -50,9 +50,11 @@ class StaticGroupRepository:
         return instance
 
     async def update(self, record_id: int, data: StaticGroupUpdate) -> StaticGroup | None:
+        has_changes = False
+
+        # 1. Update scalar fields
         values = data.model_dump(exclude_unset=True)
         values.pop("device_serial_numbers", None)
-
         if values:
             stmt = (
                 update(StaticGroup)
@@ -64,35 +66,41 @@ class StaticGroupRepository:
             except IntegrityError as err:
                 await self.db.rollback()
                 raise ConflictError("Resource already exists") from err  # noqa: TRY003, EM101
+            has_changes = True
 
+        # 2. Replace device collection
         if data.device_serial_numbers is not None:
-            existing = list(
-                (await self.db.execute(
-                    select(StaticGroupDevice).where(
-                        StaticGroupDevice.static_group_id == record_id,
-                    )
-                )).scalars().all()
-            )
-            for obj in existing:
-                await self.db.delete(obj)
+            await self._replace_devices(record_id, data.device_serial_numbers)
+            has_changes = True
 
-            for serial in data.device_serial_numbers:
-                self.db.add(StaticGroupDevice(
-                    static_group_id=record_id,
-                    device_serial_number=serial,
-                ))
-
-        if values or data.device_serial_numbers is not None:
+        # 3. Commit and return fresh state
+        if has_changes:
             try:
                 await self.db.commit()
             except IntegrityError as err:
                 await self.db.rollback()
                 raise ConflictError("Resource already exists") from err  # noqa: TRY003, EM101
+            inst = await self.db.get(StaticGroup, record_id)
+            if inst is not None:
+                self.db.expire(inst)
 
-        inst = await self.db.get(StaticGroup, record_id)
-        if inst is not None:
-            self.db.expire(inst)
         return await self.get_by_id(record_id)
+
+    async def _replace_devices(self, group_id: int, serial_numbers: list[str]) -> None:
+        existing = (
+            await self.db.execute(
+                select(StaticGroupDevice).where(
+                    StaticGroupDevice.static_group_id == group_id,
+                )
+            )
+        ).scalars().all()
+        for obj in existing:
+            await self.db.delete(obj)
+        for serial in serial_numbers:
+            self.db.add(StaticGroupDevice(
+                static_group_id=group_id,
+                device_serial_number=serial,
+            ))
 
     async def delete(self, record_id: int) -> bool:
         stmt = delete(StaticGroup).where(StaticGroup.id == record_id).returning(StaticGroup.id)
