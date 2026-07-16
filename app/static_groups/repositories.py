@@ -58,7 +58,11 @@ class StaticGroupRepository:
                 .where(StaticGroup.id == record_id)
                 .values(**values)
             )
-            await self.db.execute(stmt)
+            try:
+                await self.db.execute(stmt)
+            except IntegrityError as err:
+                await self.db.rollback()
+                raise ConflictError("Resource already exists") from err  # noqa: TRY003, EM101
 
         if data.device_serial_numbers is not None:
             del_stmt = delete(StaticGroupDevice).where(
