@@ -9,7 +9,6 @@ from typing import Sequence, Union
 
 from alembic import op
 import sqlalchemy as sa
-from sqlalchemy.dialects import mysql
 
 revision: str = '1367b77be087'
 down_revision: Union[str, Sequence[str], None] = '505f92c76c57'

@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import Enum, String, Integer, DateTime, Index
+from sqlalchemy import Enum, String, Integer, DateTime, Index, UniqueConstraint, Text, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.base import Base, utcnow
@@ -8,7 +8,6 @@ from app.common.enums import ConnectionStatus, EnrollmentStatus
 from app.types import CertificateListType, NetworkInfoType
 from app.profiles.models import Profile
 from app.profiles.models import ProfileAssignment
-from app.devices.models.device_attribute import DeviceExtensionAttribute
 
 
 class Device(Base):
@@ -43,3 +42,20 @@ class Device(Base):
         secondaryjoin="ProfileAssignment.profile_id == Profile.id",
     )
     extension_attributes: Mapped[list["DeviceExtensionAttribute"]] = relationship(viewonly=True)
+
+
+class DeviceExtensionAttribute(Base):
+    __tablename__ = "device_extension_attribute_values"
+    __table_args__ = (
+        UniqueConstraint("device_id", "extension_attribute_id"),
+        Index("ix_device_ext_attr_device_id", "device_id"),
+        Index("ix_device_ext_attr_attr_id", "extension_attribute_id"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    device_id: Mapped[int] = mapped_column(Integer, ForeignKey("devices.id", ondelete="CASCADE"))
+    extension_attribute_id: Mapped[int] = mapped_column(Integer, ForeignKey("extension_attributes.id", ondelete="CASCADE"))
+    value: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, onupdate=utcnow)
+

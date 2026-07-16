@@ -7,7 +7,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.base import Base, utcnow
 from app.common.enums import CommandType, CommandStatus
-from app.devices.models.device import Device
+from app.devices.models import Device
 
 
 class DeviceCommand(Base):

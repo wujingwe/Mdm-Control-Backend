@@ -132,7 +132,7 @@ class ProfileService:
                 device_ids_by_source.setdefault(AssignmentSource.SMART_GROUP, {}).setdefault(target_id, set()).update(ids)
 
             elif target_type == TargetType.STATIC_GROUP and target_id is not None:
-                sg_dev_stmt = select(StaticGroupDevice.device_id).where(
+                sg_dev_stmt = select(StaticGroupDevice.device_serial_number).where(
                     StaticGroupDevice.static_group_id == target_id
                 )
                 sg_dev_result = await db.execute(sg_dev_stmt)
