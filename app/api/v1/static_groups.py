@@ -59,8 +59,6 @@ async def update_static_group(
     updated = await service.update_group(group_id, data)
     if not updated:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Static group not found")
-    if data.device_serial_numbers is not None:
-        await service.set_device_serial_numbers(group_id, data.device_serial_numbers)
     await revalidate(["static-groups"])
     serials = await service.get_device_serial_numbers(group_id)
     resp = StaticGroupResponse.model_validate(updated)

@@ -469,7 +469,6 @@ class TestStaticGroupService:
         m.delete = AsyncMock()
         m.count = AsyncMock(return_value=0)
         m.get_device_serial_numbers = AsyncMock(return_value=[])
-        m.set_device_serial_numbers = AsyncMock()
         m.db = AsyncMock()
         return m
 
@@ -501,8 +500,10 @@ class TestStaticGroupService:
         fake = MagicMock()
         repo.create = AsyncMock(return_value=fake)
         svc = StaticGroupService(repo)
-        result = await svc.create_group(StaticGroupCreate(name="G", created_by=1))
+        data = StaticGroupCreate(name="G", created_by=1, device_serial_numbers=["SN001"])
+        result = await svc.create_group(data)
         assert result is fake
+        repo.create.assert_called_once_with(data)
 
     async def test_update_group(self, repo):
         fake = MagicMock()
@@ -521,11 +522,6 @@ class TestStaticGroupService:
         svc = StaticGroupService(repo)
         result = await svc.get_device_serial_numbers(1)
         assert result == ["SN001", "SN002"]
-
-    async def test_set_device_serial_numbers(self, repo):
-        svc = StaticGroupService(repo)
-        await svc.set_device_serial_numbers(1, ["SN001", "SN002"])
-        repo.set_device_serial_numbers.assert_called_once_with(1, ["SN001", "SN002"])
 
 
 class TestProfileServiceRecalculate:

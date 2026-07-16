@@ -1,18 +1,12 @@
 from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class StaticGroupCreate(BaseModel):
     name: str
     description: str | None = None
     device_serial_numbers: list[str] = []
-    created_by: int = 1
-
-
-class StaticGroupCreateDB(BaseModel):
-    name: str
-    description: str | None = None
     created_by: int = 1
 
 
@@ -26,9 +20,9 @@ class StaticGroupResponse(BaseModel):
     id: int
     name: str
     description: str | None = None
-    device_serial_numbers: list[str] = []
     created_at: datetime
     created_by: int
     updated_at: datetime | None = None
+    device_serial_numbers: list[str] = []
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
