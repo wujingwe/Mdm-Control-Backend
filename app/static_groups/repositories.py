@@ -40,7 +40,11 @@ class StaticGroupRepository:
                 device_serial_number=serial,
             ))
 
-        await self.db.commit()
+        try:
+            await self.db.commit()
+        except IntegrityError as err:
+            await self.db.rollback()
+            raise ConflictError("Resource already exists") from err  # noqa: TRY003, EM101
         await self.db.refresh(instance)
         return instance
 
@@ -53,14 +57,8 @@ class StaticGroupRepository:
                 update(StaticGroup)
                 .where(StaticGroup.id == record_id)
                 .values(**values)
-                .returning(StaticGroup)
             )
             await self.db.execute(stmt)
-            try:
-                await self.db.commit()
-            except IntegrityError as err:
-                await self.db.rollback()
-                raise ConflictError("Resource already exists") from err  # noqa: TRY003, EM101
 
         if data.device_serial_numbers is not None:
             del_stmt = delete(StaticGroupDevice).where(
@@ -72,7 +70,13 @@ class StaticGroupRepository:
                     static_group_id=record_id,
                     device_serial_number=serial,
                 ))
-            await self.db.commit()
+
+        if values or data.device_serial_numbers is not None:
+            try:
+                await self.db.commit()
+            except IntegrityError as err:
+                await self.db.rollback()
+                raise ConflictError("Resource already exists") from err  # noqa: TRY003, EM101
 
         return await self.get_by_id(record_id)
 
