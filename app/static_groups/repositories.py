@@ -54,7 +54,7 @@ class StaticGroupRepository:
             raise ConflictError("Resource already exists") from err  # noqa: TRY003, EM101
         group_id = instance.id
         self.db.expire(instance)
-        return await self.get_by_id(group_id)  # type: ignore[return-value]
+        return await self.get_by_id(group_id)
 
     async def update(self, record_id: int, data: StaticGroupUpdate) -> StaticGroup | None:
         has_changes = False
@@ -116,10 +116,3 @@ class StaticGroupRepository:
         stmt = select(func.count()).select_from(StaticGroup)
         result = await self.db.execute(stmt)
         return result.scalar_one()
-
-    async def get_device_serial_numbers(self, group_id: int) -> list[str]:
-        stmt = select(StaticGroupDevice.device_serial_number).where(
-            StaticGroupDevice.static_group_id == group_id,
-        )
-        result = await self.db.execute(stmt)
-        return list(result.scalars().all())

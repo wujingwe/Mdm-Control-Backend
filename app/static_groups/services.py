@@ -23,6 +23,3 @@ class StaticGroupService:
 
     async def delete_group(self, group_id: int) -> bool:
         return await self.repo.delete(group_id)
-
-    async def get_device_serial_numbers(self, group_id: int) -> list[str]:
-        return await self.repo.get_device_serial_numbers(group_id)

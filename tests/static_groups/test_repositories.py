@@ -24,8 +24,11 @@ class TestStaticGroupRepository:
 
     async def test_create_without_devices(self, db_session):
         repo = StaticGroupRepository(db_session)
-        created = await repo.create(StaticGroupCreate(name="SG1", created_by=1))
-        serials = await repo.get_device_serial_numbers(created.id)
+        group = await repo.create(StaticGroupCreate(name="SG1", created_by=1))
+
+        result = await repo.get_by_id(group.id)
+        assert result is not None
+        serials = [x.serial_number for x in result.devices]
         assert serials == []
 
     async def test_create_with_devices(self, db_session):
@@ -43,7 +46,10 @@ class TestStaticGroupRepository:
             created_by=1,
             device_serial_numbers=["SN001", "SN002", "SN003"],
         ))
-        serials = await repo.get_device_serial_numbers(group.id)
+
+        result = await repo.get_by_id(group.id)
+        assert result is not None
+        serials = [x.serial_number for x in result.devices]
         assert set(serials) == {"SN001", "SN002", "SN003"}
 
     async def test_create_duplicate_name_raises(self, db_session):
@@ -157,7 +163,10 @@ class TestStaticGroupRepository:
             device_serial_numbers=["SN001", "SN002"],
         ))
         await repo.update(group.id, StaticGroupUpdate(device_serial_numbers=["SN003"]))
-        serials = await repo.get_device_serial_numbers(group.id)
+
+        result = await repo.get_by_id(group.id)
+        assert result is not None
+        serials = [x.serial_number for x in result.devices]
         assert serials == ["SN003"]
 
     async def test_update_replaces_all_devices(self, db_session):
@@ -175,7 +184,10 @@ class TestStaticGroupRepository:
             device_serial_numbers=["SN001"],
         ))
         await repo.update(group.id, StaticGroupUpdate(device_serial_numbers=["SN002"]))
-        serials = await repo.get_device_serial_numbers(group.id)
+
+        result = await repo.get_by_id(group.id)
+        assert result is not None
+        serials = [x.serial_number for x in result.devices]
         assert serials == ["SN002"]
 
     async def test_update_with_empty_device_list(self, db_session):
@@ -192,7 +204,10 @@ class TestStaticGroupRepository:
             device_serial_numbers=["SN001"],
         ))
         await repo.update(group.id, StaticGroupUpdate(device_serial_numbers=[]))
-        serials = await repo.get_device_serial_numbers(group.id)
+
+        result = await repo.get_by_id(group.id)
+        assert result is not None
+        serials = [x.serial_number for x in result.devices]
         assert serials == []
 
     async def test_update_name_and_devices_together(self, db_session):
@@ -214,8 +229,41 @@ class TestStaticGroupRepository:
             device_serial_numbers=["SN002"],
         ))
         assert updated.name == "SG2"
-        serials = await repo.get_device_serial_numbers(group.id)
+
+        result = await repo.get_by_id(group.id)
+        assert result is not None
+        serials = [x.serial_number for x in result.devices]
         assert serials == ["SN002"]
+
+    async def test_update_devices_twice(self, db_session):
+        from app.devices.models import Device
+
+        repo = StaticGroupRepository(db_session)
+        dev1 = Device(name="D1", serial_number="SN001", os_version="14", connection_status="Online",
+                      enrollment_status="Compliant")
+        dev2 = Device(name="D2", serial_number="SN002", os_version="14", connection_status="Online",
+                      enrollment_status="Compliant")
+        dev3 = Device(name="D3", serial_number="SN003", os_version="14", connection_status="Online",
+                      enrollment_status="Compliant")
+        db_session.add_all([dev1, dev2, dev3])
+        await db_session.commit()
+
+        group = await repo.create(StaticGroupCreate(
+            name="SG1",
+            created_by=1,
+            device_serial_numbers=["SN001"],
+        ))
+        await repo.update(group.id, StaticGroupUpdate(
+            device_serial_numbers=["SN001", "SN002"],
+        ))
+        await repo.update(group.id, StaticGroupUpdate(
+            device_serial_numbers=["SN003"],
+        ))
+
+        result = await repo.get_by_id(group.id)
+        assert result is not None
+        serials = [x.serial_number for x in result.devices]
+        assert serials == ["SN003"]
 
     async def test_delete(self, db_session):
         repo = StaticGroupRepository(db_session)
@@ -239,31 +287,3 @@ class TestStaticGroupRepository:
         await repo.create(StaticGroupCreate(name="SG2", created_by=1))
         await repo.create(StaticGroupCreate(name="SG3", created_by=1))
         assert await repo.count() == 3
-
-    async def test_get_device_serial_numbers(self, db_session):
-        from app.devices.models import Device
-
-        repo = StaticGroupRepository(db_session)
-        dev1 = Device(name="D1", serial_number="SN001", os_version="14", connection_status="Online", enrollment_status="Compliant")
-        dev2 = Device(name="D2", serial_number="SN002", os_version="14", connection_status="Online", enrollment_status="Compliant")
-        db_session.add_all([dev1, dev2])
-        await db_session.commit()
-
-        group = await repo.create(StaticGroupCreate(
-            name="SG1",
-            created_by=1,
-            device_serial_numbers=["SN001", "SN002"],
-        ))
-        serials = await repo.get_device_serial_numbers(group.id)
-        assert set(serials) == {"SN001", "SN002"}
-
-    async def test_get_device_serial_numbers_empty(self, db_session):
-        repo = StaticGroupRepository(db_session)
-        group = await repo.create(StaticGroupCreate(name="SG1", created_by=1))
-        serials = await repo.get_device_serial_numbers(group.id)
-        assert serials == []
-
-    async def test_get_device_serial_numbers_not_found(self, db_session):
-        repo = StaticGroupRepository(db_session)
-        serials = await repo.get_device_serial_numbers(999)
-        assert serials == []

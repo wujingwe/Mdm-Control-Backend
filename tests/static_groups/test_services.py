@@ -14,7 +14,6 @@ class TestStaticGroupService:
         m.update = AsyncMock()
         m.delete = AsyncMock()
         m.count = AsyncMock(return_value=0)
-        m.get_device_serial_numbers = AsyncMock(return_value=[])
         m.db = AsyncMock()
         return m
 
@@ -62,9 +61,3 @@ class TestStaticGroupService:
         repo.delete = AsyncMock(return_value=True)
         svc = StaticGroupService(repo)
         assert await svc.delete_group(1) is True
-
-    async def test_get_device_serial_numbers(self, repo):
-        repo.get_device_serial_numbers = AsyncMock(return_value=["SN001", "SN002"])
-        svc = StaticGroupService(repo)
-        result = await svc.get_device_serial_numbers(1)
-        assert result == ["SN001", "SN002"]

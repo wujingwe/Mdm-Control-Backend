@@ -2,6 +2,8 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict
 
+from app.devices.schemas import DeviceResponse
+
 
 class StaticGroupCreate(BaseModel):
     name: str
@@ -23,6 +25,6 @@ class StaticGroupResponse(BaseModel):
     created_at: datetime
     created_by: int
     updated_at: datetime | None = None
-    device_serial_numbers: list[str] = []
+    devices: list[DeviceResponse]
 
     model_config = ConfigDict(from_attributes=True)

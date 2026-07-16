@@ -10,7 +10,6 @@ from app.users.models import User
 
 class StaticGroup(Base):
     __tablename__ = "static_groups"
-    __table_args__ = (Index("ix_static_groups_created_by", "created_by"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String(100), unique=True)
@@ -33,7 +32,7 @@ class StaticGroupDevice(Base):
     static_group_id: Mapped[int] = mapped_column(
         Integer,
         ForeignKey("static_groups.id", ondelete="CASCADE"),
-        primary_key=True
+        primary_key=True,
     )
     device_serial_number: Mapped[str] = mapped_column(
         String,
