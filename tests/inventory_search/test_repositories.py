@@ -60,3 +60,114 @@ class TestInventorySearchRepository:
         assert await repo.count() == 0
         await repo.create(InventorySearchCreate(name="s1", created_by=1))
         assert await repo.count() == 1
+
+    async def test_create_with_criteria(self, db_session):
+        repo = InventorySearchRepository(db_session)
+        created = await repo.create(
+            InventorySearchCreate(
+                name="Online Android",
+                created_by=1,
+                criteria=[
+                    {
+                        "field": "connection_status",
+                        "operator": "is",
+                        "type": "string",
+                        "value": "Online",
+                    },
+                    {
+                        "field": "os_version",
+                        "operator": "is",
+                        "type": "string",
+                        "value": "Android 14",
+                    },
+                ],
+            )
+        )
+        assert created.id is not None
+        found = await repo.get_by_id(created.id)
+        assert found.criteria is not None
+        assert len(found.criteria) == 2
+        assert found.criteria[0]["field"] == "connection_status"
+        assert found.criteria[1]["field"] == "os_version"
+
+    async def test_create_without_criteria(self, db_session):
+        repo = InventorySearchRepository(db_session)
+        created = await repo.create(
+            InventorySearchCreate(name="No Criteria", created_by=1)
+        )
+        found = await repo.get_by_id(created.id)
+        assert found.criteria is None or found.criteria == []
+
+    async def test_update_criteria(self, db_session):
+        repo = InventorySearchRepository(db_session)
+        created = await repo.create(
+            InventorySearchCreate(
+                name="Test Search",
+                created_by=1,
+                criteria=[
+                    {
+                        "field": "os_version",
+                        "operator": "is",
+                        "type": "string",
+                        "value": "Android 14",
+                    },
+                ],
+            )
+        )
+        updated = await repo.update(
+            created.id,
+            InventorySearchUpdate(
+                criteria=[
+                    {
+                        "field": "battery_status",
+                        "operator": "lessThan",
+                        "type": "number",
+                        "value": "15",
+                    },
+                ],
+            ),
+        )
+        assert updated.criteria is not None
+        assert len(updated.criteria) == 1
+        assert updated.criteria[0]["field"] == "battery_status"
+
+    async def test_update_criteria_empty_list(self, db_session):
+        repo = InventorySearchRepository(db_session)
+        created = await repo.create(
+            InventorySearchCreate(
+                name="Test Search",
+                created_by=1,
+                criteria=[
+                    {
+                        "field": "os_version",
+                        "operator": "is",
+                        "type": "string",
+                        "value": "Android 14",
+                    },
+                ],
+            )
+        )
+        updated = await repo.update(created.id, InventorySearchUpdate(criteria=[]))
+        assert updated.criteria == []
+
+    async def test_update_name_preserves_criteria(self, db_session):
+        repo = InventorySearchRepository(db_session)
+        created = await repo.create(
+            InventorySearchCreate(
+                name="Original Name",
+                created_by=1,
+                criteria=[
+                    {
+                        "field": "os_version",
+                        "operator": "is",
+                        "type": "string",
+                        "value": "Android 14",
+                    },
+                ],
+            )
+        )
+        updated = await repo.update(created.id, InventorySearchUpdate(name="New Name"))
+        assert updated.name == "New Name"
+        found = await repo.get_by_id(created.id)
+        assert len(found.criteria) == 1
+        assert found.criteria[0]["field"] == "os_version"
