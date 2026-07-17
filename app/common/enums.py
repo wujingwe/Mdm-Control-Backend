@@ -76,3 +76,10 @@ class CommandStatus(str, Enum):
     COMPLETED = "COMPLETED"  # Device finished successfully
     FAILED = "FAILED"  # Device encountered an error
     CANCELLED = "CANCELLED"  # Admin cancelled before device executed
+
+
+class CriteriaType(str, Enum):
+    STRING = "string"
+    NUMBER = "number"
+    BOOLEAN = "boolean"
+    DATE = "date"

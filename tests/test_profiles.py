@@ -1,6 +1,11 @@
 import pytest
 from app.profiles.repositories import ProfileRepository
-from app.profiles.schemas import ProfileCreate, ProfileUpdate, ScopeTarget, AssignmentUpsert
+from app.profiles.schemas import (
+    ProfileCreate,
+    ProfileUpdate,
+    ScopeTarget,
+    AssignmentUpsert,
+)
 from app.smart_groups.schemas import SmartGroupCreate
 from app.common.enums import TargetType
 from app.devices.repositories import DeviceRepository
@@ -10,12 +15,14 @@ from app.smart_groups.repositories import SmartGroupRepository
 class TestProfileRepository:
     async def test_crud(self, db_session):
         repo = ProfileRepository(db_session)
-        created = await repo.create(ProfileCreate(
-            name="Test Profile",
-            description="desc",
-            settings={"key": "value"},
-            created_by=1,
-        ))
+        created = await repo.create(
+            ProfileCreate(
+                name="Test Profile",
+                description="desc",
+                settings={"key": "value"},
+                created_by=1,
+            )
+        )
         assert created.id is not None
         assert created.name == "Test Profile"
         assert created.settings == {"key": "value"}
@@ -31,6 +38,7 @@ class TestProfileRepository:
 
     async def test_unique_name(self, db_session):
         from app.core.exceptions import ConflictError
+
         repo = ProfileRepository(db_session)
         await repo.create(ProfileCreate(name="Dup", settings={}, created_by=1))
         with pytest.raises(ConflictError):
@@ -51,45 +59,60 @@ class TestProfileRepository:
 
     async def test_scope(self, db_session):
         repo = ProfileRepository(db_session)
-        profile = await repo.create(ProfileCreate(name="Scoped", settings={}, created_by=1))
-        await repo.set_scope(profile.id, [
-            ScopeTarget(target_type=TargetType.ALL_DEVICES),
-            ScopeTarget(target_type=TargetType.SMART_GROUP, target_id=1),
-        ])
+        profile = await repo.create(
+            ProfileCreate(name="Scoped", settings={}, created_by=1)
+        )
+        await repo.set_scope(
+            profile.id,
+            [
+                ScopeTarget(target_type=TargetType.ALL_DEVICES),
+                ScopeTarget(target_type=TargetType.SMART_GROUP, target_id=1),
+            ],
+        )
         scope = await repo.get_scope(profile.id)
         assert len(scope) == 2
 
     async def test_assignments(self, db_session):
         repo = ProfileRepository(db_session)
-        profile = await repo.create(ProfileCreate(name="Assigned", settings={}, created_by=1))
-        assignment = await repo.upsert_assignment(AssignmentUpsert(
-            profile_id=profile.id,
-            device_id=1,
-            source="DIRECT",
-            status="PENDING",
-            profile_version=1,
-        ))
+        profile = await repo.create(
+            ProfileCreate(name="Assigned", settings={}, created_by=1)
+        )
+        assignment = await repo.upsert_assignment(
+            AssignmentUpsert(
+                profile_id=profile.id,
+                device_id=1,
+                source="DIRECT",
+                status="PENDING",
+                profile_version=1,
+            )
+        )
         assert assignment.id is not None
         assignments = await repo.get_assignments(profile.id)
         assert len(assignments) == 1
 
     async def test_upsert_assignment_update(self, db_session):
         repo = ProfileRepository(db_session)
-        profile = await repo.create(ProfileCreate(name="Upsert", settings={}, created_by=1))
-        await repo.upsert_assignment(AssignmentUpsert(
-            profile_id=profile.id,
-            device_id=1,
-            source="DIRECT",
-            status="PENDING",
-            profile_version=1,
-        ))
-        updated = await repo.upsert_assignment(AssignmentUpsert(
-            profile_id=profile.id,
-            device_id=1,
-            source="DIRECT",
-            status="APPLIED",
-            profile_version=1,
-        ))
+        profile = await repo.create(
+            ProfileCreate(name="Upsert", settings={}, created_by=1)
+        )
+        await repo.upsert_assignment(
+            AssignmentUpsert(
+                profile_id=profile.id,
+                device_id=1,
+                source="DIRECT",
+                status="PENDING",
+                profile_version=1,
+            )
+        )
+        updated = await repo.upsert_assignment(
+            AssignmentUpsert(
+                profile_id=profile.id,
+                device_id=1,
+                source="DIRECT",
+                status="APPLIED",
+                profile_version=1,
+            )
+        )
         assert updated.status == "APPLIED"
         assignments = await repo.get_assignments(profile.id)
         assert len(assignments) == 1
@@ -99,11 +122,14 @@ class TestProfileAPI:
     BASE = "/api/v1/profiles"
 
     async def test_crud_flow(self, client):
-        create = await client.post(self.BASE, json={
-            "name": "Test Profile",
-            "description": "desc",
-            "settings": {"key": "value"},
-        })
+        create = await client.post(
+            self.BASE,
+            json={
+                "name": "Test Profile",
+                "description": "desc",
+                "settings": {"key": "value"},
+            },
+        )
         assert create.status_code == 201
         pid = create.json()["id"]
         assert create.json()["name"] == "Test Profile"
@@ -113,7 +139,9 @@ class TestProfileAPI:
         assert get.status_code == 200
         assert get.json()["name"] == "Test Profile"
 
-        update = await client.put(f"{self.BASE}/{pid}", json={"name": "Updated Profile"})
+        update = await client.put(
+            f"{self.BASE}/{pid}", json={"name": "Updated Profile"}
+        )
         assert update.status_code == 200
         assert update.json()["name"] == "Updated Profile"
 
@@ -139,9 +167,12 @@ class TestProfileAPI:
         create = await client.post(self.BASE, json={"name": "Scoped Profile"})
         pid = create.json()["id"]
 
-        put_scope = await client.put(f"{self.BASE}/{pid}/scope", json=[
-            {"target_type": "ALL_DEVICES"},
-        ])
+        put_scope = await client.put(
+            f"{self.BASE}/{pid}/scope",
+            json=[
+                {"target_type": "ALL_DEVICES"},
+            ],
+        )
         assert put_scope.status_code == 200
         assert len(put_scope.json()["scope"]) == 1
 
@@ -159,32 +190,50 @@ class TestProfileAPI:
     async def test_update_assignment_status_not_found(self, client):
         create = await client.post(self.BASE, json={"name": "No Assignments"})
         pid = create.json()["id"]
-        resp = await client.put(f"{self.BASE}/{pid}/assignments/999/status", json={"status": "APPLIED"})
+        resp = await client.put(
+            f"{self.BASE}/{pid}/assignments/999/status", json={"status": "APPLIED"}
+        )
         assert resp.status_code == 404
 
     async def test_assignment_recalculation(self, client, db_session):
         device_repo = DeviceRepository(db_session)
-        await device_repo.create({
-            "name": "Dev1", "serial_number": "SRN-REC-001",
-            "os_version": "Android 14", "connection_status": "Online", "enrollment_status": "Compliant",
-        })
+        await device_repo.create(
+            {
+                "name": "Dev1",
+                "serial_number": "SRN-REC-001",
+                "os_version": "Android 14",
+                "connection_status": "Online",
+                "enrollment_status": "Compliant",
+            }
+        )
 
         sg_repo = SmartGroupRepository(db_session)
-        sg = await sg_repo.create(SmartGroupCreate(
-            name="Android 14",
-            created_by=1,
-            criteria=[
-                {"criteria": "os_version", "operator": "is", "type": "string", "value": "Android 14",
-                 "left_parentheses": False, "right_parentheses": False},
-            ],
-        ))
+        sg = await sg_repo.create(
+            SmartGroupCreate(
+                name="Android 14",
+                created_by=1,
+                criteria=[
+                    {
+                        "field": "os_version",
+                        "operator": "is",
+                        "type": "string",
+                        "value": "Android 14",
+                        "left_parentheses": False,
+                        "right_parentheses": False,
+                    },
+                ],
+            )
+        )
 
         create = await client.post(self.BASE, json={"name": "Recalc Test"})
         pid = create.json()["id"]
 
-        resp = await client.put(f"{self.BASE}/{pid}/scope", json=[
-            {"target_type": "SMART_GROUP", "target_id": sg.id},
-        ])
+        resp = await client.put(
+            f"{self.BASE}/{pid}/scope",
+            json=[
+                {"target_type": "SMART_GROUP", "target_id": sg.id},
+            ],
+        )
         assert resp.status_code == 200
 
         assignments_resp = await client.get(f"{self.BASE}/{pid}/assignments")

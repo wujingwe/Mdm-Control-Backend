@@ -103,6 +103,221 @@
         }
       }
     },
+    "/api/v1/devices/{device_id}/commands": {
+      "get": {
+        "tags": [
+          "Devices"
+        ],
+        "summary": "List Device Commands",
+        "operationId": "list_device_commands_api_v1_devices__device_id__commands_get",
+        "parameters": [
+          {
+            "name": "device_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Device Id"
+            }
+          },
+          {
+            "name": "skip",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Skip"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 1000,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedResponse_CommandResponse_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Devices"
+        ],
+        "summary": "Trigger Device Command",
+        "operationId": "trigger_device_command_api_v1_devices__device_id__commands_post",
+        "parameters": [
+          {
+            "name": "device_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Device Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CommandCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommandResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/devices/{device_id}/commands/{command_id}": {
+      "get": {
+        "tags": [
+          "Devices"
+        ],
+        "summary": "Get Device Command",
+        "operationId": "get_device_command_api_v1_devices__device_id__commands__command_id__get",
+        "parameters": [
+          {
+            "name": "device_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Device Id"
+            }
+          },
+          {
+            "name": "command_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Command Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommandResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Devices"
+        ],
+        "summary": "Cancel Device Command",
+        "operationId": "cancel_device_command_api_v1_devices__device_id__commands__command_id__delete",
+        "parameters": [
+          {
+            "name": "device_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Device Id"
+            }
+          },
+          {
+            "name": "command_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Command Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/profiles": {
       "get": {
         "tags": [
@@ -1041,6 +1256,45 @@
             }
           }
         }
+      },
+      "post": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Create User",
+        "operationId": "create_user_api_v1_users_post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/v1/users/{user_id}": {
@@ -1068,6 +1322,96 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/UserResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Update User",
+        "operationId": "update_user_api_v1_users__user_id__put",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "User Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Delete User",
+        "operationId": "delete_user_api_v1_users__user_id__delete",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "User Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
                 }
               }
             }
@@ -1931,6 +2275,161 @@
         "type": "object",
         "title": "Certificate"
       },
+      "CommandCreate": {
+        "properties": {
+          "command_type": {
+            "$ref": "#/components/schemas/CommandType"
+          },
+          "parameters": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parameters"
+          }
+        },
+        "type": "object",
+        "required": [
+          "command_type"
+        ],
+        "title": "CommandCreate"
+      },
+      "CommandResponse": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "device_id": {
+            "type": "integer",
+            "title": "Device Id"
+          },
+          "command_type": {
+            "$ref": "#/components/schemas/CommandType"
+          },
+          "parameters": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parameters"
+          },
+          "status": {
+            "$ref": "#/components/schemas/CommandStatus"
+          },
+          "result_message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Result Message"
+          },
+          "created_by": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created By"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "sent_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sent At"
+          },
+          "acknowledged_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Acknowledged At"
+          },
+          "completed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "device_id",
+          "command_type",
+          "status",
+          "created_at"
+        ],
+        "title": "CommandResponse"
+      },
+      "CommandStatus": {
+        "type": "string",
+        "enum": [
+          "PENDING",
+          "SENT",
+          "ACKNOWLEDGED",
+          "IN_PROGRESS",
+          "COMPLETED",
+          "FAILED",
+          "CANCELLED"
+        ],
+        "title": "CommandStatus",
+        "description": "Lifecycle states of a device command.\n\nFlow: PENDING \u2192 SENT \u2192 ACKNOWLEDGED \u2192 IN_PROGRESS \u2192 COMPLETED/FAILED\n      CANCELLED can be reached from PENDING or SENT."
+      },
+      "CommandType": {
+        "type": "string",
+        "enum": [
+          "CHECK_IN",
+          "UPDATE_INVENTORY",
+          "LOCK",
+          "UNLOCK",
+          "WIPE",
+          "RESTART",
+          "SHUTDOWN",
+          "LOST_MODE"
+        ],
+        "title": "CommandType",
+        "description": "Types of commands that can be sent to a device."
+      },
       "ConnectionStatus": {
         "type": "string",
         "enum": [
@@ -1940,11 +2439,11 @@
         ],
         "title": "ConnectionStatus"
       },
-      "CriteriaSchema": {
+      "Criteria": {
         "properties": {
-          "criteria": {
+          "field": {
             "type": "string",
-            "title": "Criteria"
+            "title": "Field"
           },
           "operator": {
             "type": "string",
@@ -1970,12 +2469,12 @@
         },
         "type": "object",
         "required": [
-          "criteria",
+          "field",
           "operator",
           "type",
           "value"
         ],
-        "title": "CriteriaSchema"
+        "title": "Criteria"
       },
       "CriteriaType": {
         "type": "string",
@@ -2400,7 +2899,7 @@
           },
           "criteria": {
             "items": {
-              "$ref": "#/components/schemas/CriteriaSchema"
+              "$ref": "#/components/schemas/Criteria"
             },
             "type": "array",
             "title": "Criteria",
@@ -2441,7 +2940,7 @@
           },
           "criteria": {
             "items": {
-              "$ref": "#/components/schemas/CriteriaSchema"
+              "$ref": "#/components/schemas/Criteria"
             },
             "type": "array",
             "title": "Criteria",
@@ -2500,7 +2999,7 @@
             "anyOf": [
               {
                 "items": {
-                  "$ref": "#/components/schemas/CriteriaSchema"
+                  "$ref": "#/components/schemas/Criteria"
                 },
                 "type": "array"
               },
@@ -2552,6 +3051,37 @@
         },
         "type": "object",
         "title": "Network"
+      },
+      "PaginatedResponse_CommandResponse_": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/CommandResponse"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "skip": {
+            "type": "integer",
+            "title": "Skip"
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "skip",
+          "limit"
+        ],
+        "title": "PaginatedResponse[CommandResponse]"
       },
       "PaginatedResponse_DeviceResponse_": {
         "properties": {
@@ -2971,7 +3501,7 @@
           },
           "criteria": {
             "items": {
-              "$ref": "#/components/schemas/CriteriaSchema"
+              "$ref": "#/components/schemas/Criteria"
             },
             "type": "array",
             "title": "Criteria",
@@ -3014,7 +3544,7 @@
             "anyOf": [
               {
                 "items": {
-                  "$ref": "#/components/schemas/CriteriaSchema"
+                  "$ref": "#/components/schemas/Criteria"
                 },
                 "type": "array"
               },
@@ -3083,7 +3613,7 @@
             "anyOf": [
               {
                 "items": {
-                  "$ref": "#/components/schemas/CriteriaSchema"
+                  "$ref": "#/components/schemas/Criteria"
                 },
                 "type": "array"
               },
@@ -3155,14 +3685,6 @@
             ],
             "title": "Description"
           },
-          "device_serial_numbers": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Device Serial Numbers",
-            "default": []
-          },
           "created_at": {
             "type": "string",
             "format": "date-time",
@@ -3183,6 +3705,13 @@
               }
             ],
             "title": "Updated At"
+          },
+          "devices": {
+            "items": {
+              "$ref": "#/components/schemas/DeviceResponse"
+            },
+            "type": "array",
+            "title": "Devices"
           }
         },
         "type": "object",
@@ -3190,7 +3719,8 @@
           "id",
           "name",
           "created_at",
-          "created_by"
+          "created_by",
+          "devices"
         ],
         "title": "StaticGroupResponse"
       },
@@ -3258,6 +3788,40 @@
         ],
         "title": "TargetType"
       },
+      "UserCreate": {
+        "properties": {
+          "email": {
+            "type": "string",
+            "title": "Email"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "password": {
+            "type": "string",
+            "title": "Password"
+          },
+          "permissions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "uniqueItems": true,
+            "title": "Permissions",
+            "default": [
+              "viewer"
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "email",
+          "name",
+          "password"
+        ],
+        "title": "UserCreate"
+      },
       "UserResponse": {
         "properties": {
           "id": {
@@ -3307,6 +3871,60 @@
           "created_at"
         ],
         "title": "UserResponse"
+      },
+      "UserUpdate": {
+        "properties": {
+          "email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "password": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Password"
+          },
+          "permissions": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array",
+                "uniqueItems": true
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Permissions"
+          }
+        },
+        "type": "object",
+        "title": "UserUpdate"
       },
       "ValidationError": {
         "properties": {

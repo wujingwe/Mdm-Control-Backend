@@ -10,7 +10,12 @@ from app.devices.models import Device
 from app.profiles.models import Profile
 from app.profiles.models import ProfileAssignment
 from app.profiles.models import ProfileScope
-from app.profiles.schemas import ProfileCreate, ProfileUpdate, ScopeTarget, AssignmentUpsert
+from app.profiles.schemas import (
+    ProfileCreate,
+    ProfileUpdate,
+    ScopeTarget,
+    AssignmentUpsert,
+)
 from app.static_groups.models import StaticGroupDevice
 from app.profiles.repositories import ProfileRepository
 
@@ -34,7 +39,9 @@ class ProfileService:
     def __init__(self, repo: ProfileRepository) -> None:
         self.repo = repo
 
-    async def list_profiles(self, skip: int = 0, limit: int = 100) -> tuple[list[Profile], int]:
+    async def list_profiles(
+        self, skip: int = 0, limit: int = 100
+    ) -> tuple[list[Profile], int]:
         items = await self.repo.list_all(skip=skip, limit=limit)
         total = await self.repo.count()
         return items, total
@@ -45,7 +52,9 @@ class ProfileService:
     async def create_profile(self, data: ProfileCreate) -> Profile:
         return await self.repo.create(data)
 
-    async def update_profile(self, profile_id: int, data: ProfileUpdate) -> Profile | None:
+    async def update_profile(
+        self, profile_id: int, data: ProfileUpdate
+    ) -> Profile | None:
         return await self.repo.update(profile_id, data)
 
     async def delete_profile(self, profile_id: int) -> bool:
@@ -71,16 +80,18 @@ class ProfileService:
             return None
         now = datetime.now(timezone.utc)
         status_enum = AssignmentStatus(status)
-        return await self.repo.upsert_assignment(AssignmentUpsert(
-            profile_id=assignment.profile_id,
-            device_id=assignment.device_id,
-            source=AssignmentSource(assignment.source),
-            source_id=assignment.source_id,
-            profile_version=assignment.profile_version,
-            status=status_enum,
-            applied_at=now if status_enum == AssignmentStatus.APPLIED else None,
-            revoked_at=now if status_enum == AssignmentStatus.REVOKED else None,
-        ))
+        return await self.repo.upsert_assignment(
+            AssignmentUpsert(
+                profile_id=assignment.profile_id,
+                device_id=assignment.device_id,
+                source=AssignmentSource(assignment.source),
+                source_id=assignment.source_id,
+                profile_version=assignment.profile_version,
+                status=status_enum,
+                applied_at=now if status_enum == AssignmentStatus.APPLIED else None,
+                revoked_at=now if status_enum == AssignmentStatus.REVOKED else None,
+            )
+        )
 
     async def _recalculate_assignments(self, profile_id: int) -> None:
         db = self.repo.db
@@ -103,7 +114,9 @@ class ProfileService:
                 stmt = select(Device.id)
                 result = await db.execute(stmt)
                 ids = {row[0] for row in result.all()}
-                device_ids_by_source.setdefault(AssignmentSource.ALL_DEVICES, {}).setdefault(0, set()).update(ids)
+                device_ids_by_source.setdefault(
+                    AssignmentSource.ALL_DEVICES, {}
+                ).setdefault(0, set()).update(ids)
 
             elif target_type == TargetType.SMART_GROUP and target_id is not None:
                 from app.smart_groups.models import SmartGroup
@@ -113,10 +126,14 @@ class ProfileService:
                 smart_group = sg_result.scalar_one_or_none()
                 if not smart_group or not smart_group.criteria:
                     continue
-                criteria_list = smart_group.criteria if isinstance(smart_group.criteria, list) else []
+                criteria_list = (
+                    smart_group.criteria
+                    if isinstance(smart_group.criteria, list)
+                    else []
+                )
                 filters: list[BinaryExpression] = []
                 for c in criteria_list:
-                    col = getattr(Device, c.get("criteria", ""), None)
+                    col = getattr(Device, c.get("field", ""), None)
                     if col is None:
                         continue
                     builder = _FILTER_BUILDERS.get(c.get("operator", "is"))
@@ -129,7 +146,9 @@ class ProfileService:
                     dev_stmt = select(Device.id)
                 dev_result = await db.execute(dev_stmt)
                 ids = {row[0] for row in dev_result.all()}
-                device_ids_by_source.setdefault(AssignmentSource.SMART_GROUP, {}).setdefault(target_id, set()).update(ids)
+                device_ids_by_source.setdefault(
+                    AssignmentSource.SMART_GROUP, {}
+                ).setdefault(target_id, set()).update(ids)
 
             elif target_type == TargetType.STATIC_GROUP and target_id is not None:
                 sg_dev_stmt = select(StaticGroupDevice.device_serial_number).where(
@@ -137,21 +156,27 @@ class ProfileService:
                 )
                 sg_dev_result = await db.execute(sg_dev_stmt)
                 dev_ids = {row[0] for row in sg_dev_result.all()}
-                device_ids_by_source.setdefault(AssignmentSource.STATIC_GROUP, {}).setdefault(target_id, set()).update(dev_ids)
+                device_ids_by_source.setdefault(
+                    AssignmentSource.STATIC_GROUP, {}
+                ).setdefault(target_id, set()).update(dev_ids)
 
             elif target_type == TargetType.DEVICE and target_id is not None:
-                device_ids_by_source.setdefault(AssignmentSource.DIRECT, {}).setdefault(0, set()).add(target_id)
+                device_ids_by_source.setdefault(AssignmentSource.DIRECT, {}).setdefault(
+                    0, set()
+                ).add(target_id)
 
         await self.repo.delete_non_direct_assignments(profile_id)
 
         for source, groups in device_ids_by_source.items():
             for source_id, dev_ids in groups.items():
                 for dev_id in dev_ids:
-                    await self.repo.upsert_assignment(AssignmentUpsert(
-                        profile_id=profile_id,
-                        device_id=dev_id,
-                        source=AssignmentSource(source),
-                        source_id=source_id if source_id else None,
-                        status=AssignmentStatus.PENDING,
-                        profile_version=profile.version,
-                    ))
+                    await self.repo.upsert_assignment(
+                        AssignmentUpsert(
+                            profile_id=profile_id,
+                            device_id=dev_id,
+                            source=AssignmentSource(source),
+                            source_id=source_id if source_id else None,
+                            status=AssignmentStatus.PENDING,
+                            profile_version=profile.version,
+                        )
+                    )
