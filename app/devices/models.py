@@ -55,6 +55,7 @@ class Device(Base):
     extension_attributes: Mapped[list["DeviceExtensionAttribute"]] = relationship(
         primaryjoin="Device.id == DeviceExtensionAttribute.device_id",
         viewonly=True,
+        lazy="noload",
     )
 
     profiles: Mapped[list["Profile"]] = relationship(

@@ -1,7 +1,13 @@
 import pytest
 from app.core.exceptions import ConflictError
 from app.devices.repositories import DeviceRepository
-from app.devices.schemas import Certificate, Cellular, Network, Wifi
+from app.devices.schemas import (
+    Certificate,
+    Cellular,
+    DeviceUpdate,
+    Network,
+    Wifi,
+)
 
 
 def _make_device_data(serial: str = "SN001", name: str = "Test Device") -> dict:
@@ -37,16 +43,16 @@ class TestDeviceRepository:
         repo = DeviceRepository(db_session)
         created = await repo.create(_make_device_data())
         updated = await repo.update(
-            created.id, {"name": "New", "connection_status": "Offline"}
+            created.id,
+            DeviceUpdate(connection_status="Offline"),
         )
         assert updated is not None
-        assert updated.name == "New"
         assert updated.connection_status == "Offline"
         assert updated.serial_number == "SN001"
 
     async def test_update_not_found(self, db_session):
         repo = DeviceRepository(db_session)
-        assert await repo.update(999, {"name": "X"}) is None
+        assert await repo.update(999, DeviceUpdate(connection_status="Offline")) is None
 
     async def test_delete(self, db_session):
         repo = DeviceRepository(db_session)
@@ -90,11 +96,79 @@ class TestDeviceRepository:
         created = await repo.create(_make_device_data())
         updated = await repo.update(
             created.id,
-            {
-                "network": Network(
+            DeviceUpdate(
+                network=Network(
                     wifi=Wifi(ssid="Updated"), cellular=Cellular(carrier="Verizon")
                 ),
-            },
+            ),
         )
         assert updated.network.wifi.ssid == "Updated"
         assert updated.network.cellular.carrier == "Verizon"
+
+    async def test_update_ext_attributes_replace(self, db_session):
+        from app.extension_attributes.repositories import ExtensionAttributeRepository
+        from app.extension_attributes.schemas import ExtensionAttributeCreate
+
+        ea_repo = ExtensionAttributeRepository(db_session)
+        ea1 = await ea_repo.create(
+            ExtensionAttributeCreate(
+                name="field1", data_type="string", input_type="Text field", created_by=1
+            )
+        )
+
+        repo = DeviceRepository(db_session)
+        device = await repo.create(_make_device_data())
+
+        updated = await repo.update(
+            device.id,
+            DeviceUpdate(
+                extension_attributes=[
+                    {
+                        "extension_attribute_id": ea1.id,
+                        "extension_attribute_name": "field1",
+                        "value": "val1",
+                    },
+                ],
+            ),
+        )
+        assert len(updated.extension_attributes) == 1
+        assert updated.extension_attributes[0].value == "val1"
+
+    async def test_update_ext_attributes_clear(self, db_session):
+        from app.extension_attributes.repositories import ExtensionAttributeRepository
+        from app.extension_attributes.schemas import ExtensionAttributeCreate
+
+        ea_repo = ExtensionAttributeRepository(db_session)
+        ea1 = await ea_repo.create(
+            ExtensionAttributeCreate(
+                name="field1", data_type="string", input_type="Text field", created_by=1
+            )
+        )
+
+        repo = DeviceRepository(db_session)
+        device = await repo.create(_make_device_data())
+        await repo.update(
+            device.id,
+            DeviceUpdate(
+                extension_attributes=[
+                    {
+                        "extension_attribute_id": ea1.id,
+                        "extension_attribute_name": "field1",
+                        "value": "val1",
+                    },
+                ],
+            ),
+        )
+
+        updated = await repo.update(
+            device.id,
+            DeviceUpdate(extension_attributes=[]),
+        )
+        assert updated.extension_attributes == []
+
+    async def test_update_no_change(self, db_session):
+        repo = DeviceRepository(db_session)
+        created = await repo.create(_make_device_data())
+        updated = await repo.update(created.id, DeviceUpdate())
+        assert updated is not None
+        assert updated.serial_number == "SN001"

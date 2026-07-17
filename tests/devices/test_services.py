@@ -1,6 +1,7 @@
 from unittest.mock import AsyncMock, MagicMock
 import pytest
 from app.devices.services import DeviceService
+from app.devices.schemas import DeviceUpdate
 
 
 class TestDeviceService:
@@ -64,3 +65,20 @@ class TestDeviceService:
         )
         assert len(result) == 1
         assert result[0].name == "MacBook"
+
+    async def test_update_device_found(self, repo):
+        fake = MagicMock()
+        repo.get_by_id = AsyncMock(return_value=fake)
+        repo.update = AsyncMock(return_value=fake)
+        svc = DeviceService(repo)
+        data = DeviceUpdate(connection_status="Offline")
+        result = await svc.update_device(1, data)
+        assert result is fake
+        repo.get_by_id.assert_called_once_with(1)
+        repo.update.assert_called_once_with(1, data)
+
+    async def test_update_device_not_found(self, repo):
+        repo.get_by_id = AsyncMock(return_value=None)
+        svc = DeviceService(repo)
+        result = await svc.update_device(999, DeviceUpdate(connection_status="Offline"))
+        assert result is None

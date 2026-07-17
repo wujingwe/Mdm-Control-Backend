@@ -7,7 +7,7 @@ from sqlalchemy.sql.expression import BinaryExpression
 
 from app.devices.models import Device
 from app.devices.repositories import DeviceRepository
-from app.devices.schemas import DeviceSearchCriteria
+from app.devices.schemas import DeviceSearchCriteria, DeviceUpdate
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +38,12 @@ class DeviceService:
 
     async def get_device(self, device_id: int) -> Device | None:
         return await self.repo.get_by_id(device_id)
+
+    async def update_device(self, device_id: int, data: DeviceUpdate) -> Device | None:
+        device = await self.repo.get_by_id(device_id)
+        if not device:
+            return None
+        return await self.repo.update(device_id, data)
 
     async def search_devices(self, criteria: DeviceSearchCriteria) -> list[Device]:
         db = self.repo.db

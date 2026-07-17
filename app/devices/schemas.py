@@ -42,6 +42,14 @@ class Certificate(BaseModel):
     serial_number: str | None = None
 
 
+class DeviceExtensionAttributeResponse(BaseModel):
+    extension_attribute_id: int
+    extension_attribute_name: str
+    value: str
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class DeviceResponse(BaseModel):
     id: int
     name: str
@@ -59,8 +67,28 @@ class DeviceResponse(BaseModel):
     available_memory: int | None = None
     network: Network | dict | None = None
     certificates: list[Certificate] | list | None = None
+    extension_attributes: list[DeviceExtensionAttributeResponse] | None = None
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class DeviceExtensionAttributeCreate(BaseModel):
+    extension_attribute_id: int
+    extension_attribute_name: str
+    value: str
+
+
+class DeviceUpdate(BaseModel):
+    connection_status: ConnectionStatus | None = None
+    enrollment_status: EnrollmentStatus | None = None
+    battery_status: int | None = None
+    total_storage: int | None = None
+    available_storage: int | None = None
+    total_memory: int | None = None
+    available_memory: int | None = None
+    network: Network | None = None
+    certificates: list[Certificate] | None = None
+    extension_attributes: list[DeviceExtensionAttributeCreate] | None = None
 
 
 class DeviceSearchCriteria(BaseModel):

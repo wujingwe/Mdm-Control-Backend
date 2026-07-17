@@ -31,7 +31,9 @@ class JsonType(TypeDecorator[T], ABC, Generic[S, T]):
 
 
 class NetworkInfoType(JsonType[dict, Network]):
-    def _bind(self, value: Network) -> dict:
+    def _bind(self, value: Network | dict) -> dict:
+        if isinstance(value, dict):
+            return value
         return value.model_dump()
 
     def _result(self, value: dict) -> Network:
@@ -39,8 +41,8 @@ class NetworkInfoType(JsonType[dict, Network]):
 
 
 class CertificateListType(JsonType[list[dict], list[Certificate]]):
-    def _bind(self, value: list[Certificate]) -> list[dict]:
-        return [c.model_dump() for c in value]
+    def _bind(self, value: list[Certificate] | list[dict]) -> list[dict]:
+        return [c if isinstance(c, dict) else c.model_dump() for c in value]
 
     def _result(self, value: list[dict]) -> list[Certificate]:
         return [Certificate.model_validate(c) for c in value]

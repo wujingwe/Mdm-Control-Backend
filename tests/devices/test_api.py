@@ -1,4 +1,4 @@
-from app.devices.schemas import Certificate, Network, Wifi
+from app.devices.schemas import Certificate, DeviceUpdate, Network, Wifi
 
 
 class TestDevicesAPI:
@@ -40,6 +40,125 @@ class TestDevicesAPI:
         assert "last_enrolled_at" in body
         assert body["network"]["wifi"]["ssid"] == "Office"
         assert body["certificates"][0]["common_name"] == "example.com"
+
+    async def test_update_device(self, client, db_session):
+        from app.devices.repositories import DeviceRepository
+
+        repo = DeviceRepository(db_session)
+        device = await repo.create(
+            {
+                "name": "MacBook",
+                "serial_number": "SN-UPD-001",
+                "os_version": "15.0",
+                "connection_status": "Online",
+                "enrollment_status": "Enrolled",
+            }
+        )
+        resp = await client.put(
+            f"/api/v1/devices/{device.id}",
+            json={
+                "connection_status": "Offline",
+                "battery_status": 50,
+            },
+        )
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["connection_status"] == "Offline"
+        assert body["battery_status"] == 50
+        assert body["serial_number"] == "SN-UPD-001"
+
+    async def test_update_device_not_found(self, client):
+        resp = await client.put(
+            "/api/v1/devices/999",
+            json={"connection_status": "Offline"},
+        )
+        assert resp.status_code == 404
+        assert resp.json()["detail"] == "Device not found"
+
+    async def test_update_device_ext_attributes(self, client, db_session):
+        from app.devices.repositories import DeviceRepository
+        from app.extension_attributes.repositories import ExtensionAttributeRepository
+        from app.extension_attributes.schemas import ExtensionAttributeCreate
+
+        ea_repo = ExtensionAttributeRepository(db_session)
+        ea = await ea_repo.create(
+            ExtensionAttributeCreate(
+                name="custom_field", data_type="string", input_type="Text field", created_by=1
+            )
+        )
+
+        repo = DeviceRepository(db_session)
+        device = await repo.create(
+            {
+                "name": "MacBook",
+                "serial_number": "SN-EXT-001",
+                "os_version": "15.0",
+                "connection_status": "Online",
+                "enrollment_status": "Enrolled",
+            }
+        )
+
+        resp = await client.put(
+            f"/api/v1/devices/{device.id}",
+            json={
+                "extension_attributes": [
+                    {
+                        "extension_attribute_id": ea.id,
+                        "extension_attribute_name": "custom_field",
+                        "value": "test_value",
+                    },
+                ],
+            },
+        )
+        assert resp.status_code == 200
+
+        get_resp = await client.get(f"/api/v1/devices/{device.id}")
+        assert get_resp.status_code == 200
+
+    async def test_update_device_clear_ext_attributes(self, client, db_session):
+        from app.devices.repositories import DeviceRepository
+        from app.extension_attributes.repositories import ExtensionAttributeRepository
+        from app.extension_attributes.schemas import ExtensionAttributeCreate
+
+        ea_repo = ExtensionAttributeRepository(db_session)
+        ea = await ea_repo.create(
+            ExtensionAttributeCreate(
+                name="custom_field", data_type="string", input_type="Text field", created_by=1
+            )
+        )
+
+        repo = DeviceRepository(db_session)
+        device = await repo.create(
+            {
+                "name": "MacBook",
+                "serial_number": "SN-CLR-001",
+                "os_version": "15.0",
+                "connection_status": "Online",
+                "enrollment_status": "Enrolled",
+            }
+        )
+        await repo.update(
+            device.id,
+            DeviceUpdate(
+                extension_attributes=[
+                    {
+                        "extension_attribute_id": ea.id,
+                        "extension_attribute_name": "custom_field",
+                        "value": "val1",
+                    },
+                ],
+            ),
+        )
+
+        resp = await client.put(
+            f"/api/v1/devices/{device.id}",
+            json={"extension_attributes": []},
+        )
+        assert resp.status_code == 200
+
+        get_resp = await client.get(f"/api/v1/devices/{device.id}")
+        assert get_resp.status_code == 200
+        assert get_resp.json()["extension_attributes"] == []
 
 
 class TestCommandsAPI:

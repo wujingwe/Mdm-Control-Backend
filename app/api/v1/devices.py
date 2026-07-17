@@ -4,7 +4,7 @@ from app.commands.schemas import CommandCreate, CommandResponse
 from app.commands.services import CommandService
 from app.common.schemas import Message, PaginatedResponse
 from app.dependencies import get_command_service, get_device_service
-from app.devices.schemas import DeviceResponse
+from app.devices.schemas import DeviceResponse, DeviceUpdate
 from app.devices.services import DeviceService
 
 router = APIRouter(prefix="/devices", tags=["Devices"])
@@ -31,6 +31,20 @@ async def get_device(
     service: DeviceService = Depends(get_device_service),
 ) -> DeviceResponse:
     device = await service.get_device(device_id)
+    if not device:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Device not found"
+        )
+    return DeviceResponse.model_validate(device)
+
+
+@router.put("/{device_id}", response_model=DeviceResponse)
+async def update_device(
+    device_id: int,
+    data: DeviceUpdate,
+    service: DeviceService = Depends(get_device_service),
+) -> DeviceResponse:
+    device = await service.update_device(device_id, data)
     if not device:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Device not found"

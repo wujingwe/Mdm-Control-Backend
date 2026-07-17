@@ -101,6 +101,56 @@
             }
           }
         }
+      },
+      "put": {
+        "tags": [
+          "Devices"
+        ],
+        "summary": "Update Device",
+        "operationId": "update_device_api_v1_devices__device_id__put",
+        "parameters": [
+          {
+            "name": "device_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Device Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeviceUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeviceResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/v1/devices/{device_id}/commands": {
@@ -2486,6 +2536,52 @@
         ],
         "title": "CriteriaType"
       },
+      "DeviceExtensionAttributeCreate": {
+        "properties": {
+          "extension_attribute_id": {
+            "type": "integer",
+            "title": "Extension Attribute Id"
+          },
+          "extension_attribute_name": {
+            "type": "string",
+            "title": "Extension Attribute Name"
+          },
+          "value": {
+            "type": "string",
+            "title": "Value"
+          }
+        },
+        "type": "object",
+        "required": [
+          "extension_attribute_id",
+          "extension_attribute_name",
+          "value"
+        ],
+        "title": "DeviceExtensionAttributeCreate"
+      },
+      "DeviceExtensionAttributeResponse": {
+        "properties": {
+          "extension_attribute_id": {
+            "type": "integer",
+            "title": "Extension Attribute Id"
+          },
+          "extension_attribute_name": {
+            "type": "string",
+            "title": "Extension Attribute Name"
+          },
+          "value": {
+            "type": "string",
+            "title": "Value"
+          }
+        },
+        "type": "object",
+        "required": [
+          "extension_attribute_id",
+          "extension_attribute_name",
+          "value"
+        ],
+        "title": "DeviceExtensionAttributeResponse"
+      },
       "DeviceResponse": {
         "properties": {
           "id": {
@@ -2612,6 +2708,20 @@
               }
             ],
             "title": "Certificates"
+          },
+          "extension_attributes": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/DeviceExtensionAttributeResponse"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Extension Attributes"
           }
         },
         "type": "object",
@@ -2627,6 +2737,125 @@
           "last_enrolled_at"
         ],
         "title": "DeviceResponse"
+      },
+      "DeviceUpdate": {
+        "properties": {
+          "connection_status": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ConnectionStatus"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "enrollment_status": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EnrollmentStatus"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "battery_status": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Battery Status"
+          },
+          "total_storage": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total Storage"
+          },
+          "available_storage": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Available Storage"
+          },
+          "total_memory": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total Memory"
+          },
+          "available_memory": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Available Memory"
+          },
+          "network": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Network"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "certificates": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/Certificate"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Certificates"
+          },
+          "extension_attributes": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/DeviceExtensionAttributeCreate"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Extension Attributes"
+          }
+        },
+        "type": "object",
+        "title": "DeviceUpdate"
       },
       "EnrollmentStatus": {
         "type": "string",

@@ -253,3 +253,71 @@ class TestCommonSchemas:
     def test_message(self):
         msg = Message(detail="OK")
         assert msg.detail == "OK"
+
+
+class TestDeviceUpdateSchema:
+    def test_update_all_fields(self):
+        from app.devices.schemas import DeviceUpdate
+
+        data = DeviceUpdate(
+            connection_status="Offline",
+            enrollment_status="Non-compliant",
+            battery_status=50,
+            total_storage=256,
+            available_storage=128,
+            total_memory=16,
+            available_memory=8,
+            network=Network(wifi=Wifi(ssid="Home")),
+            certificates=[Certificate(common_name="test.com")],
+            extension_attributes=[
+                {
+                    "extension_attribute_id": 1,
+                    "extension_attribute_name": "custom_field",
+                    "value": "test_value",
+                },
+            ],
+        )
+        assert data.connection_status == "Offline"
+        assert data.enrollment_status == "Non-compliant"
+        assert data.battery_status == 50
+        assert data.network.wifi.ssid == "Home"
+        assert len(data.certificates) == 1
+        assert len(data.extension_attributes) == 1
+
+    def test_update_partial(self):
+        from app.devices.schemas import DeviceUpdate
+
+        data = DeviceUpdate(connection_status="Online")
+        dumped = data.model_dump(exclude_unset=True)
+        assert dumped == {"connection_status": "Online"}
+
+    def test_update_empty(self):
+        from app.devices.schemas import DeviceUpdate
+
+        data = DeviceUpdate()
+        assert data.model_dump(exclude_unset=True) == {}
+
+    def test_update_ext_attrs_optional(self):
+        from app.devices.schemas import DeviceUpdate
+
+        data = DeviceUpdate()
+        assert data.extension_attributes is None
+
+    def test_update_ext_attrs_empty_list(self):
+        from app.devices.schemas import DeviceUpdate
+
+        data = DeviceUpdate(extension_attributes=[])
+        assert data.extension_attributes == []
+
+    def test_update_ext_attrs_missing_name(self):
+        from pydantic import ValidationError
+        import pytest
+
+        from app.devices.schemas import DeviceUpdate
+
+        with pytest.raises(ValidationError):
+            DeviceUpdate(
+                extension_attributes=[
+                    {"extension_attribute_id": 1, "value": "test"}
+                ]
+            )
