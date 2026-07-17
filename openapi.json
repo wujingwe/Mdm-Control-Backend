@@ -2902,8 +2902,8 @@
               "$ref": "#/components/schemas/Criteria"
             },
             "type": "array",
-            "title": "Criteria",
-            "default": []
+            "minItems": 1,
+            "title": "Criteria"
           },
           "created_by": {
             "type": "integer",
@@ -2913,6 +2913,7 @@
         "type": "object",
         "required": [
           "name",
+          "criteria",
           "created_by"
         ],
         "title": "InventorySearchCreate"
@@ -3504,8 +3505,8 @@
               "$ref": "#/components/schemas/Criteria"
             },
             "type": "array",
-            "title": "Criteria",
-            "default": []
+            "minItems": 1,
+            "title": "Criteria"
           },
           "created_by": {
             "type": "integer",
@@ -3515,7 +3516,8 @@
         },
         "type": "object",
         "required": [
-          "name"
+          "name",
+          "criteria"
         ],
         "title": "SmartGroupCreate"
       },

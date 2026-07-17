@@ -45,7 +45,9 @@ class TestUserService:
         fake = MagicMock()
         repo.create = AsyncMock(return_value=fake)
         svc = UserService(repo)
-        result = await svc.create_user(UserCreate(email="a@b.com", name="test", password="secret123"))
+        result = await svc.create_user(
+            UserCreate(email="a@b.com", name="test", password="secret123")
+        )
         assert result is fake
         create_arg = repo.create.call_args[0][0]
         assert create_arg.email == "a@b.com"

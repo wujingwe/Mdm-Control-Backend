@@ -4,31 +4,58 @@ class TestStaticGroupsAPI:
     async def test_crud_flow(self, client, db_session):
         from app.devices.models import Device
 
-        dev1 = Device(name="D1", serial_number="SN001", os_version="14", connection_status="Online", enrollment_status="Compliant")
-        dev2 = Device(name="D2", serial_number="SN002", os_version="14", connection_status="Online", enrollment_status="Compliant")
-        dev3 = Device(name="D3", serial_number="SN003", os_version="14", connection_status="Online", enrollment_status="Compliant")
+        dev1 = Device(
+            name="D1",
+            serial_number="SN001",
+            os_version="14",
+            connection_status="Online",
+            enrollment_status="Compliant",
+        )
+        dev2 = Device(
+            name="D2",
+            serial_number="SN002",
+            os_version="14",
+            connection_status="Online",
+            enrollment_status="Compliant",
+        )
+        dev3 = Device(
+            name="D3",
+            serial_number="SN003",
+            os_version="14",
+            connection_status="Online",
+            enrollment_status="Compliant",
+        )
         db_session.add_all([dev1, dev2, dev3])
         await db_session.commit()
 
-        create = await client.post(self.BASE, json={
-            "name": "Static Group A",
-            "description": "desc",
-            "device_serial_numbers": ["SN001", "SN002"],
-        })
+        create = await client.post(
+            self.BASE,
+            json={
+                "name": "Static Group A",
+                "description": "desc",
+                "device_serial_numbers": ["SN001", "SN002"],
+            },
+        )
         assert create.status_code == 201
         gid = create.json()["id"]
         assert create.json()["name"] == "Static Group A"
-        assert {d["serial_number"] for d in create.json()["devices"]} == {"SN001", "SN002"}
+        assert {d["serial_number"] for d in create.json()["devices"]} == {
+            "SN001",
+            "SN002",
+        }
 
         get = await client.get(f"{self.BASE}/{gid}")
         assert get.status_code == 200
         assert get.json()["name"] == "Static Group A"
         assert {d["serial_number"] for d in get.json()["devices"]} == {"SN001", "SN002"}
 
-        update = await client.put(f"{self.BASE}/{gid}", json={
-            "name": "Static Group B",
-            "device_serial_numbers": ["SN003"],
-        })
+        update = await client.put(
+            f"{self.BASE}/{gid}",
+            json={
+                "name": "Static Group B",
+                "device_serial_numbers": ["SN003"],
+            },
+        )
         assert update.status_code == 200
         assert update.json()["name"] == "Static Group B"
         assert [d["serial_number"] for d in update.json()["devices"]] == ["SN003"]

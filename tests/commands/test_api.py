@@ -25,9 +25,12 @@ class TestCommandsAPI:
         mock_producer.publish_device_command = AsyncMock(return_value="msg-123")
         device = await _create_device(client, db_session)
 
-        create = await client.post(f"{self.BASE}/{device.id}/commands", json={
-            "command_type": "LOCK",
-        })
+        create = await client.post(
+            f"{self.BASE}/{device.id}/commands",
+            json={
+                "command_type": "LOCK",
+            },
+        )
         assert create.status_code == 201
         cid = create.json()["id"]
         assert create.json()["status"] == "SENT"
@@ -45,9 +48,12 @@ class TestCommandsAPI:
         mock_producer.publish_device_command = AsyncMock(return_value="msg-123")
         device = await _create_device(client, db_session)
 
-        create = await client.post(f"{self.BASE}/{device.id}/commands", json={
-            "command_type": "LOCK",
-        })
+        create = await client.post(
+            f"{self.BASE}/{device.id}/commands",
+            json={
+                "command_type": "LOCK",
+            },
+        )
         cid = create.json()["id"]
         resp = await client.delete(f"{self.BASE}/{device.id}/commands/{cid}")
         assert resp.status_code == 200

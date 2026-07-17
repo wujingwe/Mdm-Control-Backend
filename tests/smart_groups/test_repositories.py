@@ -1,11 +1,17 @@
 from app.smart_groups.repositories import SmartGroupRepository
 from app.smart_groups.schemas import SmartGroupCreate, SmartGroupUpdate
 
+_CRITERIA = [
+    {"field": "os_version", "operator": "is", "type": "string", "value": "Android 14"},
+]
+
 
 class TestSmartGroupRepository:
     async def test_crud(self, db_session):
         repo = SmartGroupRepository(db_session)
-        created = await repo.create(SmartGroupCreate(name="Group A", created_by=1))
+        created = await repo.create(
+            SmartGroupCreate(name="Group A", criteria=_CRITERIA, created_by=1)
+        )
         assert created.id is not None
 
         found = await repo.get_by_id(created.id)
@@ -18,7 +24,9 @@ class TestSmartGroupRepository:
 
     async def test_delete(self, db_session):
         repo = SmartGroupRepository(db_session)
-        created = await repo.create(SmartGroupCreate(name="G", created_by=1))
+        created = await repo.create(
+            SmartGroupCreate(name="G", criteria=_CRITERIA, created_by=1)
+        )
         assert await repo.delete(created.id) is True
         assert await repo.get_by_id(created.id) is None
 
@@ -80,12 +88,6 @@ class TestSmartGroupRepository:
         assert found.criteria[0]["field"] == "os_version"
         assert found.criteria[1]["field"] == "battery_status"
         assert found.criteria[1]["left_parentheses"] is True
-
-    async def test_create_without_criteria(self, db_session):
-        repo = SmartGroupRepository(db_session)
-        created = await repo.create(SmartGroupCreate(name="No Criteria", created_by=1))
-        found = await repo.get_by_id(created.id)
-        assert found.criteria is None or found.criteria == []
 
     async def test_update_criteria(self, db_session):
         repo = SmartGroupRepository(db_session)

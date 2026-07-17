@@ -1,7 +1,10 @@
 from unittest.mock import AsyncMock, MagicMock
 import pytest
 from app.extension_attributes.services import ExtensionAttributeService
-from app.extension_attributes.schemas import ExtensionAttributeCreate, ExtensionAttributeUpdate
+from app.extension_attributes.schemas import (
+    ExtensionAttributeCreate,
+    ExtensionAttributeUpdate,
+)
 
 
 class TestExtensionAttributeService:
@@ -45,7 +48,11 @@ class TestExtensionAttributeService:
         fake = MagicMock()
         repo.create = AsyncMock(return_value=fake)
         svc = ExtensionAttributeService(repo)
-        result = await svc.create_attribute(ExtensionAttributeCreate(name="ext1", data_type="string", input_type="Text field", created_by=1))
+        result = await svc.create_attribute(
+            ExtensionAttributeCreate(
+                name="ext1", data_type="string", input_type="Text field", created_by=1
+            )
+        )
         assert result is fake
 
     async def test_update_attribute(self, repo):

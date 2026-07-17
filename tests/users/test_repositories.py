@@ -5,12 +5,14 @@ from app.users.schemas import UserCreateDB, UserUpdateDB
 class TestUserRepository:
     async def test_crud(self, db_session):
         repo = UserRepository(db_session)
-        created = await repo.create(UserCreateDB(
-            email="j@example.com",
-            name="jdoe",
-            password_hash="hashed_secret",
-            permissions=frozenset({"admin"}),
-        ))
+        created = await repo.create(
+            UserCreateDB(
+                email="j@example.com",
+                name="jdoe",
+                password_hash="hashed_secret",
+                permissions=frozenset({"admin"}),
+            )
+        )
         assert created.id is not None
         assert created.name == "jdoe"
 
@@ -28,10 +30,14 @@ class TestUserRepository:
 
     async def test_update(self, db_session):
         repo = UserRepository(db_session)
-        created = await repo.create(UserCreateDB(
-            email="upd@example.com", name="orig",
-            password_hash="h", permissions=frozenset({"viewer"}),
-        ))
+        created = await repo.create(
+            UserCreateDB(
+                email="upd@example.com",
+                name="orig",
+                password_hash="h",
+                permissions=frozenset({"viewer"}),
+            )
+        )
         updated = await repo.update(created.id, UserUpdateDB(name="updated"))
         assert updated is not None
         assert updated.name == "updated"
@@ -43,10 +49,14 @@ class TestUserRepository:
     async def test_count(self, db_session):
         repo = UserRepository(db_session)
         assert await repo.count() == 0
-        await repo.create(UserCreateDB(
-            email="c@e.com", name="c",
-            password_hash="h", permissions=frozenset({"viewer"}),
-        ))
+        await repo.create(
+            UserCreateDB(
+                email="c@e.com",
+                name="c",
+                password_hash="h",
+                permissions=frozenset({"viewer"}),
+            )
+        )
         assert await repo.count() == 1
 
     async def test_list_pagination(self, db_session):

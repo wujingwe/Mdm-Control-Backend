@@ -2,10 +2,13 @@ class TestProfilesAPI:
     BASE = "/api/v1/profiles"
 
     async def test_crud_flow(self, client):
-        create = await client.post(self.BASE, json={
-            "name": "Profile1",
-            "description": "desc",
-        })
+        create = await client.post(
+            self.BASE,
+            json={
+                "name": "Profile1",
+                "description": "desc",
+            },
+        )
         assert create.status_code == 201
         pid = create.json()["id"]
         assert create.json()["name"] == "Profile1"
@@ -33,9 +36,12 @@ class TestProfilesAPI:
     async def test_set_scope(self, client):
         create = await client.post(self.BASE, json={"name": "P"})
         pid = create.json()["id"]
-        resp = await client.put(f"{self.BASE}/{pid}/scope", json=[
-            {"target_type": "ALL_DEVICES", "target_id": 0},
-        ])
+        resp = await client.put(
+            f"{self.BASE}/{pid}/scope",
+            json=[
+                {"target_type": "ALL_DEVICES", "target_id": 0},
+            ],
+        )
         assert resp.status_code == 200
         assert len(resp.json()["scope"]) == 1
 

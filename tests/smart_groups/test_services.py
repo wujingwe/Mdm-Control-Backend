@@ -33,7 +33,13 @@ class TestSmartGroupService:
         fake = MagicMock()
         repo.create = AsyncMock(return_value=fake)
         svc = SmartGroupService(repo)
-        result = await svc.create_group(SmartGroupCreate(name="G", criteria=[], created_by=1))
+        result = await svc.create_group(
+            SmartGroupCreate(
+                name="G",
+                criteria=[{"field": "os_version", "operator": "is", "type": "string", "value": "Android 14"}],
+                created_by=1,
+            )
+        )
         assert result is fake
 
     async def test_update_group(self, repo):

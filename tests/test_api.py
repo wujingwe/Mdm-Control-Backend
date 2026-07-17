@@ -16,16 +16,19 @@ class TestDevicesAPI:
 
     async def test_device_response_shape(self, client, db_session):
         from app.devices.repositories import DeviceRepository
+
         repo = DeviceRepository(db_session)
-        device = await repo.create({
-            "name": "MacBook",
-            "serial_number": "SN-API-001",
-            "os_version": "15.0",
-            "connection_status": "Online",
-            "enrollment_status": "Enrolled",
-            "network": Network(wifi=Wifi(ssid="Office")),
-            "certificates": [Certificate(common_name="example.com")],
-        })
+        device = await repo.create(
+            {
+                "name": "MacBook",
+                "serial_number": "SN-API-001",
+                "os_version": "15.0",
+                "connection_status": "Online",
+                "enrollment_status": "Enrolled",
+                "network": Network(wifi=Wifi(ssid="Office")),
+                "certificates": [Certificate(common_name="example.com")],
+            }
+        )
         resp = await client.get(f"/api/v1/devices/{device.id}")
         assert resp.status_code == 200
         body = resp.json()
@@ -43,10 +46,16 @@ class TestSmartGroupsAPI:
     BASE = "/api/v1/smart-groups"
 
     async def test_crud_flow(self, client):
-        create = await client.post(self.BASE, json={
-            "name": "Smart Group A",
-            "description": "desc",
-        })
+        create = await client.post(
+            self.BASE,
+            json={
+                "name": "Smart Group A",
+                "description": "desc",
+                "criteria": [
+                    {"field": "os_version", "operator": "is", "type": "string", "value": "Android 14"},
+                ],
+            },
+        )
         assert create.status_code == 201
         gid = create.json()["id"]
         assert create.json()["name"] == "Smart Group A"
@@ -66,14 +75,26 @@ class TestSmartGroupsAPI:
         assert get2.status_code == 404
 
     async def test_list(self, client):
-        await client.post(self.BASE, json={"name": "SG1"})
+        await client.post(
+            self.BASE,
+            json={
+                "name": "SG1",
+                "criteria": [{"field": "os_version", "operator": "is", "type": "string", "value": "Android 14"}],
+            },
+        )
         resp = await client.get(self.BASE)
         data = resp.json()
         assert data["total"] >= 1 and len(data["items"]) >= 1
         assert all(g["name"] is not None for g in data["items"])
 
     async def test_update_empty_body(self, client):
-        create = await client.post(self.BASE, json={"name": "G"})
+        create = await client.post(
+            self.BASE,
+            json={
+                "name": "G",
+                "criteria": [{"field": "os_version", "operator": "is", "type": "string", "value": "Android 14"}],
+            },
+        )
         gid = create.json()["id"]
         resp = await client.put(f"{self.BASE}/{gid}", json={})
         assert resp.status_code == 200
@@ -85,31 +106,58 @@ class TestStaticGroupsAPI:
     async def test_crud_flow(self, client, db_session):
         from app.devices.models import Device
 
-        dev1 = Device(name="D1", serial_number="SN001", os_version="14", connection_status="Online", enrollment_status="Compliant")
-        dev2 = Device(name="D2", serial_number="SN002", os_version="14", connection_status="Online", enrollment_status="Compliant")
-        dev3 = Device(name="D3", serial_number="SN003", os_version="14", connection_status="Online", enrollment_status="Compliant")
+        dev1 = Device(
+            name="D1",
+            serial_number="SN001",
+            os_version="14",
+            connection_status="Online",
+            enrollment_status="Compliant",
+        )
+        dev2 = Device(
+            name="D2",
+            serial_number="SN002",
+            os_version="14",
+            connection_status="Online",
+            enrollment_status="Compliant",
+        )
+        dev3 = Device(
+            name="D3",
+            serial_number="SN003",
+            os_version="14",
+            connection_status="Online",
+            enrollment_status="Compliant",
+        )
         db_session.add_all([dev1, dev2, dev3])
         await db_session.commit()
 
-        create = await client.post(self.BASE, json={
-            "name": "Static Group A",
-            "description": "desc",
-            "device_serial_numbers": ["SN001", "SN002"],
-        })
+        create = await client.post(
+            self.BASE,
+            json={
+                "name": "Static Group A",
+                "description": "desc",
+                "device_serial_numbers": ["SN001", "SN002"],
+            },
+        )
         assert create.status_code == 201
         gid = create.json()["id"]
         assert create.json()["name"] == "Static Group A"
-        assert {d["serial_number"] for d in create.json()["devices"]} == {"SN001", "SN002"}
+        assert {d["serial_number"] for d in create.json()["devices"]} == {
+            "SN001",
+            "SN002",
+        }
 
         get = await client.get(f"{self.BASE}/{gid}")
         assert get.status_code == 200
         assert get.json()["name"] == "Static Group A"
         assert {d["serial_number"] for d in get.json()["devices"]} == {"SN001", "SN002"}
 
-        update = await client.put(f"{self.BASE}/{gid}", json={
-            "name": "Static Group B",
-            "device_serial_numbers": ["SN003"],
-        })
+        update = await client.put(
+            f"{self.BASE}/{gid}",
+            json={
+                "name": "Static Group B",
+                "device_serial_numbers": ["SN003"],
+            },
+        )
         assert update.status_code == 200
         assert update.json()["name"] == "Static Group B"
         assert [d["serial_number"] for d in update.json()["devices"]] == ["SN003"]
@@ -122,7 +170,13 @@ class TestStaticGroupsAPI:
 
     async def test_list_distinct(self, client):
         await client.post(self.BASE, json={"name": "Static1"})
-        await client.post("/api/v1/smart-groups", json={"name": "Smart1"})
+        await client.post(
+            "/api/v1/smart-groups",
+            json={
+                "name": "Smart1",
+                "criteria": [{"field": "os_version", "operator": "is", "type": "string", "value": "Android 14"}],
+            },
+        )
         resp = await client.get(self.BASE)
         data = resp.json()
         assert data["total"] >= 1

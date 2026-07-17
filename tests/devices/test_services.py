@@ -56,9 +56,11 @@ class TestDeviceService:
         mock_result = MagicMock()
         mock_result.scalars.return_value.all.return_value = [device]
         repo.db.execute = AsyncMock(return_value=mock_result)
-        result = await svc.search_devices(MagicMock(
-            criteria=[{"field": "status", "operator": "is", "value": "Online"}],
-            conjunction="AND",
-        ))
+        result = await svc.search_devices(
+            MagicMock(
+                criteria=[{"field": "status", "operator": "is", "value": "Online"}],
+                conjunction="AND",
+            )
+        )
         assert len(result) == 1
         assert result[0].name == "MacBook"

@@ -59,7 +59,9 @@ class TestCertificateListType:
 
     def test_result_valid_list(self) -> None:
         t = CertificateListType()
-        result = t.process_result_value([{"common_name": "a.com"}, {"common_name": "b.com"}], None)
+        result = t.process_result_value(
+            [{"common_name": "a.com"}, {"common_name": "b.com"}], None
+        )
         assert result is not None
         assert len(result) == 2
         assert isinstance(result[0], Certificate)

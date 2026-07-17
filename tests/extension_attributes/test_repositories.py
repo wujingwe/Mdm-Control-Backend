@@ -1,23 +1,34 @@
 import pytest
 from app.core.exceptions import ConflictError
 from app.extension_attributes.repositories import ExtensionAttributeRepository
-from app.extension_attributes.schemas import ExtensionAttributeCreate, ExtensionAttributeUpdate
+from app.extension_attributes.schemas import (
+    ExtensionAttributeCreate,
+    ExtensionAttributeUpdate,
+)
 from app.common.enums import ExtensionDataType, ExtensionInputType
 
 
 class TestExtensionAttributeRepository:
     async def test_create(self, db_session):
         repo = ExtensionAttributeRepository(db_session)
-        created = await repo.create(ExtensionAttributeCreate(
-            name="ext1", data_type=ExtensionDataType.STRING, input_type=ExtensionInputType.TEXT_FIELD, created_by=1,
-        ))
+        created = await repo.create(
+            ExtensionAttributeCreate(
+                name="ext1",
+                data_type=ExtensionDataType.STRING,
+                input_type=ExtensionInputType.TEXT_FIELD,
+                created_by=1,
+            )
+        )
         assert created.id is not None
         assert created.name == "ext1"
 
     async def test_create_unique_name(self, db_session):
         repo = ExtensionAttributeRepository(db_session)
         data = ExtensionAttributeCreate(
-            name="ext1", data_type=ExtensionDataType.STRING, input_type=ExtensionInputType.TEXT_FIELD, created_by=1,
+            name="ext1",
+            data_type=ExtensionDataType.STRING,
+            input_type=ExtensionInputType.TEXT_FIELD,
+            created_by=1,
         )
         await repo.create(data)
         with pytest.raises(ConflictError):
@@ -25,7 +36,11 @@ class TestExtensionAttributeRepository:
 
     async def test_list(self, db_session):
         repo = ExtensionAttributeRepository(db_session)
-        base = dict(data_type=ExtensionDataType.STRING, input_type=ExtensionInputType.TEXT_FIELD, created_by=1)
+        base = dict(
+            data_type=ExtensionDataType.STRING,
+            input_type=ExtensionInputType.TEXT_FIELD,
+            created_by=1,
+        )
         await repo.create(ExtensionAttributeCreate(name="ext1", **base))
         await repo.create(ExtensionAttributeCreate(name="ext2", **base))
         items = await repo.list_all()
@@ -33,7 +48,11 @@ class TestExtensionAttributeRepository:
 
     async def test_list_pagination(self, db_session):
         repo = ExtensionAttributeRepository(db_session)
-        base = dict(data_type=ExtensionDataType.STRING, input_type=ExtensionInputType.TEXT_FIELD, created_by=1)
+        base = dict(
+            data_type=ExtensionDataType.STRING,
+            input_type=ExtensionInputType.TEXT_FIELD,
+            created_by=1,
+        )
         for i in range(5):
             await repo.create(ExtensionAttributeCreate(name=f"ext{i}", **base))
         items = await repo.list_all(skip=1, limit=2)
@@ -41,9 +60,14 @@ class TestExtensionAttributeRepository:
 
     async def test_get_by_id(self, db_session):
         repo = ExtensionAttributeRepository(db_session)
-        created = await repo.create(ExtensionAttributeCreate(
-            name="ext1", data_type=ExtensionDataType.STRING, input_type=ExtensionInputType.TEXT_FIELD, created_by=1,
-        ))
+        created = await repo.create(
+            ExtensionAttributeCreate(
+                name="ext1",
+                data_type=ExtensionDataType.STRING,
+                input_type=ExtensionInputType.TEXT_FIELD,
+                created_by=1,
+            )
+        )
         found = await repo.get_by_id(created.id)
         assert found is not None
         assert found.name == "ext1"
@@ -54,9 +78,14 @@ class TestExtensionAttributeRepository:
 
     async def test_update(self, db_session):
         repo = ExtensionAttributeRepository(db_session)
-        created = await repo.create(ExtensionAttributeCreate(
-            name="ext1", data_type=ExtensionDataType.STRING, input_type=ExtensionInputType.TEXT_FIELD, created_by=1,
-        ))
+        created = await repo.create(
+            ExtensionAttributeCreate(
+                name="ext1",
+                data_type=ExtensionDataType.STRING,
+                input_type=ExtensionInputType.TEXT_FIELD,
+                created_by=1,
+            )
+        )
         updated = await repo.update(created.id, ExtensionAttributeUpdate(name="ext2"))
         assert updated is not None
         assert updated.name == "ext2"
@@ -67,9 +96,14 @@ class TestExtensionAttributeRepository:
 
     async def test_delete(self, db_session):
         repo = ExtensionAttributeRepository(db_session)
-        created = await repo.create(ExtensionAttributeCreate(
-            name="ext1", data_type=ExtensionDataType.STRING, input_type=ExtensionInputType.TEXT_FIELD, created_by=1,
-        ))
+        created = await repo.create(
+            ExtensionAttributeCreate(
+                name="ext1",
+                data_type=ExtensionDataType.STRING,
+                input_type=ExtensionInputType.TEXT_FIELD,
+                created_by=1,
+            )
+        )
         assert await repo.delete(created.id) is True
         assert await repo.get_by_id(created.id) is None
 
@@ -80,7 +114,12 @@ class TestExtensionAttributeRepository:
     async def test_count(self, db_session):
         repo = ExtensionAttributeRepository(db_session)
         assert await repo.count() == 0
-        await repo.create(ExtensionAttributeCreate(
-            name="ext1", data_type=ExtensionDataType.STRING, input_type=ExtensionInputType.TEXT_FIELD, created_by=1,
-        ))
+        await repo.create(
+            ExtensionAttributeCreate(
+                name="ext1",
+                data_type=ExtensionDataType.STRING,
+                input_type=ExtensionInputType.TEXT_FIELD,
+                created_by=1,
+            )
+        )
         assert await repo.count() == 1

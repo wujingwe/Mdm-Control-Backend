@@ -1,6 +1,11 @@
 from app.commands.repositories import CommandRepository
 from app.commands.schemas import CommandCreate
-from app.common.enums import CommandType, CommandStatus, ConnectionStatus, EnrollmentStatus
+from app.common.enums import (
+    CommandType,
+    CommandStatus,
+    ConnectionStatus,
+    EnrollmentStatus,
+)
 from app.devices.models import Device
 
 
@@ -48,8 +53,12 @@ class TestCommandRepository:
     async def test_list_for_device(self, db_session):
         device = await _create_device(db_session)
         repo = CommandRepository(db_session)
-        await repo.create(device_id=device.id, data=CommandCreate(command_type=CommandType.LOCK))
-        await repo.create(device_id=device.id, data=CommandCreate(command_type=CommandType.WIPE))
+        await repo.create(
+            device_id=device.id, data=CommandCreate(command_type=CommandType.LOCK)
+        )
+        await repo.create(
+            device_id=device.id, data=CommandCreate(command_type=CommandType.WIPE)
+        )
         items = await repo.list_for_device(device.id)
         assert len(items) == 2
 
@@ -70,7 +79,9 @@ class TestCommandRepository:
             device_id=device.id,
             data=CommandCreate(command_type=CommandType.LOCK),
         )
-        updated = await repo.update_status(created.id, CommandStatus.COMPLETED, result_message="done")
+        updated = await repo.update_status(
+            created.id, CommandStatus.COMPLETED, result_message="done"
+        )
         assert updated.status == CommandStatus.COMPLETED
         assert updated.result_message == "done"
 
@@ -88,11 +99,15 @@ class TestCommandRepository:
         device = await _create_device(db_session)
         repo = CommandRepository(db_session)
         assert await repo.count_all() == 0
-        await repo.create(device_id=device.id, data=CommandCreate(command_type=CommandType.LOCK))
+        await repo.create(
+            device_id=device.id, data=CommandCreate(command_type=CommandType.LOCK)
+        )
         assert await repo.count_all() == 1
 
     async def test_count_for_device(self, db_session):
         device = await _create_device(db_session)
         repo = CommandRepository(db_session)
-        await repo.create(device_id=device.id, data=CommandCreate(command_type=CommandType.LOCK))
+        await repo.create(
+            device_id=device.id, data=CommandCreate(command_type=CommandType.LOCK)
+        )
         assert await repo.count_for_device(device.id) == 1

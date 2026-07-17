@@ -36,7 +36,9 @@ class TestDeviceRepository:
     async def test_update(self, db_session):
         repo = DeviceRepository(db_session)
         created = await repo.create(_make_device_data())
-        updated = await repo.update(created.id, {"name": "New", "connection_status": "Offline"})
+        updated = await repo.update(
+            created.id, {"name": "New", "connection_status": "Offline"}
+        )
         assert updated is not None
         assert updated.name == "New"
         assert updated.connection_status == "Offline"
@@ -86,8 +88,13 @@ class TestDeviceRepository:
     async def test_update_network(self, db_session):
         repo = DeviceRepository(db_session)
         created = await repo.create(_make_device_data())
-        updated = await repo.update(created.id, {
-            "network": Network(wifi=Wifi(ssid="Updated"), cellular=Cellular(carrier="Verizon")),
-        })
+        updated = await repo.update(
+            created.id,
+            {
+                "network": Network(
+                    wifi=Wifi(ssid="Updated"), cellular=Cellular(carrier="Verizon")
+                ),
+            },
+        )
         assert updated.network.wifi.ssid == "Updated"
         assert updated.network.cellular.carrier == "Verizon"

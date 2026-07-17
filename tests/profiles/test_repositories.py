@@ -11,7 +11,9 @@ from app.common.enums import TargetType, AssignmentSource, AssignmentStatus
 class TestProfileRepository:
     async def test_create_profile(self, db_session):
         repo = ProfileRepository(db_session)
-        created = await repo.create(ProfileCreate(name="Prod", description="desc", created_by=1))
+        created = await repo.create(
+            ProfileCreate(name="Prod", description="desc", created_by=1)
+        )
         assert created.id is not None
         assert created.name == "Prod"
 
@@ -87,8 +89,12 @@ class TestProfileRepository:
     async def test_set_scope_replaces(self, db_session):
         repo = ProfileRepository(db_session)
         profile = await repo.create(ProfileCreate(name="P", created_by=1))
-        await repo.set_scope(profile.id, [ScopeTarget(target_type=TargetType.DEVICE, target_id=1)])
-        await repo.set_scope(profile.id, [ScopeTarget(target_type=TargetType.SMART_GROUP, target_id=2)])
+        await repo.set_scope(
+            profile.id, [ScopeTarget(target_type=TargetType.DEVICE, target_id=1)]
+        )
+        await repo.set_scope(
+            profile.id, [ScopeTarget(target_type=TargetType.SMART_GROUP, target_id=2)]
+        )
 
         found = await repo.get_scope(profile.id)
         assert len(found) == 1
@@ -98,8 +104,11 @@ class TestProfileRepository:
         repo = ProfileRepository(db_session)
         profile = await repo.create(ProfileCreate(name="P", created_by=1))
         data = AssignmentUpsert(
-            profile_id=profile.id, device_id=100,
-            source=AssignmentSource.DIRECT, status=AssignmentStatus.PENDING, profile_version=1,
+            profile_id=profile.id,
+            device_id=100,
+            source=AssignmentSource.DIRECT,
+            status=AssignmentStatus.PENDING,
+            profile_version=1,
         )
         result = await repo.upsert_assignment(data)
         assert result.id is not None
@@ -108,14 +117,20 @@ class TestProfileRepository:
         repo = ProfileRepository(db_session)
         profile = await repo.create(ProfileCreate(name="P", created_by=1))
         data = AssignmentUpsert(
-            profile_id=profile.id, device_id=100,
-            source=AssignmentSource.DIRECT, status=AssignmentStatus.PENDING, profile_version=1,
+            profile_id=profile.id,
+            device_id=100,
+            source=AssignmentSource.DIRECT,
+            status=AssignmentStatus.PENDING,
+            profile_version=1,
         )
         await repo.upsert_assignment(data)
 
         data2 = AssignmentUpsert(
-            profile_id=profile.id, device_id=100,
-            source=AssignmentSource.DIRECT, status=AssignmentStatus.APPLIED, profile_version=1,
+            profile_id=profile.id,
+            device_id=100,
+            source=AssignmentSource.DIRECT,
+            status=AssignmentStatus.APPLIED,
+            profile_version=1,
         )
         result = await repo.upsert_assignment(data2)
         assert result.status == AssignmentStatus.APPLIED
@@ -123,9 +138,14 @@ class TestProfileRepository:
     async def test_get_assignments(self, db_session):
         repo = ProfileRepository(db_session)
         profile = await repo.create(ProfileCreate(name="P", created_by=1))
-        await repo.upsert_assignment(AssignmentUpsert(
-            profile_id=profile.id, device_id=100,
-            source=AssignmentSource.DIRECT, status=AssignmentStatus.PENDING, profile_version=1,
-        ))
+        await repo.upsert_assignment(
+            AssignmentUpsert(
+                profile_id=profile.id,
+                device_id=100,
+                source=AssignmentSource.DIRECT,
+                status=AssignmentStatus.PENDING,
+                profile_version=1,
+            )
+        )
         assignments = await repo.get_assignments(profile.id)
         assert len(assignments) == 1

@@ -1,31 +1,39 @@
 from app.inventory_search.repositories import InventorySearchRepository
 from app.inventory_search.schemas import InventorySearchCreate, InventorySearchUpdate
 
+_CRITERIA = [
+    {"field": "connection_status", "operator": "is", "type": "string", "value": "Online"},
+]
+
 
 class TestInventorySearchRepository:
     async def test_create(self, db_session):
         repo = InventorySearchRepository(db_session)
-        created = await repo.create(InventorySearchCreate(name="search1", created_by=1))
+        created = await repo.create(
+            InventorySearchCreate(name="search1", criteria=_CRITERIA, created_by=1)
+        )
         assert created.id is not None
         assert created.name == "search1"
 
     async def test_list(self, db_session):
         repo = InventorySearchRepository(db_session)
-        await repo.create(InventorySearchCreate(name="s1", created_by=1))
-        await repo.create(InventorySearchCreate(name="s2", created_by=1))
+        await repo.create(InventorySearchCreate(name="s1", criteria=_CRITERIA, created_by=1))
+        await repo.create(InventorySearchCreate(name="s2", criteria=_CRITERIA, created_by=1))
         items = await repo.list_all()
         assert len(items) == 2
 
     async def test_list_pagination(self, db_session):
         repo = InventorySearchRepository(db_session)
         for i in range(5):
-            await repo.create(InventorySearchCreate(name=f"s{i}", created_by=1))
+            await repo.create(InventorySearchCreate(name=f"s{i}", criteria=_CRITERIA, created_by=1))
         items = await repo.list_all(skip=1, limit=2)
         assert len(items) == 2
 
     async def test_get_by_id(self, db_session):
         repo = InventorySearchRepository(db_session)
-        created = await repo.create(InventorySearchCreate(name="s1", created_by=1))
+        created = await repo.create(
+            InventorySearchCreate(name="s1", criteria=_CRITERIA, created_by=1)
+        )
         found = await repo.get_by_id(created.id)
         assert found is not None
         assert found.name == "s1"
@@ -36,7 +44,9 @@ class TestInventorySearchRepository:
 
     async def test_update(self, db_session):
         repo = InventorySearchRepository(db_session)
-        created = await repo.create(InventorySearchCreate(name="s1", created_by=1))
+        created = await repo.create(
+            InventorySearchCreate(name="s1", criteria=_CRITERIA, created_by=1)
+        )
         updated = await repo.update(created.id, InventorySearchUpdate(name="s2"))
         assert updated is not None
         assert updated.name == "s2"
@@ -47,7 +57,9 @@ class TestInventorySearchRepository:
 
     async def test_delete(self, db_session):
         repo = InventorySearchRepository(db_session)
-        created = await repo.create(InventorySearchCreate(name="s1", created_by=1))
+        created = await repo.create(
+            InventorySearchCreate(name="s1", criteria=_CRITERIA, created_by=1)
+        )
         assert await repo.delete(created.id) is True
         assert await repo.get_by_id(created.id) is None
 
@@ -58,7 +70,7 @@ class TestInventorySearchRepository:
     async def test_count(self, db_session):
         repo = InventorySearchRepository(db_session)
         assert await repo.count() == 0
-        await repo.create(InventorySearchCreate(name="s1", created_by=1))
+        await repo.create(InventorySearchCreate(name="s1", criteria=_CRITERIA, created_by=1))
         assert await repo.count() == 1
 
     async def test_create_with_criteria(self, db_session):
@@ -89,14 +101,6 @@ class TestInventorySearchRepository:
         assert len(found.criteria) == 2
         assert found.criteria[0]["field"] == "connection_status"
         assert found.criteria[1]["field"] == "os_version"
-
-    async def test_create_without_criteria(self, db_session):
-        repo = InventorySearchRepository(db_session)
-        created = await repo.create(
-            InventorySearchCreate(name="No Criteria", created_by=1)
-        )
-        found = await repo.get_by_id(created.id)
-        assert found.criteria is None or found.criteria == []
 
     async def test_update_criteria(self, db_session):
         repo = InventorySearchRepository(db_session)

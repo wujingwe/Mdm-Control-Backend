@@ -45,7 +45,9 @@ class TestStaticGroupService:
         fake = MagicMock()
         repo.create = AsyncMock(return_value=fake)
         svc = StaticGroupService(repo)
-        data = StaticGroupCreate(name="G", created_by=1, device_serial_numbers=["SN001"])
+        data = StaticGroupCreate(
+            name="G", created_by=1, device_serial_numbers=["SN001"]
+        )
         result = await svc.create_group(data)
         assert result is fake
         repo.create.assert_called_once_with(data)

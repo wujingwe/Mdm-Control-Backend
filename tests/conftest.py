@@ -19,12 +19,15 @@ test_engine = create_async_engine(TEST_DB_URL, echo=False)
 @event.listens_for(test_engine.sync_engine, "connect")
 def _register_sqlite_regexp(dbapi_conn, _connection_record) -> None:
     dbapi_conn.create_function(
-        "regexp", 2,
+        "regexp",
+        2,
         lambda pattern, string: 1 if re.search(pattern, string or "") else 0,
     )
 
 
-test_async_session = async_sessionmaker(test_engine, class_=AsyncSession, expire_on_commit=False)
+test_async_session = async_sessionmaker(
+    test_engine, class_=AsyncSession, expire_on_commit=False
+)
 
 
 async def override_get_db() -> AsyncGenerator[AsyncSession, None]:

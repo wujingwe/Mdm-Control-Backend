@@ -35,14 +35,20 @@ class TestNotifySSEServer:
         }
 
     async def test_retry_then_succeed(self, mock_client):
-        fail = httpx.HTTPStatusError("fail", request=MagicMock(), response=MagicMock(status_code=500))
-        mock_client.post = AsyncMock(side_effect=[fail, fail, MagicMock(status_code=200)])
+        fail = httpx.HTTPStatusError(
+            "fail", request=MagicMock(), response=MagicMock(status_code=500)
+        )
+        mock_client.post = AsyncMock(
+            side_effect=[fail, fail, MagicMock(status_code=200)]
+        )
         await notify_sse_server(device_serial="SN001")
         assert mock_client.post.call_count == 3
 
     async def test_all_retries_fail_raises_retry_error(self, mock_client):
         mock_client.post = AsyncMock(
-            side_effect=httpx.HTTPStatusError("fail", request=MagicMock(), response=MagicMock(status_code=500))
+            side_effect=httpx.HTTPStatusError(
+                "fail", request=MagicMock(), response=MagicMock(status_code=500)
+            )
         )
         with pytest.raises(tenacity.RetryError):
             await notify_sse_server(device_serial="SN001")

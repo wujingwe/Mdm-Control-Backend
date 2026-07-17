@@ -7,7 +7,11 @@ from app.devices.schemas import (
     Wifi,
 )
 from app.profiles.schemas import ProfileResponse
-from app.smart_groups.schemas import SmartGroupCreate, SmartGroupUpdate, SmartGroupResponse
+from app.smart_groups.schemas import (
+    SmartGroupCreate,
+    SmartGroupUpdate,
+    SmartGroupResponse,
+)
 from app.users.schemas import UserResponse
 from app.common.schemas import Message
 
@@ -35,7 +39,9 @@ class TestDeviceSchemas:
         assert data.name == "Test"
 
     def test_search_criteria_valid(self):
-        data = DeviceSearchCriteria(criteria=[{"field": "status", "operator": "is", "value": "Online"}])
+        data = DeviceSearchCriteria(
+            criteria=[{"field": "status", "operator": "is", "value": "Online"}]
+        )
         assert len(data.criteria) == 1
         assert data.criteria[0]["field"] == "status"
 
@@ -165,11 +171,15 @@ class TestCertificateInfo:
         assert loaded.common_name == "test.com"
         assert loaded.fingerprint == "12:34:56"
 
+
 class TestProfileSchemas:
     def test_response(self):
         data = ProfileResponse(
-            id=1, name="Profile A", version=1,
-            created_at=datetime.now(timezone.utc), created_by=1,
+            id=1,
+            name="Profile A",
+            version=1,
+            created_at=datetime.now(timezone.utc),
+            created_by=1,
         )
         assert data.name == "Profile A"
         assert data.version == 1
@@ -177,12 +187,27 @@ class TestProfileSchemas:
 
 class TestSmartGroupSchemas:
     def test_create_valid(self):
-        data = SmartGroupCreate(name="Group A")
+        data = SmartGroupCreate(
+            name="Group A",
+            criteria=[{"field": "os_version", "operator": "is", "type": "string", "value": "Android 14"}],
+        )
         assert data.name == "Group A"
+        assert len(data.criteria) == 1
 
     def test_create_with_description(self):
-        data = SmartGroupCreate(name="Group A", description="desc")
+        data = SmartGroupCreate(
+            name="Group A",
+            description="desc",
+            criteria=[{"field": "os_version", "operator": "is", "type": "string", "value": "Android 14"}],
+        )
         assert data.description == "desc"
+
+    def test_create_empty_criteria_rejected(self):
+        from pydantic import ValidationError
+        import pytest
+
+        with pytest.raises(ValidationError):
+            SmartGroupCreate(name="Group A", criteria=[])
 
     def test_update_partial(self):
         data = SmartGroupUpdate(description="Updated desc")
@@ -190,6 +215,7 @@ class TestSmartGroupSchemas:
 
     def test_response(self):
         from datetime import datetime, timezone
+
         now = datetime.now(timezone.utc)
         data = SmartGroupResponse(id=1, name="Group A", created_by=1, created_at=now)
         assert data.id == 1
@@ -198,14 +224,28 @@ class TestSmartGroupSchemas:
 class TestUserSchemas:
     def test_response(self):
         from datetime import datetime, timezone
+
         now = datetime.now(timezone.utc)
-        data = UserResponse(id=1, name="jdoe", email="j@example.com", permissions=["admin"], created_at=now)
+        data = UserResponse(
+            id=1,
+            name="jdoe",
+            email="j@example.com",
+            permissions=["admin"],
+            created_at=now,
+        )
         assert data.name == "jdoe"
 
     def test_response_with_email(self):
         from datetime import datetime, timezone
+
         now = datetime.now(timezone.utc)
-        data = UserResponse(id=1, name="test", email="bad@example.com", permissions=["editor"], created_at=now)
+        data = UserResponse(
+            id=1,
+            name="test",
+            email="bad@example.com",
+            permissions=["editor"],
+            created_at=now,
+        )
         assert data.email == "bad@example.com"
 
 

@@ -7,6 +7,9 @@ class TestSmartGroupsAPI:
             json={
                 "name": "Smart Group A",
                 "description": "desc",
+                "criteria": [
+                    {"field": "os_version", "operator": "is", "type": "string", "value": "Android 14"},
+                ],
             },
         )
         assert create.status_code == 201
@@ -28,14 +31,26 @@ class TestSmartGroupsAPI:
         assert get2.status_code == 404
 
     async def test_list(self, client):
-        await client.post(self.BASE, json={"name": "SG1"})
+        await client.post(
+            self.BASE,
+            json={
+                "name": "SG1",
+                "criteria": [{"field": "os_version", "operator": "is", "type": "string", "value": "Android 14"}],
+            },
+        )
         resp = await client.get(self.BASE)
         data = resp.json()
         assert data["total"] >= 1 and len(data["items"]) >= 1
         assert all(g["name"] is not None for g in data["items"])
 
     async def test_update_empty_body(self, client):
-        create = await client.post(self.BASE, json={"name": "G"})
+        create = await client.post(
+            self.BASE,
+            json={
+                "name": "G",
+                "criteria": [{"field": "os_version", "operator": "is", "type": "string", "value": "Android 14"}],
+            },
+        )
         gid = create.json()["id"]
         resp = await client.put(f"{self.BASE}/{gid}", json={})
         assert resp.status_code == 200
@@ -178,13 +193,19 @@ class TestSmartGroupsAPI:
         assert update.status_code == 200
         assert update.json()["criteria"] == []
 
-    async def test_create_without_criteria(self, client):
+    async def test_create_without_criteria_rejected(self, client):
         create = await client.post(
             self.BASE,
             json={"name": "No Criteria Group"},
         )
-        assert create.status_code == 201
-        assert create.json()["criteria"] is None or create.json()["criteria"] == []
+        assert create.status_code == 422
+
+    async def test_create_with_empty_criteria_rejected(self, client):
+        create = await client.post(
+            self.BASE,
+            json={"name": "Empty Criteria Group", "criteria": []},
+        )
+        assert create.status_code == 422
 
     async def test_create_with_invalid_criteria_type(self, client):
         create = await client.post(

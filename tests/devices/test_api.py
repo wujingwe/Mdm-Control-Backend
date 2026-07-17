@@ -16,16 +16,19 @@ class TestDevicesAPI:
 
     async def test_device_response_shape(self, client, db_session):
         from app.devices.repositories import DeviceRepository
+
         repo = DeviceRepository(db_session)
-        device = await repo.create({
-            "name": "MacBook",
-            "serial_number": "SN-API-001",
-            "os_version": "15.0",
-            "connection_status": "Online",
-            "enrollment_status": "Enrolled",
-            "network": Network(wifi=Wifi(ssid="Office")),
-            "certificates": [Certificate(common_name="example.com")],
-        })
+        device = await repo.create(
+            {
+                "name": "MacBook",
+                "serial_number": "SN-API-001",
+                "os_version": "15.0",
+                "connection_status": "Online",
+                "enrollment_status": "Enrolled",
+                "network": Network(wifi=Wifi(ssid="Office")),
+                "certificates": [Certificate(common_name="example.com")],
+            }
+        )
         resp = await client.get(f"/api/v1/devices/{device.id}")
         assert resp.status_code == 200
         body = resp.json()

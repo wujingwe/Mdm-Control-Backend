@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.criteria.schemas import Criteria
 
@@ -8,7 +8,7 @@ from app.criteria.schemas import Criteria
 class InventorySearchCreate(BaseModel):
     name: str
     description: str | None = None
-    criteria: list[Criteria] = []
+    criteria: list[Criteria] = Field(min_length=1)
     created_by: int
 
 
@@ -27,4 +27,4 @@ class InventorySearchResponse(BaseModel):
     created_by: int
     updated_at: datetime
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)

@@ -10,7 +10,9 @@ class TestCommandService:
     @pytest.fixture
     def repo(self):
         m = MagicMock()
-        m.create = AsyncMock(return_value=MagicMock(id=1, device_id=1, command_type=CommandType.LOCK))
+        m.create = AsyncMock(
+            return_value=MagicMock(id=1, device_id=1, command_type=CommandType.LOCK)
+        )
         m.get_by_id = AsyncMock(return_value=None)
         m.list_all = AsyncMock(return_value=[])
         m.count_all = AsyncMock(return_value=0)
@@ -35,7 +37,9 @@ class TestCommandService:
         svc = CommandService(repo)
         data = CommandCreate(command_type=CommandType.LOCK)
         with patch("app.commands.services.rabbitmq_producer") as mock_producer:
-            mock_producer.publish_device_command = AsyncMock(side_effect=RuntimeError("MQ down"))
+            mock_producer.publish_device_command = AsyncMock(
+                side_effect=RuntimeError("MQ down")
+            )
             result = await svc.trigger_command(device_id=1, data=data)
             assert result["message_id"] is None
             repo.mark_sent.assert_not_called()

@@ -43,7 +43,13 @@ class TestInventorySearchService:
         fake = MagicMock()
         repo.create = AsyncMock(return_value=fake)
         svc = InventorySearchService(repo)
-        result = await svc.create_search(InventorySearchCreate(name="s1", created_by=1))
+        result = await svc.create_search(
+            InventorySearchCreate(
+                name="s1",
+                criteria=[{"field": "os_version", "operator": "is", "type": "string", "value": "Android 14"}],
+                created_by=1,
+            )
+        )
         assert result is fake
 
     async def test_update_search(self, repo):

@@ -8,6 +8,9 @@ class TestInventorySearchAPI:
                 "name": "Search1",
                 "description": "desc",
                 "created_by": 1,
+                "criteria": [
+                    {"field": "os_version", "operator": "is", "type": "string", "value": "Android 14"},
+                ],
             },
         )
         assert create.status_code == 201
@@ -29,7 +32,14 @@ class TestInventorySearchAPI:
         assert get2.status_code == 404
 
     async def test_list(self, client):
-        await client.post(self.BASE, json={"name": "S1", "created_by": 1})
+        await client.post(
+            self.BASE,
+            json={
+                "name": "S1",
+                "created_by": 1,
+                "criteria": [{"field": "os_version", "operator": "is", "type": "string", "value": "Android 14"}],
+            },
+        )
         resp = await client.get(self.BASE)
         data = resp.json()
         assert data["total"] >= 1 and len(data["items"]) >= 1
