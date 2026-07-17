@@ -35,27 +35,29 @@ class Device(Base):
     network: Mapped[dict | None] = mapped_column(NetworkInfoType, nullable=True)
     certificates: Mapped[list | None] = mapped_column(CertificateListType, nullable=True)
 
-    assignments: Mapped[list["ProfileAssignment"]] = relationship(viewonly=True)
-    profiles: Mapped[list["Profile"]] = relationship(
-        secondary="profile_assignments", viewonly=True,
-        primaryjoin="Device.id == ProfileAssignment.device_id",
-        secondaryjoin="ProfileAssignment.profile_id == Profile.id",
+    extension_attributes: Mapped[list["DeviceExtensionAttribute"]] = relationship(
+        primaryjoin="Device.id == DeviceExtensionAttribute.device_id",
+        viewonly=True,
     )
-    extension_attributes: Mapped[list["DeviceExtensionAttribute"]] = relationship(viewonly=True)
-
+    
+    profiles: Mapped[list["Profile"]] = relationship(
+        primaryjoin="Device.id == ProfileAssignment.device_id",
+        viewonly=True,
+    )
+    
 
 class DeviceExtensionAttribute(Base):
     __tablename__ = "device_extension_attribute_values"
     __table_args__ = (
         UniqueConstraint("device_id", "extension_attribute_id"),
         Index("ix_device_ext_attr_device_id", "device_id"),
-        Index("ix_device_ext_attr_attr_id", "extension_attribute_id"),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     device_id: Mapped[int] = mapped_column(Integer, ForeignKey("devices.id", ondelete="CASCADE"))
     extension_attribute_id: Mapped[int] = mapped_column(Integer, ForeignKey("extension_attributes.id", ondelete="CASCADE"))
-    value: Mapped[str | None] = mapped_column(Text, nullable=True)
+    extension_attribute_name: Mapped[str] = mapped_column(String(100))
+    value: Mapped[str] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, onupdate=utcnow)
 
