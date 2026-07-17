@@ -36,7 +36,12 @@ class SmartGroupRepository:
         values = data.model_dump(exclude_unset=True)
         if not values:
             return await self.get_by_id(record_id)
-        stmt = update(SmartGroup).where(SmartGroup.id == record_id).values(**values).returning(SmartGroup)
+        stmt = (
+            update(SmartGroup)
+            .where(SmartGroup.id == record_id)
+            .values(**values)
+            .returning(SmartGroup)
+        )
         result = await self.db.execute(stmt)
         try:
             await self.db.commit()
@@ -46,7 +51,11 @@ class SmartGroupRepository:
         return result.scalars().one_or_none()
 
     async def delete(self, record_id: int) -> bool:
-        stmt = delete(SmartGroup).where(SmartGroup.id == record_id).returning(SmartGroup.id)
+        stmt = (
+            delete(SmartGroup)
+            .where(SmartGroup.id == record_id)
+            .returning(SmartGroup.id)
+        )
         result = await self.db.execute(stmt)
         await self.db.commit()
         return result.scalar_one_or_none() is not None

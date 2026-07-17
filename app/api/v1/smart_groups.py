@@ -2,7 +2,11 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app.dependencies import get_smart_group_service
 from app.common.schemas import Message, PaginatedResponse
-from app.smart_groups.schemas import SmartGroupCreate, SmartGroupResponse, SmartGroupUpdate
+from app.smart_groups.schemas import (
+    SmartGroupCreate,
+    SmartGroupResponse,
+    SmartGroupUpdate,
+)
 from app.smart_groups.services import SmartGroupService
 from app.webhook_client import revalidate
 
@@ -31,7 +35,9 @@ async def get_smart_group(
 ) -> SmartGroupResponse:
     group = await service.get_group(group_id)
     if not group:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Smart group not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Smart group not found"
+        )
     return SmartGroupResponse.model_validate(group)
 
 
@@ -53,7 +59,9 @@ async def update_smart_group(
 ) -> SmartGroupResponse:
     updated = await service.update_group(group_id, data)
     if not updated:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Smart group not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Smart group not found"
+        )
     await revalidate(["smart-groups"])
     return SmartGroupResponse.model_validate(updated)
 
@@ -65,6 +73,8 @@ async def delete_smart_group(
 ) -> Message:
     deleted = await service.delete_group(group_id)
     if not deleted:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Smart group not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Smart group not found"
+        )
     await revalidate(["smart-groups"])
     return Message(detail="Smart group deleted")

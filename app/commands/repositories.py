@@ -36,7 +36,11 @@ class CommandRepository:
         return result.scalar_one_or_none()
 
     async def list_for_device(
-        self, device_id: int, *, skip: int = 0, limit: int = 50,
+        self,
+        device_id: int,
+        *,
+        skip: int = 0,
+        limit: int = 50,
     ) -> list[DeviceCommand]:
         stmt = (
             select(DeviceCommand)
@@ -73,7 +77,9 @@ class CommandRepository:
         return result.scalar_one()
 
     async def mark_sent(
-        self, command_id: int, rabbitmq_message_id: str,
+        self,
+        command_id: int,
+        rabbitmq_message_id: str,
     ) -> DeviceCommand | None:
         now = datetime.now(timezone.utc)
         stmt = (

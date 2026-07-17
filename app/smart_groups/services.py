@@ -7,7 +7,9 @@ class SmartGroupService:
     def __init__(self, repo: SmartGroupRepository) -> None:
         self.repo = repo
 
-    async def list_groups(self, skip: int = 0, limit: int = 100) -> tuple[list[SmartGroup], int]:
+    async def list_groups(
+        self, skip: int = 0, limit: int = 100
+    ) -> tuple[list[SmartGroup], int]:
         items = await self.repo.list_all(skip=skip, limit=limit)
         total = await self.repo.count()
         return items, total
@@ -18,7 +20,9 @@ class SmartGroupService:
     async def create_group(self, data: SmartGroupCreate) -> SmartGroup:
         return await self.repo.create(data)
 
-    async def update_group(self, group_id: int, data: SmartGroupUpdate) -> SmartGroup | None:
+    async def update_group(
+        self, group_id: int, data: SmartGroupUpdate
+    ) -> SmartGroup | None:
         return await self.repo.update(group_id, data)
 
     async def delete_group(self, group_id: int) -> bool:

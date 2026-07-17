@@ -32,7 +32,9 @@ async def get_device(
 ) -> DeviceResponse:
     device = await service.get_device(device_id)
     if not device:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Device not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Device not found"
+        )
     return DeviceResponse.model_validate(device)
 
 
@@ -60,7 +62,9 @@ async def get_device_command(
 ) -> CommandResponse:
     command = await service.get_command(command_id)
     if not command or command.device_id != device_id:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Command not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Command not found"
+        )
     return CommandResponse.model_validate(command)
 
 
@@ -83,7 +87,9 @@ async def cancel_device_command(
 ) -> Message:
     command = await service.get_command(command_id)
     if not command or command.device_id != device_id:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Command not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Command not found"
+        )
 
     cancelled = await service.cancel_command(command_id)
     if not cancelled:

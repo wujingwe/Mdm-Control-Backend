@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from app.common.enums import AssignmentSource, AssignmentStatus, TargetType
 
@@ -33,7 +33,7 @@ class ProfileResponse(BaseModel):
     created_by: int | None = None
     updated_at: datetime | None = None
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
 
 
 class ProfileScopeResponse(BaseModel):
@@ -53,7 +53,7 @@ class AssignmentResponse(BaseModel):
     applied_at: datetime | None = None
     revoked_at: datetime | None = None
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
 
 
 class StatusUpdate(BaseModel):

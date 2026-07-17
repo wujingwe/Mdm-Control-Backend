@@ -43,14 +43,21 @@ class CommandService:
         return await self.repo.get_by_id(command_id)
 
     async def list_commands(
-        self, *, skip: int = 0, limit: int = 100,
+        self,
+        *,
+        skip: int = 0,
+        limit: int = 100,
     ) -> tuple[list[DeviceCommand], int]:
         items = await self.repo.list_all(skip=skip, limit=limit)
         total = await self.repo.count_all()
         return items, total
 
     async def list_device_commands(
-        self, device_id: int, *, skip: int = 0, limit: int = 50,
+        self,
+        device_id: int,
+        *,
+        skip: int = 0,
+        limit: int = 50,
     ) -> tuple[list[DeviceCommand], int]:
         items = await self.repo.list_for_device(device_id, skip=skip, limit=limit)
         total = await self.repo.count_for_device(device_id)

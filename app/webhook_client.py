@@ -35,7 +35,9 @@ async def revalidate(tags: list[str]) -> None:
             logger.info("Cache revalidated tags=%s", tags)
         else:
             logger.warning(
-                "Revalidation webhook returned %s: %s", resp.status_code, resp.text,
+                "Revalidation webhook returned %s: %s",
+                resp.status_code,
+                resp.text,
             )
     except httpx.RequestError as exc:
         logger.warning("Revalidation webhook request failed: %s", exc)

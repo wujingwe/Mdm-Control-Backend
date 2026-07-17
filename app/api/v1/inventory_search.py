@@ -22,7 +22,9 @@ async def list_inventory_searches(
     items, total = await service.list_searches(skip=skip, limit=limit)
     return PaginatedResponse(
         items=[InventorySearchResponse.model_validate(s) for s in items],
-        total=total, skip=skip, limit=limit,
+        total=total,
+        skip=skip,
+        limit=limit,
     )
 
 
@@ -33,11 +35,15 @@ async def get_inventory_search(
 ) -> InventorySearchResponse:
     search = await service.get_search(search_id)
     if not search:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Inventory search not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Inventory search not found"
+        )
     return InventorySearchResponse.model_validate(search)
 
 
-@router.post("", response_model=InventorySearchResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "", response_model=InventorySearchResponse, status_code=status.HTTP_201_CREATED
+)
 async def create_inventory_search(
     data: InventorySearchCreate,
     service: InventorySearchService = Depends(get_inventory_search_service),
@@ -55,7 +61,9 @@ async def update_inventory_search(
 ) -> InventorySearchResponse:
     updated = await service.update_search(search_id, data)
     if not updated:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Inventory search not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Inventory search not found"
+        )
     await revalidate(["inventory-search"])
     return InventorySearchResponse.model_validate(updated)
 
@@ -67,6 +75,8 @@ async def delete_inventory_search(
 ) -> Message:
     deleted = await service.delete_search(search_id)
     if not deleted:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Inventory search not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Inventory search not found"
+        )
     await revalidate(["inventory-search"])
     return Message(detail="Inventory search deleted")

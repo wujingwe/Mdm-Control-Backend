@@ -31,7 +31,9 @@ async def notify_sse_server(
         with attempt:
             async with httpx.AsyncClient() as client:
                 resp = await client.post(
-                    settings.sse_server_url, json=payload, timeout=10.0,
+                    settings.sse_server_url,
+                    json=payload,
+                    timeout=10.0,
                 )
                 resp.raise_for_status()
                 logger.info(

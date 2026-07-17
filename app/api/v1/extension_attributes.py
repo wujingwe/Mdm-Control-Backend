@@ -35,7 +35,10 @@ async def get_extension_attribute(
 ) -> ExtensionAttributeResponse:
     attr = await service.get_attribute(attribute_id)
     if not attr:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Extension attribute not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Extension attribute not found",
+        )
     return ExtensionAttributeResponse.model_validate(attr)
 
 
@@ -57,7 +60,10 @@ async def update_extension_attribute(
 ) -> ExtensionAttributeResponse:
     updated = await service.update_attribute(attribute_id, data)
     if not updated:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Extension attribute not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Extension attribute not found",
+        )
 
     await revalidate(["extension-attributes"])
     return ExtensionAttributeResponse.model_validate(updated)
@@ -70,7 +76,10 @@ async def delete_extension_attribute(
 ) -> Message:
     deleted = await service.delete_attribute(attribute_id)
     if not deleted:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Extension attribute not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Extension attribute not found",
+        )
 
     await revalidate(["extension-attributes"])
     return Message(detail="Extension attribute deleted")

@@ -5,6 +5,7 @@ Revises: a1b2c3d4e5f6
 Create Date: 2026-07-11
 
 """
+
 from typing import Sequence, Union
 
 from alembic import op
@@ -26,7 +27,10 @@ def upgrade() -> None:
     # Drop the policies table
     op.drop_table("policies")
     # Add version column to profiles
-    op.add_column("profiles", sa.Column("version", sa.Integer(), server_default="1", nullable=False))
+    op.add_column(
+        "profiles",
+        sa.Column("version", sa.Integer(), server_default="1", nullable=False),
+    )
 
 
 def downgrade() -> None:
@@ -51,16 +55,46 @@ def downgrade() -> None:
     # Recreate junction tables
     op.create_table(
         "device_policies",
-        sa.Column("device_id", sa.Integer(), sa.ForeignKey("devices.id", ondelete="CASCADE"), primary_key=True),
-        sa.Column("policy_id", sa.Integer(), sa.ForeignKey("policies.id", ondelete="CASCADE"), primary_key=True),
+        sa.Column(
+            "device_id",
+            sa.Integer(),
+            sa.ForeignKey("devices.id", ondelete="CASCADE"),
+            primary_key=True,
+        ),
+        sa.Column(
+            "policy_id",
+            sa.Integer(),
+            sa.ForeignKey("policies.id", ondelete="CASCADE"),
+            primary_key=True,
+        ),
     )
     op.create_table(
         "smart_group_policies",
-        sa.Column("smart_group_id", sa.Integer(), sa.ForeignKey("smart_groups.id", ondelete="CASCADE"), primary_key=True),
-        sa.Column("policy_id", sa.Integer(), sa.ForeignKey("policies.id", ondelete="CASCADE"), primary_key=True),
+        sa.Column(
+            "smart_group_id",
+            sa.Integer(),
+            sa.ForeignKey("smart_groups.id", ondelete="CASCADE"),
+            primary_key=True,
+        ),
+        sa.Column(
+            "policy_id",
+            sa.Integer(),
+            sa.ForeignKey("policies.id", ondelete="CASCADE"),
+            primary_key=True,
+        ),
     )
     op.create_table(
         "static_group_policies",
-        sa.Column("static_group_id", sa.Integer(), sa.ForeignKey("static_groups.id", ondelete="CASCADE"), primary_key=True),
-        sa.Column("policy_id", sa.Integer(), sa.ForeignKey("policies.id", ondelete="CASCADE"), primary_key=True),
+        sa.Column(
+            "static_group_id",
+            sa.Integer(),
+            sa.ForeignKey("static_groups.id", ondelete="CASCADE"),
+            primary_key=True,
+        ),
+        sa.Column(
+            "policy_id",
+            sa.Integer(),
+            sa.ForeignKey("policies.id", ondelete="CASCADE"),
+            primary_key=True,
+        ),
     )

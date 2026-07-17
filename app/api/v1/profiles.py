@@ -27,7 +27,9 @@ async def list_profiles(
     items, total = await service.list_profiles(skip=skip, limit=limit)
     return PaginatedResponse(
         items=[ProfileResponse.model_validate(p) for p in items],
-        total=total, skip=skip, limit=limit,
+        total=total,
+        skip=skip,
+        limit=limit,
     )
 
 
@@ -38,7 +40,9 @@ async def get_profile(
 ) -> ProfileResponse:
     profile = await service.get_profile(profile_id)
     if not profile:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Profile not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Profile not found"
+        )
     return ProfileResponse.model_validate(profile)
 
 
@@ -60,7 +64,9 @@ async def update_profile(
 ) -> ProfileResponse:
     updated = await service.update_profile(profile_id, data)
     if not updated:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Profile not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Profile not found"
+        )
     await revalidate(["profiles"])
     return ProfileResponse.model_validate(updated)
 
@@ -72,7 +78,9 @@ async def delete_profile(
 ) -> Message:
     deleted = await service.delete_profile(profile_id)
     if not deleted:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Profile not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Profile not found"
+        )
     await revalidate(["profiles"])
     return Message(detail="Profile deleted")
 
@@ -85,7 +93,10 @@ async def get_profile_scope(
     scope = await service.get_scope(profile_id)
     return ProfileScopeResponse(
         profile_id=profile_id,
-        scope=[ScopeTarget(target_type=TargetType(s.target_type), target_id=s.target_id) for s in scope],
+        scope=[
+            ScopeTarget(target_type=TargetType(s.target_type), target_id=s.target_id)
+            for s in scope
+        ],
     )
 
 
@@ -100,7 +111,10 @@ async def set_profile_scope(
     updated_scope = await service.get_scope(profile_id)
     return ProfileScopeResponse(
         profile_id=profile_id,
-        scope=[ScopeTarget(target_type=TargetType(s.target_type), target_id=s.target_id) for s in updated_scope],
+        scope=[
+            ScopeTarget(target_type=TargetType(s.target_type), target_id=s.target_id)
+            for s in updated_scope
+        ],
     )
 
 
@@ -113,15 +127,21 @@ async def list_assignments(
     return [AssignmentResponse.model_validate(a) for a in assignments]
 
 
-@router.put("/{profile_id}/assignments/{device_id}/status", response_model=AssignmentResponse)
+@router.put(
+    "/{profile_id}/assignments/{device_id}/status", response_model=AssignmentResponse
+)
 async def update_assignment_status(
     profile_id: int,
     device_id: int,
     data: StatusUpdate,
     service: ProfileService = Depends(get_profile_service),
 ) -> AssignmentResponse:
-    assignment = await service.update_assignment_status(profile_id, device_id, data.status.value)
+    assignment = await service.update_assignment_status(
+        profile_id, device_id, data.status.value
+    )
     if not assignment:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Assignment not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Assignment not found"
+        )
     await revalidate(["profiles"])
     return AssignmentResponse.model_validate(assignment)

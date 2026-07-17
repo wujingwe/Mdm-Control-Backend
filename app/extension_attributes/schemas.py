@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from app.common.enums import ExtensionDataType, ExtensionInputType
 
@@ -33,4 +33,4 @@ class ExtensionAttributeResponse(BaseModel):
     created_by: int
     updated_at: datetime | None = None
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)

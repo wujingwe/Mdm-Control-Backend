@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from app.common.enums import CommandType, CommandStatus
 
@@ -23,4 +23,4 @@ class CommandResponse(BaseModel):
     acknowledged_at: datetime | None = None
     completed_at: datetime | None = None
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)

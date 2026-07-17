@@ -7,7 +7,9 @@ class StaticGroupService:
     def __init__(self, repo: StaticGroupRepository) -> None:
         self.repo = repo
 
-    async def list_groups(self, skip: int = 0, limit: int = 100) -> tuple[list[StaticGroup], int]:
+    async def list_groups(
+        self, skip: int = 0, limit: int = 100
+    ) -> tuple[list[StaticGroup], int]:
         items = await self.repo.list_all(skip=skip, limit=limit)
         total = await self.repo.count()
         return items, total
@@ -18,7 +20,9 @@ class StaticGroupService:
     async def create_group(self, data: StaticGroupCreate) -> StaticGroup:
         return await self.repo.create(data)
 
-    async def update_group(self, group_id: int, data: StaticGroupUpdate) -> StaticGroup | None:
+    async def update_group(
+        self, group_id: int, data: StaticGroupUpdate
+    ) -> StaticGroup | None:
         return await self.repo.update(group_id, data)
 
     async def delete_group(self, group_id: int) -> bool:

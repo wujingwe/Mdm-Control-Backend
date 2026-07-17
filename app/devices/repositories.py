@@ -35,7 +35,12 @@ class DeviceRepository:
     async def update(self, record_id: int, data: dict[str, Any]) -> Device | None:
         if not data:
             return await self.get_by_id(record_id)
-        stmt = update(Device).where(Device.id == record_id).values(**data).returning(Device)
+        stmt = (
+            update(Device)
+            .where(Device.id == record_id)
+            .values(**data)
+            .returning(Device)
+        )
         result = await self.db.execute(stmt)
         try:
             await self.db.commit()

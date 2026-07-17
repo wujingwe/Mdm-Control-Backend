@@ -11,7 +11,9 @@ from app.config.settings import settings
 try:
     import aio_pika
     from aio_pika.abc import AbstractChannel, AbstractExchange, AbstractRobustConnection
-except ModuleNotFoundError:  # pragma: no cover - exercised only without optional deps installed
+except (
+    ModuleNotFoundError
+):  # pragma: no cover - exercised only without optional deps installed
     aio_pika = None  # type: ignore[assignment]
     AbstractChannel = Any  # type: ignore[misc,assignment]
     AbstractExchange = Any  # type: ignore[misc,assignment]
@@ -62,7 +64,9 @@ class RabbitMQProducer:
         self._connection = connection
         self._channel = channel
         self._exchange = exchange
-        logger.info("RabbitMQ producer connected to exchange '%s'", self._config.exchange_name)
+        logger.info(
+            "RabbitMQ producer connected to exchange '%s'", self._config.exchange_name
+        )
 
     async def stop(self) -> None:
         if self._connection is not None and not self._connection.is_closed:
@@ -189,7 +193,9 @@ class RabbitMQProducer:
         try:
             return aio_pika.ExchangeType(self._config.exchange_type)
         except ValueError as err:
-            raise ValueError(f"Unsupported RabbitMQ exchange type: {self._config.exchange_type}") from err
+            raise ValueError(
+                f"Unsupported RabbitMQ exchange type: {self._config.exchange_type}"
+            ) from err
 
     @property
     def healthy(self) -> bool:

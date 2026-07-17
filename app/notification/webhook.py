@@ -17,7 +17,9 @@ async def send_validation_webhook(device_serial_number: str) -> None:
         with attempt:
             async with httpx.AsyncClient() as client:
                 resp = await client.post(
-                    settings.webhook_url, json=payload, timeout=10.0,
+                    settings.webhook_url,
+                    json=payload,
+                    timeout=10.0,
                 )
                 resp.raise_for_status()
                 logger.info(

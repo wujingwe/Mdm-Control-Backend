@@ -26,6 +26,7 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
     async with async_session() as session:
         yield session
 
+
 def get_device_service(db: AsyncSession = Depends(get_db)) -> DeviceService:
     return DeviceService(DeviceRepository(db))
 
@@ -38,11 +39,15 @@ def get_static_group_service(db: AsyncSession = Depends(get_db)) -> StaticGroupS
     return StaticGroupService(StaticGroupRepository(db))
 
 
-def get_inventory_search_service(db: AsyncSession = Depends(get_db)) -> InventorySearchService:
+def get_inventory_search_service(
+    db: AsyncSession = Depends(get_db),
+) -> InventorySearchService:
     return InventorySearchService(InventorySearchRepository(db))
 
 
-def get_extension_attribute_service(db: AsyncSession = Depends(get_db)) -> ExtensionAttributeService:
+def get_extension_attribute_service(
+    db: AsyncSession = Depends(get_db),
+) -> ExtensionAttributeService:
     return ExtensionAttributeService(ExtensionAttributeRepository(db))
 
 

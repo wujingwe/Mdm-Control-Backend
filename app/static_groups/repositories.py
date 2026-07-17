@@ -24,7 +24,11 @@ class StaticGroupRepository:
         return list(result.scalars().all())
 
     async def get_by_id(self, record_id: int) -> StaticGroup | None:
-        stmt = select(StaticGroup).options(selectinload(StaticGroup.devices)).where(StaticGroup.id == record_id)
+        stmt = (
+            select(StaticGroup)
+            .options(selectinload(StaticGroup.devices))
+            .where(StaticGroup.id == record_id)
+        )
         result = await self.db.execute(stmt)
         return result.scalar_one_or_none()
 
@@ -42,10 +46,12 @@ class StaticGroupRepository:
             raise ConflictError("Resource already exists") from err  # noqa: TRY003, EM101
 
         for serial in data.device_serial_numbers:
-            self.db.add(StaticGroupDevice(
-                static_group_id=instance.id,
-                device_serial_number=serial,
-            ))
+            self.db.add(
+                StaticGroupDevice(
+                    static_group_id=instance.id,
+                    device_serial_number=serial,
+                )
+            )
 
         try:
             await self.db.commit()
@@ -56,16 +62,16 @@ class StaticGroupRepository:
         self.db.expire(instance)
         return await self.get_by_id(group_id)
 
-    async def update(self, record_id: int, data: StaticGroupUpdate) -> StaticGroup | None:
+    async def update(
+        self, record_id: int, data: StaticGroupUpdate
+    ) -> StaticGroup | None:
         has_changes = False
 
         # 1. Update scalar fields
         values = data.model_dump(exclude_unset=True, exclude={"device_serial_numbers"})
         if values:
             stmt = (
-                update(StaticGroup)
-                .where(StaticGroup.id == record_id)
-                .values(**values)
+                update(StaticGroup).where(StaticGroup.id == record_id).values(**values)
             )
             try:
                 await self.db.execute(stmt)
@@ -77,20 +83,26 @@ class StaticGroupRepository:
         # 2. Replace device collection
         if data.device_serial_numbers is not None:
             existing = (
-                await self.db.execute(
-                    select(StaticGroupDevice).where(
-                        StaticGroupDevice.static_group_id == record_id,
+                (
+                    await self.db.execute(
+                        select(StaticGroupDevice).where(
+                            StaticGroupDevice.static_group_id == record_id,
+                        )
                     )
                 )
-            ).scalars().all()
+                .scalars()
+                .all()
+            )
             for obj in existing:
                 await self.db.delete(obj)
 
             for serial in data.device_serial_numbers:
-                self.db.add(StaticGroupDevice(
-                    static_group_id=record_id,
-                    device_serial_number=serial,
-                ))
+                self.db.add(
+                    StaticGroupDevice(
+                        static_group_id=record_id,
+                        device_serial_number=serial,
+                    )
+                )
             has_changes = True
 
         # 3. Commit and return fresh state
@@ -107,7 +119,11 @@ class StaticGroupRepository:
         return await self.get_by_id(record_id)
 
     async def delete(self, record_id: int) -> bool:
-        stmt = delete(StaticGroup).where(StaticGroup.id == record_id).returning(StaticGroup.id)
+        stmt = (
+            delete(StaticGroup)
+            .where(StaticGroup.id == record_id)
+            .returning(StaticGroup.id)
+        )
         result = await self.db.execute(stmt)
         await self.db.commit()
         return result.scalar_one_or_none() is not None

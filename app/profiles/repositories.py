@@ -6,7 +6,12 @@ from app.common.enums import AssignmentSource
 from app.profiles.models import Profile
 from app.profiles.models import ProfileScope
 from app.profiles.models import ProfileAssignment
-from app.profiles.schemas import ProfileCreate, ProfileUpdate, ScopeTarget, AssignmentUpsert
+from app.profiles.schemas import (
+    ProfileCreate,
+    ProfileUpdate,
+    ScopeTarget,
+    AssignmentUpsert,
+)
 from app.core.exceptions import ConflictError
 
 
@@ -39,7 +44,12 @@ class ProfileRepository:
         values = data.model_dump(exclude_unset=True)
         if not values:
             return await self.get_by_id(record_id)
-        stmt = update(Profile).where(Profile.id == record_id).values(**values).returning(Profile)
+        stmt = (
+            update(Profile)
+            .where(Profile.id == record_id)
+            .values(**values)
+            .returning(Profile)
+        )
         result = await self.db.execute(stmt)
         try:
             await self.db.commit()
@@ -70,15 +80,27 @@ class ProfileRepository:
         for existing in result.scalars().all():
             await self.db.delete(existing)
         for t in targets:
-            self.db.add(ProfileScope(profile_id=profile_id, target_type=t.target_type, target_id=t.target_id))
+            self.db.add(
+                ProfileScope(
+                    profile_id=profile_id,
+                    target_type=t.target_type,
+                    target_id=t.target_id,
+                )
+            )
         await self.db.commit()
 
     async def get_assignments(self, profile_id: int) -> list[ProfileAssignment]:
-        stmt = select(ProfileAssignment).where(ProfileAssignment.profile_id == profile_id).order_by(ProfileAssignment.id)
+        stmt = (
+            select(ProfileAssignment)
+            .where(ProfileAssignment.profile_id == profile_id)
+            .order_by(ProfileAssignment.id)
+        )
         result = await self.db.execute(stmt)
         return list(result.scalars().all())
 
-    async def get_assignment(self, profile_id: int, device_id: int) -> ProfileAssignment | None:
+    async def get_assignment(
+        self, profile_id: int, device_id: int
+    ) -> ProfileAssignment | None:
         stmt = select(ProfileAssignment).where(
             ProfileAssignment.profile_id == profile_id,
             ProfileAssignment.device_id == device_id,

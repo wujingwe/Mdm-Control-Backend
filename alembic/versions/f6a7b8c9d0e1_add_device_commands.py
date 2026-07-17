@@ -4,6 +4,7 @@ Revision ID: f6a7b8c9d0e1
 Revises: d4e5f6a7b8c9
 Create Date: 2026-01-01 00:00:00.000000
 """
+
 from alembic import op
 import sqlalchemy as sa
 
@@ -27,9 +28,17 @@ def upgrade() -> None:
         sa.Column(
             "command_type",
             sa.Enum(
-                "CHECK_IN", "UPDATE_INVENTORY", "LOCK", "UNLOCK",
-                "WIPE", "RESTART", "SHUTDOWN", "LOST_MODE",
-                name="commandtype", native_enum=False, length=30,
+                "CHECK_IN",
+                "UPDATE_INVENTORY",
+                "LOCK",
+                "UNLOCK",
+                "WIPE",
+                "RESTART",
+                "SHUTDOWN",
+                "LOST_MODE",
+                name="commandtype",
+                native_enum=False,
+                length=30,
             ),
             nullable=False,
         ),
@@ -37,9 +46,16 @@ def upgrade() -> None:
         sa.Column(
             "status",
             sa.Enum(
-                "PENDING", "SENT", "ACKNOWLEDGED", "IN_PROGRESS",
-                "COMPLETED", "FAILED", "CANCELLED",
-                name="commandstatus", native_enum=False, length=20,
+                "PENDING",
+                "SENT",
+                "ACKNOWLEDGED",
+                "IN_PROGRESS",
+                "COMPLETED",
+                "FAILED",
+                "CANCELLED",
+                name="commandstatus",
+                native_enum=False,
+                length=20,
             ),
             nullable=False,
             server_default="PENDING",
@@ -64,7 +80,9 @@ def upgrade() -> None:
     )
     op.create_index("ix_device_commands_device_id", "device_commands", ["device_id"])
     op.create_index("ix_device_commands_status", "device_commands", ["status"])
-    op.create_index("ix_device_commands_command_type", "device_commands", ["command_type"])
+    op.create_index(
+        "ix_device_commands_command_type", "device_commands", ["command_type"]
+    )
     op.create_index("ix_device_commands_created_at", "device_commands", ["created_at"])
 
 

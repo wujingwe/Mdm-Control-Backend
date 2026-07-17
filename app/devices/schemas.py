@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import Any
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from app.common.enums import ConnectionStatus, EnrollmentStatus
 
@@ -60,7 +60,7 @@ class DeviceResponse(BaseModel):
     network: Network | dict | None = None
     certificates: list[Certificate] | list | None = None
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
 
 
 class DeviceSearchCriteria(BaseModel):

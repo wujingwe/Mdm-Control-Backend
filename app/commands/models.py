@@ -20,8 +20,12 @@ class DeviceCommand(Base):
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    device_id: Mapped[int] = mapped_column(Integer, ForeignKey("devices.id", ondelete="CASCADE"))
-    command_type: Mapped[CommandType] = mapped_column(Enum(CommandType, native_enum=False, length=30))
+    device_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("devices.id", ondelete="CASCADE")
+    )
+    command_type: Mapped[CommandType] = mapped_column(
+        Enum(CommandType, native_enum=False, length=30)
+    )
     parameters: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     status: Mapped[CommandStatus] = mapped_column(
         Enum(CommandStatus, native_enum=False, length=20),
@@ -29,7 +33,9 @@ class DeviceCommand(Base):
     )
     result_message: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_by: Mapped[int | None] = mapped_column(
-        Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True,
+        Integer,
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
     )
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
     sent_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
