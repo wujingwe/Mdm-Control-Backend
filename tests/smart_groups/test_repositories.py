@@ -122,24 +122,12 @@ class TestSmartGroupRepository:
         assert len(updated.criteria) == 1
         assert updated.criteria[0]["field"] == "battery_status"
 
-    async def test_update_criteria_empty_list(self, db_session):
-        repo = SmartGroupRepository(db_session)
-        created = await repo.create(
-            SmartGroupCreate(
-                name="Test Group",
-                created_by=1,
-                criteria=[
-                    {
-                        "field": "os_version",
-                        "operator": "is",
-                        "type": "string",
-                        "value": "Android 14",
-                    },
-                ],
-            )
-        )
-        updated = await repo.update(created.id, SmartGroupUpdate(criteria=[]))
-        assert updated.criteria == []
+    async def test_update_criteria_empty_list_rejected(self, db_session):
+        from pydantic import ValidationError
+        import pytest
+
+        with pytest.raises(ValidationError):
+            SmartGroupUpdate(criteria=[])
 
     async def test_update_name_preserves_criteria(self, db_session):
         repo = SmartGroupRepository(db_session)

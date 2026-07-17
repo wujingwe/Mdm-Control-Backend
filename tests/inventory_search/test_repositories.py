@@ -135,24 +135,12 @@ class TestInventorySearchRepository:
         assert len(updated.criteria) == 1
         assert updated.criteria[0]["field"] == "battery_status"
 
-    async def test_update_criteria_empty_list(self, db_session):
-        repo = InventorySearchRepository(db_session)
-        created = await repo.create(
-            InventorySearchCreate(
-                name="Test Search",
-                created_by=1,
-                criteria=[
-                    {
-                        "field": "os_version",
-                        "operator": "is",
-                        "type": "string",
-                        "value": "Android 14",
-                    },
-                ],
-            )
-        )
-        updated = await repo.update(created.id, InventorySearchUpdate(criteria=[]))
-        assert updated.criteria == []
+    async def test_update_criteria_empty_list_rejected(self, db_session):
+        from pydantic import ValidationError
+        import pytest
+
+        with pytest.raises(ValidationError):
+            InventorySearchUpdate(criteria=[])
 
     async def test_update_name_preserves_criteria(self, db_session):
         repo = InventorySearchRepository(db_session)

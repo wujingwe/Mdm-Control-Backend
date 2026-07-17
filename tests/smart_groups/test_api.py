@@ -170,7 +170,7 @@ class TestSmartGroupsAPI:
         assert len(criteria) == 1
         assert criteria[0]["field"] == "battery_status"
 
-    async def test_update_criteria_empty_list(self, client):
+    async def test_update_empty_criteria_rejected(self, client):
         create = await client.post(
             self.BASE,
             json={
@@ -190,8 +190,7 @@ class TestSmartGroupsAPI:
             f"{self.BASE}/{gid}",
             json={"criteria": []},
         )
-        assert update.status_code == 200
-        assert update.json()["criteria"] == []
+        assert update.status_code == 422
 
     async def test_create_without_criteria_rejected(self, client):
         create = await client.post(

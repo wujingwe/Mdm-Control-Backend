@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from app.criteria.schemas import Criteria
 
@@ -16,6 +16,12 @@ class InventorySearchUpdate(BaseModel):
     name: str | None = None
     description: str | None = None
     criteria: list[Criteria] | None = None
+
+    @model_validator(mode="after")
+    def _validate_criteria(self) -> "InventorySearchUpdate":
+        if self.criteria is not None and len(self.criteria) == 0:
+            raise ValueError("criteria must not be empty when provided")
+        return self
 
 
 class InventorySearchResponse(BaseModel):
