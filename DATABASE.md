@@ -1,5 +1,27 @@
 # Database Schema Reference
 
+## Main table
+- users
+- devices
+- smart_groups
+- static_groups
+- criteria
+- extension_attributes
+- profiles
+- commands
+- inventory_searches
+- mobile_apps
+
+## Conjunction table
+- device_extension_attributes
+- device_mobile_apps
+- device_commands
+- device_profiles 
+- static_group_devices
+- inventory_search_criteria
+- smart_group_criteria
+- profile_scopes
+
 MariaDB backend with 9 tables across 7 domain modules. All tables extend `Base` from `app/base.py`.
 
 ---
