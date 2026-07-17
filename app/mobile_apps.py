@@ -2,6 +2,11 @@
 from app.base import Base, utcnow
 from app.mobile_apps.schemas import Scope
 
+class Scope(BaseModel):
+    targets: list[Target] = []
+    exclusions: list[Exclusion] = []
+
+
 class ScopeType(TypeDecorator[Scope]):
     impl = JSON
 
@@ -14,6 +19,7 @@ class ScopeType(TypeDecorator[Scope]):
         if value is None:
             return None
         return Scope.model.validate(value)
+
 
 class MobileApp(Base):
     __tablename__ = "mobile_apps"
