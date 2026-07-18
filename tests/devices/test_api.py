@@ -160,6 +160,107 @@ class TestDevicesAPI:
         assert get_resp.status_code == 200
         assert get_resp.json()["extension_attributes"] == []
 
+    async def test_update_device_certificates(self, client, db_session):
+        from app.devices.repositories import DeviceRepository
+
+        repo = DeviceRepository(db_session)
+        device = await repo.create(
+            {
+                "name": "MacBook",
+                "serial_number": "SN-CRT-001",
+                "os_version": "15.0",
+                "connection_status": "Online",
+                "enrollment_status": "Enrolled",
+            }
+        )
+
+        resp = await client.put(
+            f"/api/v1/devices/{device.id}",
+            json={
+                "certificates": [
+                    {"common_name": "new.com", "issuer": "CA2"},
+                    {"common_name": "backup.com"},
+                ],
+            },
+        )
+        assert resp.status_code == 200
+        body = resp.json()
+        assert len(body["certificates"]) == 2
+        assert body["certificates"][0]["common_name"] == "new.com"
+
+    async def test_update_device_multiple_fields(self, client, db_session):
+        from app.devices.repositories import DeviceRepository
+
+        repo = DeviceRepository(db_session)
+        device = await repo.create(
+            {
+                "name": "MacBook",
+                "serial_number": "SN-MUL-001",
+                "os_version": "15.0",
+                "connection_status": "Online",
+                "enrollment_status": "Enrolled",
+            }
+        )
+
+        resp = await client.put(
+            f"/api/v1/devices/{device.id}",
+            json={
+                "connection_status": "Offline",
+                "enrollment_status": "Non-compliant",
+                "battery_status": 15,
+                "total_memory": 16,
+            },
+        )
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["connection_status"] == "Offline"
+        assert body["enrollment_status"] == "Non-compliant"
+        assert body["battery_status"] == 15
+        assert body["total_memory"] == 16
+
+    async def test_update_device_invalid_enum(self, client, db_session):
+        from app.devices.repositories import DeviceRepository
+
+        repo = DeviceRepository(db_session)
+        device = await repo.create(
+            {
+                "name": "MacBook",
+                "serial_number": "SN-INV-001",
+                "os_version": "15.0",
+                "connection_status": "Online",
+                "enrollment_status": "Enrolled",
+            }
+        )
+
+        resp = await client.put(
+            f"/api/v1/devices/{device.id}",
+            json={"connection_status": "INVALID_STATUS"},
+        )
+        assert resp.status_code == 422
+
+    async def test_update_device_empty_body(self, client, db_session):
+        from app.devices.repositories import DeviceRepository
+
+        repo = DeviceRepository(db_session)
+        device = await repo.create(
+            {
+                "name": "MacBook",
+                "serial_number": "SN-EMP-001",
+                "os_version": "15.0",
+                "connection_status": "Online",
+                "enrollment_status": "Enrolled",
+            }
+        )
+
+        resp = await client.put(
+            f"/api/v1/devices/{device.id}",
+            json={},
+        )
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["connection_status"] == "Online"
+        assert body["serial_number"] == "SN-EMP-001"
+
 
 class TestCommandsAPI:
     async def test_list_empty(self, client):

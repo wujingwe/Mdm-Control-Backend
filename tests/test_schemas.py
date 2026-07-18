@@ -321,3 +321,21 @@ class TestDeviceUpdateSchema:
                     {"extension_attribute_id": 1, "value": "test"}
                 ]
             )
+
+    def test_update_invalid_connection_status(self):
+        from pydantic import ValidationError
+        import pytest
+
+        from app.devices.schemas import DeviceUpdate
+
+        with pytest.raises(ValidationError):
+            DeviceUpdate(connection_status="INVALID")
+
+    def test_update_invalid_enrollment_status(self):
+        from pydantic import ValidationError
+        import pytest
+
+        from app.devices.schemas import DeviceUpdate
+
+        with pytest.raises(ValidationError):
+            DeviceUpdate(enrollment_status="INVALID")
