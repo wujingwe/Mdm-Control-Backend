@@ -94,12 +94,12 @@ def search():
     return _search
 
 
-def _names(result):
+def _names(result: list[Device]) -> list[str]:
     """Extract names from search result, sorted case-insensitively."""
     return sorted((d.name for d in result), key=str.casefold)
 
 
-def _serials(result):
+def _serials(result: list[Device]) -> list[str]:
     """Extract serial_numbers from search result."""
     return sorted(d.serial_number for d in result)
 
