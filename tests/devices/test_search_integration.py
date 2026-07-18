@@ -1,6 +1,7 @@
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.common.enums import ConnectionStatus
 from app.devices.models import Device
 from app.devices.repositories import DeviceRepository
 from app.devices.schemas import DeviceSearchCriteria
@@ -45,7 +46,7 @@ async def devices(db_session: AsyncSession):
             name="iPhone SE",
             serial_number="SN-IPSE-004",
             os_version="iOS 17.4",
-            connection_status="Online",
+            connection_status=ConnectionStatus.ONLINE,
             enrollment_status="Pending",
             battery_status=80,
             total_storage=128,
@@ -82,8 +83,8 @@ async def devices(db_session: AsyncSession):
 def search():
     """Helper to build DeviceSearchCriteria from shorthand."""
 
-    def _search(service, field, operator, value, conjunction="AND"):
-        return service.search_devices(
+    async def _search(service, field, operator, value, conjunction="AND"):
+        return await service.search_devices(
             DeviceSearchCriteria(
                 conjunction=conjunction,
                 criteria=[{"field": field, "operator": operator, "value": value}],
