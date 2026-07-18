@@ -37,5 +37,4 @@ class InventorySearchResponse(BaseModel):
 
 
 class InventorySearchExecuteRequest(BaseModel):
-    conjunction: str = "AND"
     criteria: list[Criteria] = Field(min_length=1)

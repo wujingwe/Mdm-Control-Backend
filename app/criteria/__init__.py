@@ -1,5 +1,4 @@
 from collections.abc import Callable
-from functools import reduce
 from operator import and_, or_
 
 from sqlalchemy.sql.expression import BinaryExpression
@@ -23,23 +22,78 @@ FILTER_BUILDERS: dict[str, Callable] = {
 
 
 def build_device_query(
-    criteria: list[Criteria], conjunction: str = "AND"
+    criteria: list[Criteria],
 ) -> tuple[BinaryExpression | None, list[BinaryExpression]]:
+    """Build a SQLAlchemy WHERE expression from a list of Criteria.
+
+    Each criterion's ``and_or`` field determines the conjunction to the
+    *next* criterion (AND / OR).  ``left_parentheses`` / ``right_parentheses``
+    group criteria into sub-expressions so that parentheses override the
+    default left-to-right evaluation.
+
+    Returns ``(where_expression, all_filters)``.
+    """
     from app.devices.models import Device
 
-    filters: list[BinaryExpression] = []
-
+    # 1. Build individual column filters
+    filters: list[BinaryExpression | None] = []
     for c in criteria:
         col = getattr(Device, c.field, None)
         if col is None:
+            filters.append(None)
             continue
         builder = FILTER_BUILDERS.get(c.operator)
-        if builder is not None:
-            filters.append(builder(col, c.value))
+        filters.append(builder(col, c.value) if builder else None)
 
-    where = None
-    if filters:
-        combine = and_ if conjunction.upper() == "AND" else or_
-        where = reduce(combine, filters)
+    # 2. Group consecutive criteria by parentheses.
+    #    A ``left_parentheses`` starts a new group; a ``right_parentheses``
+    #    closes the current group.  Criteria without any parentheses land in
+    #    a single implicit group.
+    groups: list[list[tuple[BinaryExpression, str]]] = []
+    current_group: list[tuple[BinaryExpression, str]] = []
 
-    return where, filters
+    for i, c in enumerate(criteria):
+        f = filters[i]
+        if f is None:
+            continue
+
+        if c.left_parentheses:
+            current_group = []
+
+        current_group.append((f, c.and_or))
+
+        if c.right_parentheses:
+            groups.append(current_group)
+            current_group = []
+
+    if current_group:
+        groups.append(current_group)
+
+    if not groups:
+        return None, []
+
+    # 3. Within each group, combine filters using the conjunction stored on
+    #    each criterion (except the last, whose ``and_or`` connects to the
+    #    next group).
+    group_exprs: list[BinaryExpression] = []
+    group_conjs: list[str] = []
+
+    for group in groups:
+        expr = group[0][0]
+        for j in range(1, len(group)):
+            conj = group[j - 1][1]
+            combine = and_ if conj.upper() == "AND" else or_
+            expr = combine(expr, group[j][0])
+        group_exprs.append(expr)
+        group_conjs.append(group[-1][1])
+
+    # 4. Combine groups.  The conjunction between group *i-1* and group *i*
+    #    is the ``and_or`` of the last criterion in group *i-1*.
+    result = group_exprs[0]
+    for idx in range(1, len(group_exprs)):
+        conj = group_conjs[idx - 1]
+        combine = and_ if conj.upper() == "AND" else or_
+        result = combine(result, group_exprs[idx])
+
+    all_filters = [f for f in filters if f is not None]
+    return result, all_filters

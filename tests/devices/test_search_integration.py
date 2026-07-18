@@ -87,13 +87,18 @@ async def _search(
     field: str,
     operator: str,
     value: str,
-    conjunction: str = "AND",
+    and_or: str = "AND",
 ) -> list[Device]:
     return await service.execute_search(
         InventorySearchExecuteRequest(
-            conjunction=conjunction,
             criteria=[
-                Criteria(field=field, operator=operator, type="string", value=value)
+                Criteria(
+                    field=field,
+                    operator=operator,
+                    type="string",
+                    value=value,
+                    and_or=and_or,
+                )
             ],
         )
     )
@@ -302,19 +307,20 @@ class TestSearchConjunctions:
         svc, _ = devices
         result = await svc.execute_search(
             InventorySearchExecuteRequest(
-                conjunction="AND",
                 criteria=[
                     Criteria(
                         field="connection_status",
                         operator="is",
                         type="string",
                         value="Online",
+                        and_or="AND",
                     ),
                     Criteria(
                         field="enrollment_status",
                         operator="is",
                         type="string",
                         value="Enrolled",
+                        and_or="AND",
                     ),
                 ],
             )
@@ -327,11 +333,20 @@ class TestSearchConjunctions:
         svc, _ = devices
         result = await svc.execute_search(
             InventorySearchExecuteRequest(
-                conjunction="OR",
                 criteria=[
-                    Criteria(field="name", operator="like", type="string", value="Mac"),
                     Criteria(
-                        field="name", operator="like", type="string", value="iPhone"
+                        field="name",
+                        operator="like",
+                        type="string",
+                        value="Mac",
+                        and_or="OR",
+                    ),
+                    Criteria(
+                        field="name",
+                        operator="like",
+                        type="string",
+                        value="iPhone",
+                        and_or="AND",
                     ),
                 ],
             )
@@ -361,22 +376,27 @@ class TestSearchMultiCriteria:
         svc, _ = devices
         result = await svc.execute_search(
             InventorySearchExecuteRequest(
-                conjunction="AND",
                 criteria=[
                     Criteria(
-                        field="os_version", operator="like", type="string", value="iOS"
+                        field="os_version",
+                        operator="like",
+                        type="string",
+                        value="iOS",
+                        and_or="AND",
                     ),
                     Criteria(
                         field="enrollment_status",
                         operator="is",
                         type="string",
                         value="Enrolled",
+                        and_or="AND",
                     ),
                     Criteria(
                         field="battery_status",
                         operator="greaterThan",
                         type="number",
                         value="5",
+                        and_or="AND",
                     ),
                 ],
             )
@@ -389,19 +409,20 @@ class TestSearchMultiCriteria:
         svc, _ = devices
         result = await svc.execute_search(
             InventorySearchExecuteRequest(
-                conjunction="OR",
                 criteria=[
                     Criteria(
                         field="os_version",
                         operator="is",
                         type="string",
                         value="macOS 15.0",
+                        and_or="OR",
                     ),
                     Criteria(
                         field="os_version",
                         operator="is",
                         type="string",
                         value="Android 15",
+                        and_or="AND",
                     ),
                 ],
             )
@@ -414,27 +435,226 @@ class TestSearchMultiCriteria:
         svc, _ = devices
         result = await svc.execute_search(
             InventorySearchExecuteRequest(
-                conjunction="AND",
                 criteria=[
                     Criteria(
                         field="connection_status",
                         operator="is",
                         type="string",
                         value="Online",
+                        and_or="AND",
                     ),
                     Criteria(
                         field="enrollment_status",
                         operator="isNot",
                         type="string",
                         value="Pending",
+                        and_or="AND",
                     ),
                     Criteria(
-                        field="name", operator="notLike", type="string", value="Pixel"
+                        field="name",
+                        operator="notLike",
+                        type="string",
+                        value="Pixel",
+                        and_or="AND",
                     ),
                 ],
             )
         )
         assert _names(result) == ["MacBook Air", "MacBook Pro"]
+
+
+class TestSearchParentheses:
+    """Tests for parentheses grouping with mixed AND/OR conjunctions."""
+
+    async def test_and_group_or_and_group(
+        self, devices: tuple[InventorySearchService, dict[str, Device]]
+    ) -> None:
+        """(name LIKE 'Mac' AND connection_status IS 'Online') OR (os_version LIKE 'iOS' AND enrollment_status IS 'Enrolled')"""
+        svc, _ = devices
+        result = await svc.execute_search(
+            InventorySearchExecuteRequest(
+                criteria=[
+                    Criteria(
+                        field="name",
+                        operator="like",
+                        type="string",
+                        value="Mac",
+                        and_or="AND",
+                        left_parentheses=True,
+                    ),
+                    Criteria(
+                        field="connection_status",
+                        operator="is",
+                        type="string",
+                        value="Online",
+                        and_or="OR",
+                        right_parentheses=True,
+                    ),
+                    Criteria(
+                        field="os_version",
+                        operator="like",
+                        type="string",
+                        value="iOS",
+                        and_or="AND",
+                        left_parentheses=True,
+                    ),
+                    Criteria(
+                        field="enrollment_status",
+                        operator="is",
+                        type="string",
+                        value="Enrolled",
+                        and_or="AND",
+                        right_parentheses=True,
+                    ),
+                ],
+            )
+        )
+        # (Mac AND Online) = MacBook Pro, MacBook Air
+        # (iOS AND Enrolled) = iPhone 15
+        assert _names(result) == ["iPhone 15", "MacBook Air", "MacBook Pro"]
+
+    async def test_or_group_and_group(
+        self, devices: tuple[InventorySearchService, dict[str, Device]]
+    ) -> None:
+        """(name LIKE 'Mac' OR name LIKE 'iPhone') AND connection_status IS 'Online'"""
+        svc, _ = devices
+        result = await svc.execute_search(
+            InventorySearchExecuteRequest(
+                criteria=[
+                    Criteria(
+                        field="name",
+                        operator="like",
+                        type="string",
+                        value="Mac",
+                        and_or="OR",
+                        left_parentheses=True,
+                    ),
+                    Criteria(
+                        field="name",
+                        operator="like",
+                        type="string",
+                        value="iPhone",
+                        and_or="AND",
+                        right_parentheses=True,
+                    ),
+                    Criteria(
+                        field="connection_status",
+                        operator="is",
+                        type="string",
+                        value="Online",
+                        and_or="AND",
+                    ),
+                ],
+            )
+        )
+        # (Mac OR iPhone) = MacBook Pro, MacBook Air, iPhone 15, iPhone SE
+        # AND Online = MacBook Pro, MacBook Air, iPhone SE
+        assert _names(result) == ["iPhone SE", "MacBook Air", "MacBook Pro"]
+
+    async def test_single_parenthesized_group(
+        self, devices: tuple[InventorySearchService, dict[str, Device]]
+    ) -> None:
+        """(name LIKE 'Mac' AND enrollment_status IS 'Enrolled')"""
+        svc, _ = devices
+        result = await svc.execute_search(
+            InventorySearchExecuteRequest(
+                criteria=[
+                    Criteria(
+                        field="name",
+                        operator="like",
+                        type="string",
+                        value="Mac",
+                        and_or="AND",
+                        left_parentheses=True,
+                    ),
+                    Criteria(
+                        field="enrollment_status",
+                        operator="is",
+                        type="string",
+                        value="Enrolled",
+                        and_or="AND",
+                        right_parentheses=True,
+                    ),
+                ],
+            )
+        )
+        assert _names(result) == ["MacBook Air", "MacBook Pro"]
+
+    async def test_no_parens_same_as_single_group(
+        self, devices: tuple[InventorySearchService, dict[str, Device]]
+    ) -> None:
+        """Without parentheses, all criteria form one group (flat chain)."""
+        svc, _ = devices
+        result = await svc.execute_search(
+            InventorySearchExecuteRequest(
+                criteria=[
+                    Criteria(
+                        field="name",
+                        operator="like",
+                        type="string",
+                        value="Mac",
+                        and_or="AND",
+                    ),
+                    Criteria(
+                        field="enrollment_status",
+                        operator="is",
+                        type="string",
+                        value="Enrolled",
+                        and_or="AND",
+                    ),
+                ],
+            )
+        )
+        assert _names(result) == ["MacBook Air", "MacBook Pro"]
+
+    async def test_three_groups(
+        self, devices: tuple[InventorySearchService, dict[str, Device]]
+    ) -> None:
+        """(name LIKE 'Mac') OR (os_version LIKE 'iOS') OR (os_version LIKE 'Android 14')"""
+        svc, _ = devices
+        result = await svc.execute_search(
+            InventorySearchExecuteRequest(
+                criteria=[
+                    Criteria(
+                        field="name",
+                        operator="like",
+                        type="string",
+                        value="Mac",
+                        and_or="OR",
+                        left_parentheses=True,
+                        right_parentheses=True,
+                    ),
+                    Criteria(
+                        field="os_version",
+                        operator="like",
+                        type="string",
+                        value="iOS",
+                        and_or="OR",
+                        left_parentheses=True,
+                        right_parentheses=True,
+                    ),
+                    Criteria(
+                        field="os_version",
+                        operator="is",
+                        type="string",
+                        value="Android 14",
+                        and_or="AND",
+                        left_parentheses=True,
+                        right_parentheses=True,
+                    ),
+                ],
+            )
+        )
+        # Mac = MacBook Pro, MacBook Air
+        # iOS = iPhone 15, iPhone SE
+        # Android 14 = Galaxy S24
+        assert _names(result) == [
+            "Galaxy S24",
+            "iPhone 15",
+            "iPhone SE",
+            "MacBook Air",
+            "MacBook Pro",
+        ]
 
 
 class TestSearchEdgeCases:

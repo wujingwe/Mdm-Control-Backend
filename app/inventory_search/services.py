@@ -37,7 +37,7 @@ class InventorySearchService:
         return await self.repo.delete(search_id)
 
     async def execute_search(self, data: InventorySearchExecuteRequest) -> list[Device]:
-        where, _ = build_device_query(data.criteria, data.conjunction)
+        where, _ = build_device_query(data.criteria)
 
         if where is not None:
             stmt = select(Device).where(where).order_by(Device.id)

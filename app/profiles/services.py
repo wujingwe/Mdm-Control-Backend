@@ -116,7 +116,7 @@ class ProfileService:
                     if isinstance(smart_group.criteria, list)
                     else []
                 )
-                where, _ = build_device_query(criteria_list, "AND")
+                where, _ = build_device_query(criteria_list)
                 if where is not None:
                     dev_stmt = select(Device.id).where(where)
                 else:

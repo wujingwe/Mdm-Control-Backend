@@ -1545,7 +1545,7 @@
     "/api/v1/inventory-search": {
       "get": {
         "tags": [
-          "Inventory Search"
+          "InventorySearch"
         ],
         "summary": "List Inventory Searches",
         "operationId": "list_inventory_searches_api_v1_inventory_search_get",
@@ -1599,7 +1599,7 @@
       },
       "post": {
         "tags": [
-          "Inventory Search"
+          "InventorySearch"
         ],
         "summary": "Create Inventory Search",
         "operationId": "create_inventory_search_api_v1_inventory_search_post",
@@ -1640,7 +1640,7 @@
     "/api/v1/inventory-search/{search_id}": {
       "get": {
         "tags": [
-          "Inventory Search"
+          "InventorySearch"
         ],
         "summary": "Get Inventory Search",
         "operationId": "get_inventory_search_api_v1_inventory_search__search_id__get",
@@ -1680,7 +1680,7 @@
       },
       "put": {
         "tags": [
-          "Inventory Search"
+          "InventorySearch"
         ],
         "summary": "Update Inventory Search",
         "operationId": "update_inventory_search_api_v1_inventory_search__search_id__put",
@@ -1730,7 +1730,7 @@
       },
       "delete": {
         "tags": [
-          "Inventory Search"
+          "InventorySearch"
         ],
         "summary": "Delete Inventory Search",
         "operationId": "delete_inventory_search_api_v1_inventory_search__search_id__delete",
@@ -1772,7 +1772,7 @@
     "/api/v1/inventory-search/execute": {
       "post": {
         "tags": [
-          "Inventory Search"
+          "InventorySearch"
         ],
         "summary": "Execute Inventory Search",
         "operationId": "execute_inventory_search_api_v1_inventory_search_execute_post",
@@ -2525,6 +2525,11 @@
             "type": "string",
             "title": "Value"
           },
+          "and_or": {
+            "type": "string",
+            "title": "And Or",
+            "default": "AND"
+          },
           "left_parentheses": {
             "type": "boolean",
             "title": "Left Parentheses",
@@ -3168,11 +3173,6 @@
       },
       "InventorySearchExecuteRequest": {
         "properties": {
-          "conjunction": {
-            "type": "string",
-            "title": "Conjunction",
-            "default": "AND"
-          },
           "criteria": {
             "items": {
               "$ref": "#/components/schemas/Criteria"
