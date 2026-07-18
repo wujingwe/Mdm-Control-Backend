@@ -7,14 +7,12 @@ from app.common.enums import CommandType, CommandStatus
 
 class CommandCreate(BaseModel):
     command_type: CommandType
-    parameters: dict | None = None
 
 
 class CommandResponse(BaseModel):
     id: int
     device_id: int
     command_type: CommandType
-    parameters: dict | None = None
     status: CommandStatus
     result_message: str | None = None
     created_by: int | None = None

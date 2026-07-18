@@ -4,6 +4,7 @@ from sqlalchemy import ForeignKey, Index, String, Integer, DateTime, JSON, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.base import Base, utcnow
+from app.criteria.schemas import Criteria
 from app.users.models import User
 
 
@@ -21,6 +22,6 @@ class SmartGroup(Base):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, default=utcnow, onupdate=utcnow
     )
-    criteria: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    criteria: Mapped[list[Criteria] | None] = mapped_column(JSON, nullable=True)
 
     creator: Mapped[User | None] = relationship(User, foreign_keys=[created_by])

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from sqlalchemy import Enum, Integer, ForeignKey, DateTime, Text, Index, String, JSON
+from sqlalchemy import Enum, Integer, ForeignKey, DateTime, Text, Index, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.base import Base, utcnow
@@ -26,7 +26,6 @@ class DeviceCommand(Base):
     command_type: Mapped[CommandType] = mapped_column(
         Enum(CommandType, native_enum=False, length=30)
     )
-    parameters: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     status: Mapped[CommandStatus] = mapped_column(
         Enum(CommandStatus, native_enum=False, length=20),
         default=CommandStatus.PENDING,

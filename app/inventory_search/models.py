@@ -13,6 +13,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.base import Base, utcnow
+from app.criteria.schemas import Criteria
 from app.users.models import User
 
 
@@ -26,7 +27,7 @@ class InventorySearch(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String(100))
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
-    criteria: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    criteria: Mapped[list[Criteria] | None] = mapped_column(JSON, nullable=True)
     created_by: Mapped[int | None] = mapped_column(
         Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True
     )

@@ -2329,18 +2329,6 @@
         "properties": {
           "command_type": {
             "$ref": "#/components/schemas/CommandType"
-          },
-          "parameters": {
-            "anyOf": [
-              {
-                "additionalProperties": true,
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Parameters"
           }
         },
         "type": "object",
@@ -2361,18 +2349,6 @@
           },
           "command_type": {
             "$ref": "#/components/schemas/CommandType"
-          },
-          "parameters": {
-            "anyOf": [
-              {
-                "additionalProperties": true,
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Parameters"
           },
           "status": {
             "$ref": "#/components/schemas/CommandStatus"
@@ -3548,9 +3524,7 @@
             "title": "Description"
           },
           "settings": {
-            "additionalProperties": true,
-            "type": "object",
-            "title": "Settings",
+            "$ref": "#/components/schemas/ProfileSettings",
             "default": {}
           },
           "created_by": {
@@ -3592,9 +3566,7 @@
             "default": 1
           },
           "settings": {
-            "additionalProperties": true,
-            "type": "object",
-            "title": "Settings",
+            "$ref": "#/components/schemas/ProfileSettings",
             "default": {}
           },
           "created_at": {
@@ -3655,6 +3627,12 @@
         ],
         "title": "ProfileScopeResponse"
       },
+      "ProfileSettings": {
+        "properties": {},
+        "additionalProperties": true,
+        "type": "object",
+        "title": "ProfileSettings"
+      },
       "ProfileUpdate": {
         "properties": {
           "name": {
@@ -3682,14 +3660,12 @@
           "settings": {
             "anyOf": [
               {
-                "additionalProperties": true,
-                "type": "object"
+                "$ref": "#/components/schemas/ProfileSettings"
               },
               {
                 "type": "null"
               }
-            ],
-            "title": "Settings"
+            ]
           }
         },
         "type": "object",

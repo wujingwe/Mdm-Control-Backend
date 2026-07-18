@@ -28,7 +28,7 @@ class CommandService:
                 device_id=device_id,
                 command_id=command.id,
                 command_type=data.command_type.value,
-                parameters=data.parameters or {},
+                parameters={},
                 event_type=event_type,
             )
             updated = await self.repo.mark_sent(command.id, message_id)

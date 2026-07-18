@@ -17,6 +17,7 @@ from app.common.enums import ConnectionStatus, EnrollmentStatus
 from app.profiles.models import Profile
 from app.profiles.models import ProfileAssignment  # noqa: F401 — used in relationship string
 from app.types import CertificateListType, NetworkInfoType
+from app.devices.schemas import Certificate, Network
 
 
 class Device(Base):
@@ -47,8 +48,8 @@ class Device(Base):
     available_storage: Mapped[int | None] = mapped_column(Integer, nullable=True)
     total_memory: Mapped[int | None] = mapped_column(Integer, nullable=True)
     available_memory: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    network: Mapped[dict | None] = mapped_column(NetworkInfoType, nullable=True)
-    certificates: Mapped[list | None] = mapped_column(
+    network: Mapped[Network | None] = mapped_column(NetworkInfoType, nullable=True)
+    certificates: Mapped[list[Certificate] | None] = mapped_column(
         CertificateListType, nullable=True
     )
 

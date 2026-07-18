@@ -21,7 +21,7 @@ class ExtensionAttribute(Base):
     input_type: Mapped[str] = mapped_column(
         Enum(ExtensionInputType, native_enum=False, length=20)
     )
-    popup_choices: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    popup_choices: Mapped[list[str] | None] = mapped_column(JSON, nullable=True)
     created_by: Mapped[int | None] = mapped_column(
         Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True
     )

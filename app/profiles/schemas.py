@@ -10,17 +10,21 @@ class ScopeTarget(BaseModel):
     target_id: int = 0
 
 
+class ProfileSettings(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+
 class ProfileCreate(BaseModel):
     name: str
     description: str | None = None
-    settings: dict = {}
+    settings: ProfileSettings = ProfileSettings()
     created_by: int = 1
 
 
 class ProfileUpdate(BaseModel):
     name: str | None = None
     description: str | None = None
-    settings: dict | None = None
+    settings: ProfileSettings | None = None
 
 
 class ProfileResponse(BaseModel):
@@ -28,7 +32,7 @@ class ProfileResponse(BaseModel):
     name: str
     description: str | None = None
     version: int = 1
-    settings: dict = {}
+    settings: ProfileSettings = ProfileSettings()
     created_at: datetime
     created_by: int | None = None
     updated_at: datetime | None = None

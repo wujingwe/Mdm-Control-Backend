@@ -21,7 +21,6 @@ class CommandRepository:
         instance = DeviceCommand(
             device_id=device_id,
             command_type=data.command_type,
-            parameters=data.parameters,
             status=CommandStatus.PENDING,
             created_by=created_by,
         )
