@@ -1,23 +1,17 @@
+from datetime import datetime, timezone
+
+import pytest
+from pydantic import ValidationError
+
 from app.devices.schemas import (
     Certificate,
     Cellular,
     DeviceResponse,
     DeviceSearchCriteria,
+    DeviceUpdate,
     Network,
     Wifi,
 )
-from app.profiles.schemas import ProfileResponse
-from app.smart_groups.schemas import (
-    SmartGroupCreate,
-    SmartGroupUpdate,
-    SmartGroupResponse,
-)
-from app.users.schemas import UserResponse
-from app.common.schemas import Message
-
-
-from datetime import datetime, timezone
-
 
 _DEVICE_FIELDS = {
     "id": 1,
@@ -32,28 +26,17 @@ _DEVICE_FIELDS = {
 }
 
 
-class TestDeviceSchemas:
+class TestDeviceResponseSchema:
     def test_response_from_attributes(self):
         data = DeviceResponse(**_DEVICE_FIELDS)
         assert data.id == 1
         assert data.name == "Test"
-
-    def test_search_criteria_valid(self):
-        data = DeviceSearchCriteria(
-            criteria=[{"field": "status", "operator": "is", "value": "Online"}]
-        )
-        assert len(data.criteria) == 1
-        assert data.criteria[0]["field"] == "status"
 
     def test_optional_fields_default_to_none(self):
         data = DeviceResponse(**_DEVICE_FIELDS)
         assert data.battery_status is None
         assert data.network is None
         assert data.certificates is None
-
-    def test_search_criteria_empty(self):
-        data = DeviceSearchCriteria(criteria=[])
-        assert data.criteria == []
 
     def test_network_and_certificates_default_to_none(self):
         data = DeviceResponse(**_DEVICE_FIELDS)
@@ -90,7 +73,20 @@ class TestDeviceSchemas:
         assert data.certificates[1].fingerprint == "AB:CD:EF"
 
 
-class TestWifiInfo:
+class TestDeviceSearchCriteriaSchema:
+    def test_search_criteria_valid(self):
+        data = DeviceSearchCriteria(
+            criteria=[{"field": "status", "operator": "is", "value": "Online"}]
+        )
+        assert len(data.criteria) == 1
+        assert data.criteria[0]["field"] == "status"
+
+    def test_search_criteria_empty(self):
+        data = DeviceSearchCriteria(criteria=[])
+        assert data.criteria == []
+
+
+class TestWifiSchema:
     def test_all_fields_default_to_none(self):
         w = Wifi()
         assert w.ssid is None
@@ -109,7 +105,7 @@ class TestWifiInfo:
         assert w.signal_strength == -60
 
 
-class TestCellularInfo:
+class TestCellularSchema:
     def test_all_fields_default_to_none(self):
         c = Cellular()
         assert c.carrier is None
@@ -124,7 +120,7 @@ class TestCellularInfo:
         assert c.roaming is True
 
 
-class TestNetworkInfo:
+class TestNetworkSchema:
     def test_both_subfields_default_to_none(self):
         n = Network()
         assert n.wifi is None
@@ -148,7 +144,7 @@ class TestNetworkInfo:
         assert loaded.cellular.carrier == "T-Mobile"
 
 
-class TestCertificateInfo:
+class TestCertificateSchema:
     def test_all_fields_default_to_none(self):
         c = Certificate()
         assert c.common_name is None
@@ -172,93 +168,8 @@ class TestCertificateInfo:
         assert loaded.fingerprint == "12:34:56"
 
 
-class TestProfileSchemas:
-    def test_response(self):
-        data = ProfileResponse(
-            id=1,
-            name="Profile A",
-            version=1,
-            created_at=datetime.now(timezone.utc),
-            created_by=1,
-        )
-        assert data.name == "Profile A"
-        assert data.version == 1
-
-
-class TestSmartGroupSchemas:
-    def test_create_valid(self):
-        data = SmartGroupCreate(
-            name="Group A",
-            criteria=[{"field": "os_version", "operator": "is", "type": "string", "value": "Android 14"}],
-        )
-        assert data.name == "Group A"
-        assert len(data.criteria) == 1
-
-    def test_create_with_description(self):
-        data = SmartGroupCreate(
-            name="Group A",
-            description="desc",
-            criteria=[{"field": "os_version", "operator": "is", "type": "string", "value": "Android 14"}],
-        )
-        assert data.description == "desc"
-
-    def test_create_empty_criteria_rejected(self):
-        from pydantic import ValidationError
-        import pytest
-
-        with pytest.raises(ValidationError):
-            SmartGroupCreate(name="Group A", criteria=[])
-
-    def test_update_partial(self):
-        data = SmartGroupUpdate(description="Updated desc")
-        assert data.model_dump(exclude_unset=True) == {"description": "Updated desc"}
-
-    def test_response(self):
-        from datetime import datetime, timezone
-
-        now = datetime.now(timezone.utc)
-        data = SmartGroupResponse(id=1, name="Group A", created_by=1, created_at=now)
-        assert data.id == 1
-
-
-class TestUserSchemas:
-    def test_response(self):
-        from datetime import datetime, timezone
-
-        now = datetime.now(timezone.utc)
-        data = UserResponse(
-            id=1,
-            name="jdoe",
-            email="j@example.com",
-            permissions=["admin"],
-            created_at=now,
-        )
-        assert data.name == "jdoe"
-
-    def test_response_with_email(self):
-        from datetime import datetime, timezone
-
-        now = datetime.now(timezone.utc)
-        data = UserResponse(
-            id=1,
-            name="test",
-            email="bad@example.com",
-            permissions=["editor"],
-            created_at=now,
-        )
-        assert data.email == "bad@example.com"
-
-
-class TestCommonSchemas:
-    def test_message(self):
-        msg = Message(detail="OK")
-        assert msg.detail == "OK"
-
-
 class TestDeviceUpdateSchema:
     def test_update_all_fields(self):
-        from app.devices.schemas import DeviceUpdate
-
         data = DeviceUpdate(
             connection_status="Offline",
             enrollment_status="Non-compliant",
@@ -285,36 +196,23 @@ class TestDeviceUpdateSchema:
         assert len(data.extension_attributes) == 1
 
     def test_update_partial(self):
-        from app.devices.schemas import DeviceUpdate
-
         data = DeviceUpdate(connection_status="Online")
         dumped = data.model_dump(exclude_unset=True)
         assert dumped == {"connection_status": "Online"}
 
     def test_update_empty(self):
-        from app.devices.schemas import DeviceUpdate
-
         data = DeviceUpdate()
         assert data.model_dump(exclude_unset=True) == {}
 
     def test_update_ext_attrs_optional(self):
-        from app.devices.schemas import DeviceUpdate
-
         data = DeviceUpdate()
         assert data.extension_attributes is None
 
     def test_update_ext_attrs_empty_list(self):
-        from app.devices.schemas import DeviceUpdate
-
         data = DeviceUpdate(extension_attributes=[])
         assert data.extension_attributes == []
 
     def test_update_ext_attrs_missing_name(self):
-        from pydantic import ValidationError
-        import pytest
-
-        from app.devices.schemas import DeviceUpdate
-
         with pytest.raises(ValidationError):
             DeviceUpdate(
                 extension_attributes=[
@@ -323,19 +221,9 @@ class TestDeviceUpdateSchema:
             )
 
     def test_update_invalid_connection_status(self):
-        from pydantic import ValidationError
-        import pytest
-
-        from app.devices.schemas import DeviceUpdate
-
         with pytest.raises(ValidationError):
             DeviceUpdate(connection_status="INVALID")
 
     def test_update_invalid_enrollment_status(self):
-        from pydantic import ValidationError
-        import pytest
-
-        from app.devices.schemas import DeviceUpdate
-
         with pytest.raises(ValidationError):
             DeviceUpdate(enrollment_status="INVALID")

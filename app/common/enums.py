@@ -53,13 +53,11 @@ class CommandType(str, Enum):
     """Types of commands that can be sent to a device."""
 
     CHECK_IN = "CHECK_IN"
-    UPDATE_INVENTORY = "UPDATE_INVENTORY"
     LOCK = "LOCK"
     UNLOCK = "UNLOCK"
     WIPE = "WIPE"
     RESTART = "RESTART"
     SHUTDOWN = "SHUTDOWN"
-    LOST_MODE = "LOST_MODE"
 
 
 class CommandStatus(str, Enum):
