@@ -1,11 +1,11 @@
 from sqlalchemy import select, func, update, delete
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.core.exceptions import ConflictError
 from app.static_groups.models import StaticGroup, StaticGroupDevice
 from app.static_groups.schemas import StaticGroupCreate, StaticGroupUpdate
-from app.core.exceptions import ConflictError
 
 
 class StaticGroupRepository:

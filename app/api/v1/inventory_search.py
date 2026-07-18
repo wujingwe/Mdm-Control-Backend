@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
-from app.dependencies import get_inventory_search_service
 from app.common.schemas import Message, PaginatedResponse
+from app.dependencies import get_inventory_search_service
 from app.inventory_search.schemas import (
     InventorySearchCreate,
     InventorySearchResponse,

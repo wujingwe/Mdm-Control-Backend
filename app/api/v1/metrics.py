@@ -1,11 +1,12 @@
 from fastapi import APIRouter, Depends
+from pydantic import BaseModel
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.dependencies import get_db
+
 from app.common.enums import AssignmentStatus, ConnectionStatus
+from app.dependencies import get_db
 from app.devices.models import Device
 from app.profiles.models import ProfileAssignment
-from pydantic import BaseModel
 
 router = APIRouter(prefix="/metrics", tags=["Metrics"])
 

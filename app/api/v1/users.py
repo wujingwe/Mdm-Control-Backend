@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
-from app.dependencies import get_user_service
 from app.common.schemas import Message, PaginatedResponse
+from app.dependencies import get_user_service
 from app.users.schemas import UserCreate, UserResponse, UserUpdate
 from app.users.services import UserService
 from app.webhook_client import revalidate

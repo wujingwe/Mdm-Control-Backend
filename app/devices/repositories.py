@@ -1,11 +1,11 @@
 from sqlalchemy import select, func, update, delete
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.core.exceptions import ConflictError
 from app.devices.models import Device, DeviceExtensionAttribute
 from app.devices.schemas import DeviceUpdate
-from app.core.exceptions import ConflictError
 
 
 class DeviceRepository:

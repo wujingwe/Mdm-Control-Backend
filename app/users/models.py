@@ -4,6 +4,7 @@ from datetime import datetime
 
 from sqlalchemy import String, Integer, DateTime
 from sqlalchemy.orm import Mapped, mapped_column
+
 from app.base import Base, utcnow
 from app.types import PermissionListType
 

@@ -1,10 +1,10 @@
 from sqlalchemy import select, func, update, delete
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.exceptions import ConflictError
 from app.inventory_search.models import InventorySearch
 from app.inventory_search.schemas import InventorySearchCreate, InventorySearchUpdate
-from app.core.exceptions import ConflictError
 
 
 class InventorySearchRepository:

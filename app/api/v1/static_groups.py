@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
-from app.dependencies import get_static_group_service
 from app.common.schemas import Message, PaginatedResponse
+from app.dependencies import get_static_group_service
 from app.static_groups.schemas import (
     StaticGroupCreate,
     StaticGroupResponse,

@@ -1,18 +1,18 @@
 from sqlalchemy import select, func, update, delete
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.common.enums import AssignmentSource
+from app.core.exceptions import ConflictError
 from app.profiles.models import Profile
-from app.profiles.models import ProfileScope
 from app.profiles.models import ProfileAssignment
+from app.profiles.models import ProfileScope
 from app.profiles.schemas import (
     ProfileCreate,
     ProfileUpdate,
     ScopeTarget,
     AssignmentUpsert,
 )
-from app.core.exceptions import ConflictError
 
 
 class ProfileRepository:

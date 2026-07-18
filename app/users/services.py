@@ -4,7 +4,6 @@ from app.users.models import User
 from app.users.repositories import UserRepository
 from app.users.schemas import UserCreate, UserCreateDB, UserUpdate, UserUpdateDB
 
-
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 

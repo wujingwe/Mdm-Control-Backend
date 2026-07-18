@@ -1,13 +1,13 @@
 from sqlalchemy import select, func, update, delete
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.exceptions import ConflictError
 from app.extension_attributes.models import ExtensionAttribute
 from app.extension_attributes.schemas import (
     ExtensionAttributeCreate,
     ExtensionAttributeUpdate,
 )
-from app.core.exceptions import ConflictError
 
 
 class ExtensionAttributeRepository:

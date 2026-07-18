@@ -2,6 +2,7 @@ import logging
 
 import httpx
 from tenacity import AsyncRetrying, stop_after_attempt, wait_exponential
+
 from app.config.settings import settings
 
 logger = logging.getLogger(__name__)

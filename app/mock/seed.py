@@ -4,9 +4,10 @@ from datetime import datetime, timezone
 from passlib.context import CryptContext
 from sqlalchemy import text
 
-from app.database import engine, async_session
 from app.base import Base
+from app.database import engine, async_session
 from app.devices.models import Device
+from app.devices.schemas import Network, Wifi
 from app.extension_attributes.models import ExtensionAttribute
 from app.inventory_search.models import InventorySearch
 from app.profiles.models import Profile
@@ -15,7 +16,6 @@ from app.smart_groups.models import SmartGroup
 from app.static_groups.models import StaticGroup
 from app.static_groups.models import StaticGroupDevice
 from app.users.models import User
-from app.devices.schemas import Network, Wifi
 
 logger = logging.getLogger(__name__)
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")

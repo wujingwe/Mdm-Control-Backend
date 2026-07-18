@@ -10,6 +10,7 @@ from app.devices.models import Device
 from app.profiles.models import Profile
 from app.profiles.models import ProfileAssignment
 from app.profiles.models import ProfileScope
+from app.profiles.repositories import ProfileRepository
 from app.profiles.schemas import (
     ProfileCreate,
     ProfileUpdate,
@@ -17,7 +18,6 @@ from app.profiles.schemas import (
     AssignmentUpsert,
 )
 from app.static_groups.models import StaticGroupDevice
-from app.profiles.repositories import ProfileRepository
 
 logger = logging.getLogger(__name__)
 

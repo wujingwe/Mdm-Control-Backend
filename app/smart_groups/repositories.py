@@ -1,10 +1,10 @@
 from sqlalchemy import select, func, update, delete
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.exceptions import ConflictError
 from app.smart_groups.models import SmartGroup
 from app.smart_groups.schemas import SmartGroupCreate, SmartGroupUpdate
-from app.core.exceptions import ConflictError
 
 
 class SmartGroupRepository:

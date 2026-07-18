@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
-from app.dependencies import get_extension_attribute_service
 from app.common.schemas import Message, PaginatedResponse
+from app.dependencies import get_extension_attribute_service
 from app.extension_attributes.schemas import (
     ExtensionAttributeCreate,
     ExtensionAttributeResponse,

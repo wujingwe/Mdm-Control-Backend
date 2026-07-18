@@ -31,6 +31,7 @@ class JsonType(TypeDecorator[T], ABC, Generic[S, T]):
 
 
 class NetworkInfoType(JsonType[dict, Network]):
+    cache_ok = True
     def _bind(self, value: Network | dict) -> dict:
         if isinstance(value, dict):
             return value
@@ -41,6 +42,7 @@ class NetworkInfoType(JsonType[dict, Network]):
 
 
 class CertificateListType(JsonType[list[dict], list[Certificate]]):
+    cache_ok = True
     def _bind(self, value: list[Certificate] | list[dict]) -> list[dict]:
         return [c if isinstance(c, dict) else c.model_dump() for c in value]
 
@@ -49,6 +51,7 @@ class CertificateListType(JsonType[list[dict], list[Certificate]]):
 
 
 class PermissionListType(JsonType[list[str], frozenset[str]]):
+    cache_ok = True
     VALID_PERMISSIONS = frozenset({"admin", "editor", "viewer"})
 
     def _bind(self, value: frozenset[str]) -> list[str]:

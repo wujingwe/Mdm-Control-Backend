@@ -13,8 +13,8 @@ from app.commands.models import DeviceCommand
 from app.common.enums import AssignmentStatus, CommandStatus
 from app.config.settings import settings
 from app.database import async_session
-from app.profiles.models import ProfileAssignment
 from app.notification.webhook import send_validation_webhook
+from app.profiles.models import ProfileAssignment
 
 try:
     import aio_pika

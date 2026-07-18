@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
-from app.dependencies import get_profile_service
-from app.common.schemas import Message, PaginatedResponse
 from app.common.enums import TargetType
+from app.common.schemas import Message, PaginatedResponse
+from app.dependencies import get_profile_service
 from app.profiles.schemas import (
     AssignmentResponse,
     ProfileCreate,

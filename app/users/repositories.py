@@ -1,10 +1,10 @@
 from sqlalchemy import select, func, update, delete
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.exceptions import ConflictError
 from app.users.models import User
 from app.users.schemas import UserCreateDB, UserUpdateDB
-from app.core.exceptions import ConflictError
 
 
 class UserRepository:
