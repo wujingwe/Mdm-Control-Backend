@@ -94,12 +94,12 @@ def search():
     return _search
 
 
-async def _names(result):
+def _names(result):
     """Extract names from search result, sorted case-insensitively."""
     return sorted((d.name for d in result), key=str.casefold)
 
 
-async def _serials(result):
+def _serials(result):
     """Extract serial_numbers from search result."""
     return sorted(d.serial_number for d in result)
 
@@ -108,17 +108,17 @@ class TestSearchIsOperator:
     async def test_is_online(self, devices, search):
         svc, _ = devices
         result = await search(svc, "connection_status", "is", "Online")
-        assert await _names(result) == ["iPhone SE", "MacBook Air", "MacBook Pro", "Pixel 8"]
+        assert _names(result) == ["iPhone SE", "MacBook Air", "MacBook Pro", "Pixel 8"]
 
     async def test_is_offline(self, devices, search):
         svc, _ = devices
         result = await search(svc, "connection_status", "is", "Offline")
-        assert await _names(result) == ["Galaxy S24", "iPhone 15"]
+        assert _names(result) == ["Galaxy S24", "iPhone 15"]
 
     async def test_is_enrolled(self, devices, search):
         svc, _ = devices
         result = await search(svc, "enrollment_status", "is", "Enrolled")
-        assert await _names(result) == ["iPhone 15", "MacBook Air", "MacBook Pro", "Pixel 8"]
+        assert _names(result) == ["iPhone 15", "MacBook Air", "MacBook Pro", "Pixel 8"]
 
     async def test_is_exact_name(self, devices, search):
         svc, _ = devices
@@ -131,58 +131,58 @@ class TestSearchIsNotOperator:
     async def test_is_not_offline(self, devices, search):
         svc, _ = devices
         result = await search(svc, "connection_status", "isNot", "Offline")
-        assert await _names(result) == ["iPhone SE", "MacBook Air", "MacBook Pro", "Pixel 8"]
+        assert _names(result) == ["iPhone SE", "MacBook Air", "MacBook Pro", "Pixel 8"]
 
     async def test_is_not_enrolled(self, devices, search):
         svc, _ = devices
         result = await search(svc, "enrollment_status", "isNot", "Enrolled")
-        assert await _names(result) == ["Galaxy S24", "iPhone SE"]
+        assert _names(result) == ["Galaxy S24", "iPhone SE"]
 
 
 class TestSearchLikeOperator:
     async def test_like_mac(self, devices, search):
         svc, _ = devices
         result = await search(svc, "name", "like", "Mac")
-        assert await _names(result) == ["MacBook Air", "MacBook Pro"]
+        assert _names(result) == ["MacBook Air", "MacBook Pro"]
 
     async def test_like_iphone(self, devices, search):
         svc, _ = devices
         result = await search(svc, "name", "like", "iPhone")
-        assert await _names(result) == ["iPhone 15", "iPhone SE"]
+        assert _names(result) == ["iPhone 15", "iPhone SE"]
 
     async def test_like_os_version_android(self, devices, search):
         svc, _ = devices
         result = await search(svc, "os_version", "like", "Android")
-        assert await _names(result) == ["Galaxy S24", "Pixel 8"]
+        assert _names(result) == ["Galaxy S24", "Pixel 8"]
 
 
 class TestSearchNotLikeOperator:
     async def test_not_like_mac(self, devices, search):
         svc, _ = devices
         result = await search(svc, "name", "notLike", "Mac")
-        assert await _names(result) == ["Galaxy S24", "iPhone 15", "iPhone SE", "Pixel 8"]
+        assert _names(result) == ["Galaxy S24", "iPhone 15", "iPhone SE", "Pixel 8"]
 
     async def test_not_like_ios(self, devices, search):
         svc, _ = devices
         result = await search(svc, "os_version", "notLike", "iOS")
-        assert await _names(result) == ["Galaxy S24", "MacBook Air", "MacBook Pro", "Pixel 8"]
+        assert _names(result) == ["Galaxy S24", "MacBook Air", "MacBook Pro", "Pixel 8"]
 
 
 class TestSearchGreaterThanOperator:
     async def test_greater_than_80_battery(self, devices, search):
         svc, _ = devices
         result = await search(svc, "battery_status", "greaterThan", "80")
-        assert await _names(result) == ["MacBook Pro"]
+        assert _names(result) == ["MacBook Pro"]
 
     async def test_greater_than_50_battery(self, devices, search):
         svc, _ = devices
         result = await search(svc, "battery_status", "greaterThan", "50")
-        assert await _names(result) == ["iPhone SE", "MacBook Pro"]
+        assert _names(result) == ["iPhone SE", "MacBook Pro"]
 
     async def test_greater_than_excludes_none(self, devices, search):
         svc, _ = devices
         result = await search(svc, "battery_status", "greaterThan", "0")
-        assert await _names(result) == [
+        assert _names(result) == [
             "Galaxy S24",
             "iPhone 15",
             "iPhone SE",
@@ -195,53 +195,53 @@ class TestSearchLessThanOperator:
     async def test_less_than_30_battery(self, devices, search):
         svc, _ = devices
         result = await search(svc, "battery_status", "lessThan", "30")
-        assert await _names(result) == ["iPhone 15"]
+        assert _names(result) == ["iPhone 15"]
 
     async def test_less_than_50_battery(self, devices, search):
         svc, _ = devices
         result = await search(svc, "battery_status", "lessThan", "50")
-        assert await _names(result) == ["iPhone 15", "MacBook Air"]
+        assert _names(result) == ["iPhone 15", "MacBook Air"]
 
 
 class TestSearchGreaterThanOrEqualOperator:
     async def test_gte_80(self, devices, search):
         svc, _ = devices
         result = await search(svc, "battery_status", "greaterThanOrEqual", "80")
-        assert await _names(result) == ["iPhone SE", "MacBook Pro"]
+        assert _names(result) == ["iPhone SE", "MacBook Pro"]
 
     async def test_gte_50(self, devices, search):
         svc, _ = devices
         result = await search(svc, "battery_status", "greaterThanOrEqual", "50")
-        assert await _names(result) == ["Galaxy S24", "iPhone SE", "MacBook Pro"]
+        assert _names(result) == ["Galaxy S24", "iPhone SE", "MacBook Pro"]
 
 
 class TestSearchLessThanOrEqualOperator:
     async def test_lte_30(self, devices, search):
         svc, _ = devices
         result = await search(svc, "battery_status", "lessThanOrEqual", "30")
-        assert await _names(result) == ["iPhone 15", "MacBook Air"]
+        assert _names(result) == ["iPhone 15", "MacBook Air"]
 
     async def test_lte_50(self, devices, search):
         svc, _ = devices
         result = await search(svc, "battery_status", "lessThanOrEqual", "50")
-        assert await _names(result) == ["Galaxy S24", "iPhone 15", "MacBook Air"]
+        assert _names(result) == ["Galaxy S24", "iPhone 15", "MacBook Air"]
 
 
 class TestSearchRegexOperator:
     async def test_matches_regex(self, devices, search):
         svc, _ = devices
         result = await search(svc, "os_version", "matchesRegex", "^macOS")
-        assert await _names(result) == ["MacBook Air", "MacBook Pro"]
+        assert _names(result) == ["MacBook Air", "MacBook Pro"]
 
     async def test_does_not_match_regex(self, devices, search):
         svc, _ = devices
         result = await search(svc, "os_version", "doesNotMatchRegex", "^macOS")
-        assert await _names(result) == ["Galaxy S24", "iPhone 15", "iPhone SE", "Pixel 8"]
+        assert _names(result) == ["Galaxy S24", "iPhone 15", "iPhone SE", "Pixel 8"]
 
     async def test_regex_partial_match(self, devices, search):
         svc, _ = devices
         result = await search(svc, "name", "matchesRegex", "^.*\\s(Pro|Air)$")
-        assert await _names(result) == ["MacBook Air", "MacBook Pro"]
+        assert _names(result) == ["MacBook Air", "MacBook Pro"]
 
 
 class TestSearchConjunctions:
@@ -256,7 +256,7 @@ class TestSearchConjunctions:
                 ],
             )
         )
-        assert await _names(result) == ["MacBook Air", "MacBook Pro", "Pixel 8"]
+        assert _names(result) == ["MacBook Air", "MacBook Pro", "Pixel 8"]
 
     async def test_or_online_or_enrolled(self, devices):
         svc, _ = devices
@@ -269,7 +269,7 @@ class TestSearchConjunctions:
                 ],
             )
         )
-        assert await _names(result) == [
+        assert _names(result) == [
             "iPhone 15",
             "iPhone SE",
             "MacBook Air",
@@ -279,9 +279,9 @@ class TestSearchConjunctions:
     async def test_and_no_match(self, devices, search):
         svc, _ = devices
         result = await search(svc, "connection_status", "is", "Online")
-        online = await _names(result)
+        online = _names(result)
         result2 = await search(svc, "enrollment_status", "is", "Needs attention")
-        needs_attention = await _names(result2)
+        needs_attention = _names(result2)
         assert len(set(online) & set(needs_attention)) == 0
 
 
@@ -298,7 +298,7 @@ class TestSearchMultiCriteria:
                 ],
             )
         )
-        assert await _names(result) == ["iPhone 15"]
+        assert _names(result) == ["iPhone 15"]
 
     async def test_two_criteria_or(self, devices):
         svc, _ = devices
@@ -311,7 +311,7 @@ class TestSearchMultiCriteria:
                 ],
             )
         )
-        assert await _names(result) == ["MacBook Pro", "Pixel 8"]
+        assert _names(result) == ["MacBook Pro", "Pixel 8"]
 
     async def test_criteria_across_different_fields(self, devices):
         svc, _ = devices
@@ -325,7 +325,7 @@ class TestSearchMultiCriteria:
                 ],
             )
         )
-        assert await _names(result) == ["MacBook Air", "MacBook Pro"]
+        assert _names(result) == ["MacBook Air", "MacBook Pro"]
 
 
 class TestSearchEdgeCases:
@@ -347,10 +347,10 @@ class TestSearchEdgeCases:
     async def test_battery_status_none_excluded_from_numeric(self, devices, search):
         svc, _ = devices
         result = await search(svc, "battery_status", "greaterThan", "0")
-        serials = await _serials(result)
+        serials = _serials(result)
         assert "SN-PIX-006" not in serials
 
     async def test_storage_numeric_filter(self, devices, search):
         svc, _ = devices
         result = await search(svc, "available_storage", "greaterThan", "200")
-        assert await _names(result) == ["Galaxy S24", "MacBook Pro"]
+        assert _names(result) == ["Galaxy S24", "MacBook Pro"]
