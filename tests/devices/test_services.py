@@ -74,7 +74,9 @@ class TestDeviceService:
         svc = DeviceService(repo)
         result = await svc.search_devices(
             DeviceSearchCriteria(
-                criteria=[{"field": "connection_status", "operator": "is", "value": "Online"}],
+                criteria=[
+                    {"field": "connection_status", "operator": "is", "value": "Online"}
+                ],
                 conjunction="AND",
             )
         )
@@ -87,7 +89,13 @@ class TestDeviceService:
         svc = DeviceService(repo)
         result = await svc.search_devices(
             DeviceSearchCriteria(
-                criteria=[{"field": "connection_status", "operator": "isNot", "value": "Offline"}],
+                criteria=[
+                    {
+                        "field": "connection_status",
+                        "operator": "isNot",
+                        "value": "Offline",
+                    }
+                ],
                 conjunction="AND",
             )
         )
@@ -126,7 +134,13 @@ class TestDeviceService:
         svc = DeviceService(repo)
         result = await svc.search_devices(
             DeviceSearchCriteria(
-                criteria=[{"field": "battery_status", "operator": "greaterThan", "value": "50"}],
+                criteria=[
+                    {
+                        "field": "battery_status",
+                        "operator": "greaterThan",
+                        "value": "50",
+                    }
+                ],
                 conjunction="AND",
             )
         )
@@ -139,7 +153,9 @@ class TestDeviceService:
         svc = DeviceService(repo)
         result = await svc.search_devices(
             DeviceSearchCriteria(
-                criteria=[{"field": "battery_status", "operator": "lessThan", "value": "20"}],
+                criteria=[
+                    {"field": "battery_status", "operator": "lessThan", "value": "20"}
+                ],
                 conjunction="AND",
             )
         )
@@ -154,7 +170,11 @@ class TestDeviceService:
             DeviceSearchCriteria(
                 criteria=[
                     {"field": "connection_status", "operator": "is", "value": "Online"},
-                    {"field": "enrollment_status", "operator": "is", "value": "Enrolled"},
+                    {
+                        "field": "enrollment_status",
+                        "operator": "is",
+                        "value": "Enrolled",
+                    },
                 ],
                 conjunction="AND",
             )
@@ -170,7 +190,11 @@ class TestDeviceService:
             DeviceSearchCriteria(
                 criteria=[
                     {"field": "connection_status", "operator": "is", "value": "Online"},
-                    {"field": "connection_status", "operator": "is", "value": "Offline"},
+                    {
+                        "field": "connection_status",
+                        "operator": "is",
+                        "value": "Offline",
+                    },
                 ],
                 conjunction="OR",
             )
@@ -184,13 +208,17 @@ class TestDeviceService:
         svc = DeviceService(repo)
         result = await svc.search_devices(
             DeviceSearchCriteria(
-                criteria=[{"field": "nonexistent_field", "operator": "is", "value": "x"}],
+                criteria=[
+                    {"field": "nonexistent_field", "operator": "is", "value": "x"}
+                ],
                 conjunction="AND",
             )
         )
         assert result == []
 
-    async def test_search_devices_unknown_operator_uses_default(self, repo: MagicMock) -> None:
+    async def test_search_devices_unknown_operator_uses_default(
+        self, repo: MagicMock
+    ) -> None:
         mock_result = MagicMock()
         mock_result.scalars.return_value.all.return_value = []
         repo.db.execute = AsyncMock(return_value=mock_result)

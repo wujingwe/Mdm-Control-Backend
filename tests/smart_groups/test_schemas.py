@@ -3,14 +3,25 @@ from datetime import datetime, timezone
 import pytest
 from pydantic import ValidationError
 
-from app.smart_groups.schemas import SmartGroupCreate, SmartGroupResponse, SmartGroupUpdate
+from app.smart_groups.schemas import (
+    SmartGroupCreate,
+    SmartGroupResponse,
+    SmartGroupUpdate,
+)
 
 
 class TestSmartGroupSchemas:
     def test_create_valid(self) -> None:
         data = SmartGroupCreate(
             name="Group A",
-            criteria=[{"field": "os_version", "operator": "is", "type": "string", "value": "Android 14"}],
+            criteria=[
+                {
+                    "field": "os_version",
+                    "operator": "is",
+                    "type": "string",
+                    "value": "Android 14",
+                }
+            ],
         )
         assert data.name == "Group A"
         assert len(data.criteria) == 1
@@ -19,7 +30,14 @@ class TestSmartGroupSchemas:
         data = SmartGroupCreate(
             name="Group A",
             description="desc",
-            criteria=[{"field": "os_version", "operator": "is", "type": "string", "value": "Android 14"}],
+            criteria=[
+                {
+                    "field": "os_version",
+                    "operator": "is",
+                    "type": "string",
+                    "value": "Android 14",
+                }
+            ],
         )
         assert data.description == "desc"
 

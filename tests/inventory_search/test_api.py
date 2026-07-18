@@ -1,4 +1,6 @@
 from httpx import AsyncClient
+
+
 class TestInventorySearchAPI:
     BASE = "/api/v1/inventory-search"
 
@@ -10,7 +12,12 @@ class TestInventorySearchAPI:
                 "description": "desc",
                 "created_by": 1,
                 "criteria": [
-                    {"field": "os_version", "operator": "is", "type": "string", "value": "Android 14"},
+                    {
+                        "field": "os_version",
+                        "operator": "is",
+                        "type": "string",
+                        "value": "Android 14",
+                    },
                 ],
             },
         )
@@ -38,7 +45,14 @@ class TestInventorySearchAPI:
             json={
                 "name": "S1",
                 "created_by": 1,
-                "criteria": [{"field": "os_version", "operator": "is", "type": "string", "value": "Android 14"}],
+                "criteria": [
+                    {
+                        "field": "os_version",
+                        "operator": "is",
+                        "type": "string",
+                        "value": "Android 14",
+                    }
+                ],
             },
         )
         resp = await client.get(self.BASE)

@@ -59,7 +59,9 @@ class TestDeviceRepository:
         repo = DeviceRepository(db_session)
         assert await repo.get_by_id(999) is None
 
-    async def test_get_by_id_loads_extension_attributes(self, db_session: AsyncSession) -> None:
+    async def test_get_by_id_loads_extension_attributes(
+        self, db_session: AsyncSession
+    ) -> None:
         from app.extension_attributes.repositories import ExtensionAttributeRepository
         from app.extension_attributes.schemas import ExtensionAttributeCreate
 
@@ -76,7 +78,11 @@ class TestDeviceRepository:
             device.id,
             DeviceUpdate(
                 extension_attributes=[
-                    {"extension_attribute_id": ea.id, "extension_attribute_name": "field1", "value": "v1"},
+                    {
+                        "extension_attribute_id": ea.id,
+                        "extension_attribute_name": "field1",
+                        "value": "v1",
+                    },
                 ],
             ),
         )
@@ -168,14 +174,19 @@ class TestDeviceRepository:
     async def test_update_clear_certificates(self, db_session: AsyncSession) -> None:
         repo = DeviceRepository(db_session)
         created = await repo.create(
-            {**_make_device_data(), "certificates": [Certificate(common_name="old.com")]}
+            {
+                **_make_device_data(),
+                "certificates": [Certificate(common_name="old.com")],
+            }
         )
         assert len(created.certificates) == 1
 
         updated = await repo.update(created.id, DeviceUpdate(certificates=None))
         assert updated.certificates is None
 
-    async def test_update_multiple_scalar_fields(self, db_session: AsyncSession) -> None:
+    async def test_update_multiple_scalar_fields(
+        self, db_session: AsyncSession
+    ) -> None:
         repo = DeviceRepository(db_session)
         created = await repo.create(_make_device_data())
         updated = await repo.update(
@@ -194,7 +205,9 @@ class TestDeviceRepository:
         assert updated.total_storage == 512
         assert updated.available_storage == 256
 
-    async def test_update_ext_attributes_replace(self, db_session: AsyncSession) -> None:
+    async def test_update_ext_attributes_replace(
+        self, db_session: AsyncSession
+    ) -> None:
         from app.extension_attributes.repositories import ExtensionAttributeRepository
         from app.extension_attributes.schemas import ExtensionAttributeCreate
 
@@ -255,7 +268,9 @@ class TestDeviceRepository:
         )
         assert updated.extension_attributes == []
 
-    async def test_update_ext_attrs_and_scalar_together(self, db_session: AsyncSession) -> None:
+    async def test_update_ext_attrs_and_scalar_together(
+        self, db_session: AsyncSession
+    ) -> None:
         from app.extension_attributes.repositories import ExtensionAttributeRepository
         from app.extension_attributes.schemas import ExtensionAttributeCreate
 
@@ -286,7 +301,9 @@ class TestDeviceRepository:
         assert len(updated.extension_attributes) == 1
         assert updated.extension_attributes[0].value == "val1"
 
-    async def test_update_ext_attrs_replace_multiple(self, db_session: AsyncSession) -> None:
+    async def test_update_ext_attrs_replace_multiple(
+        self, db_session: AsyncSession
+    ) -> None:
         from app.extension_attributes.repositories import ExtensionAttributeRepository
         from app.extension_attributes.schemas import ExtensionAttributeCreate
 
@@ -298,7 +315,10 @@ class TestDeviceRepository:
         )
         ea2 = await ea_repo.create(
             ExtensionAttributeCreate(
-                name="field2", data_type="integer", input_type="Text field", created_by=1
+                name="field2",
+                data_type="integer",
+                input_type="Text field",
+                created_by=1,
             )
         )
 
@@ -308,7 +328,11 @@ class TestDeviceRepository:
             device.id,
             DeviceUpdate(
                 extension_attributes=[
-                    {"extension_attribute_id": ea1.id, "extension_attribute_name": "field1", "value": "v1"},
+                    {
+                        "extension_attribute_id": ea1.id,
+                        "extension_attribute_name": "field1",
+                        "value": "v1",
+                    },
                 ],
             ),
         )
@@ -317,13 +341,23 @@ class TestDeviceRepository:
             device.id,
             DeviceUpdate(
                 extension_attributes=[
-                    {"extension_attribute_id": ea2.id, "extension_attribute_name": "field2", "value": "v2"},
-                    {"extension_attribute_id": ea1.id, "extension_attribute_name": "field1", "value": "v1-new"},
+                    {
+                        "extension_attribute_id": ea2.id,
+                        "extension_attribute_name": "field2",
+                        "value": "v2",
+                    },
+                    {
+                        "extension_attribute_id": ea1.id,
+                        "extension_attribute_name": "field1",
+                        "value": "v1-new",
+                    },
                 ],
             ),
         )
         assert len(updated.extension_attributes) == 2
-        values = {a.extension_attribute_name: a.value for a in updated.extension_attributes}
+        values = {
+            a.extension_attribute_name: a.value for a in updated.extension_attributes
+        }
         assert values == {"field1": "v1-new", "field2": "v2"}
 
     async def test_update_no_change(self, db_session: AsyncSession) -> None:
@@ -360,7 +394,11 @@ class TestDeviceRepository:
             device.id,
             DeviceUpdate(
                 extension_attributes=[
-                    {"extension_attribute_id": ea.id, "extension_attribute_name": "field1", "value": "v1"},
+                    {
+                        "extension_attribute_id": ea.id,
+                        "extension_attribute_name": "field1",
+                        "value": "v1",
+                    },
                 ],
             ),
         )
@@ -389,7 +427,9 @@ class TestDeviceRepository:
         with pytest.raises(ConflictError):
             await repo.create(_make_device_data())
 
-    async def test_create_with_network_and_certificates(self, db_session: AsyncSession) -> None:
+    async def test_create_with_network_and_certificates(
+        self, db_session: AsyncSession
+    ) -> None:
         repo = DeviceRepository(db_session)
         data = _make_device_data()
         data["network"] = Network(wifi=Wifi(ssid="Office", bssid="00:11:22:33:44:55"))
@@ -404,7 +444,9 @@ class TestDeviceRepository:
         assert device.certificates[0].common_name == "example.com"
         assert device.certificates[0].issuer == "CA Inc"
 
-    async def test_update_with_network_wifi_only(self, db_session: AsyncSession) -> None:
+    async def test_update_with_network_wifi_only(
+        self, db_session: AsyncSession
+    ) -> None:
         repo = DeviceRepository(db_session)
         created = await repo.create(_make_device_data())
         updated = await repo.update(
@@ -414,12 +456,16 @@ class TestDeviceRepository:
         assert updated.network.wifi.ssid == "NewWifi"
         assert updated.network.cellular is None
 
-    async def test_update_with_network_cellular_only(self, db_session: AsyncSession) -> None:
+    async def test_update_with_network_cellular_only(
+        self, db_session: AsyncSession
+    ) -> None:
         repo = DeviceRepository(db_session)
         created = await repo.create(_make_device_data())
         updated = await repo.update(
             created.id,
-            DeviceUpdate(network=Network(cellular=Cellular(carrier="T-Mobile", roaming=True))),
+            DeviceUpdate(
+                network=Network(cellular=Cellular(carrier="T-Mobile", roaming=True))
+            ),
         )
         assert updated.network.cellular.carrier == "T-Mobile"
         assert updated.network.cellular.roaming is True

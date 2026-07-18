@@ -215,9 +215,7 @@ class TestDeviceUpdateSchema:
     def test_update_ext_attrs_missing_name(self) -> None:
         with pytest.raises(ValidationError):
             DeviceUpdate(
-                extension_attributes=[
-                    {"extension_attribute_id": 1, "value": "test"}
-                ]
+                extension_attributes=[{"extension_attribute_id": 1, "value": "test"}]
             )
 
     def test_update_invalid_connection_status(self) -> None:

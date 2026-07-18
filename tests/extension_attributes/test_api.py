@@ -1,4 +1,6 @@
 from httpx import AsyncClient
+
+
 class TestExtensionAttributesAPI:
     BASE = "/api/v1/extension-attributes"
 

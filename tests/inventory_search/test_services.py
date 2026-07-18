@@ -46,7 +46,14 @@ class TestInventorySearchService:
         result = await svc.create_search(
             InventorySearchCreate(
                 name="s1",
-                criteria=[{"field": "os_version", "operator": "is", "type": "string", "value": "Android 14"}],
+                criteria=[
+                    {
+                        "field": "os_version",
+                        "operator": "is",
+                        "type": "string",
+                        "value": "Android 14",
+                    }
+                ],
                 created_by=1,
             )
         )

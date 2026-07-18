@@ -1,4 +1,6 @@
 from httpx import AsyncClient
+
+
 class TestHealth:
     async def test_liveness(self, client: AsyncClient) -> None:
         resp = await client.get("/health/live")

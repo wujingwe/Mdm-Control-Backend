@@ -1,4 +1,6 @@
 from httpx import AsyncClient
+
+
 class TestUsersAPI:
     async def test_list_empty(self, client: AsyncClient) -> None:
         resp = await client.get("/api/v1/users")

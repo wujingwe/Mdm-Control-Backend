@@ -61,12 +61,7 @@ class CommandRepository:
         return result.scalar_one()
 
     async def list_all(self, *, skip: int = 0, limit: int = 100) -> list[Command]:
-        stmt = (
-            select(Command)
-            .order_by(Command.id.desc())
-            .offset(skip)
-            .limit(limit)
-        )
+        stmt = select(Command).order_by(Command.id.desc()).offset(skip).limit(limit)
         result = await self.db.execute(stmt)
         return list(result.scalars().all())
 

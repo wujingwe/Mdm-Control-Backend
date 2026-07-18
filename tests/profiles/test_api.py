@@ -1,4 +1,6 @@
 from httpx import AsyncClient
+
+
 class TestProfilesAPI:
     BASE = "/api/v1/profiles"
 

@@ -38,20 +38,14 @@ class DeviceRepository:
         return instance
 
     async def update(self, record_id: int, data: DeviceUpdate) -> Device | None:
-        values = data.model_dump(
-            exclude_unset=True, exclude={"extension_attributes"}
-        )
+        values = data.model_dump(exclude_unset=True, exclude={"extension_attributes"})
         ext_attrs = data.extension_attributes
 
         if not values and ext_attrs is None:
             return await self.get_by_id(record_id)
 
         if values:
-            stmt = (
-                update(Device)
-                .where(Device.id == record_id)
-                .values(**values)
-            )
+            stmt = update(Device).where(Device.id == record_id).values(**values)
             result = await self.db.execute(stmt)
             if result.rowcount == 0:  # type: ignore[attr-defined]
                 return None

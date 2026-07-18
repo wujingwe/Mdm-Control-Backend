@@ -61,7 +61,9 @@ class TestSmartGroupRepository:
         assert len(found.criteria) == 1
         assert found.criteria[0]["field"] == "os_version"
 
-    async def test_create_with_multiple_criteria(self, db_session: AsyncSession) -> None:
+    async def test_create_with_multiple_criteria(
+        self, db_session: AsyncSession
+    ) -> None:
         repo = SmartGroupRepository(db_session)
         created = await repo.create(
             SmartGroupCreate(
@@ -123,14 +125,18 @@ class TestSmartGroupRepository:
         assert len(updated.criteria) == 1
         assert updated.criteria[0]["field"] == "battery_status"
 
-    async def test_update_criteria_empty_list_rejected(self, db_session: AsyncSession) -> None:
+    async def test_update_criteria_empty_list_rejected(
+        self, db_session: AsyncSession
+    ) -> None:
         from pydantic import ValidationError
         import pytest
 
         with pytest.raises(ValidationError):
             SmartGroupUpdate(criteria=[])
 
-    async def test_update_name_preserves_criteria(self, db_session: AsyncSession) -> None:
+    async def test_update_name_preserves_criteria(
+        self, db_session: AsyncSession
+    ) -> None:
         repo = SmartGroupRepository(db_session)
         created = await repo.create(
             SmartGroupCreate(

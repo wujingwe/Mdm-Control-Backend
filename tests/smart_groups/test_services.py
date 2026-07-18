@@ -36,7 +36,14 @@ class TestSmartGroupService:
         result = await svc.create_group(
             SmartGroupCreate(
                 name="G",
-                criteria=[{"field": "os_version", "operator": "is", "type": "string", "value": "Android 14"}],
+                criteria=[
+                    {
+                        "field": "os_version",
+                        "operator": "is",
+                        "type": "string",
+                        "value": "Android 14",
+                    }
+                ],
                 created_by=1,
             )
         )

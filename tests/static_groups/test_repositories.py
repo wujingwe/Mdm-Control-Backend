@@ -156,7 +156,9 @@ class TestStaticGroupRepository:
         assert updated.name == "SG2"
         assert updated.description == "New desc"
 
-    async def test_update_empty_body_returns_same(self, db_session: AsyncSession) -> None:
+    async def test_update_empty_body_returns_same(
+        self, db_session: AsyncSession
+    ) -> None:
         repo = StaticGroupRepository(db_session)
         created = await repo.create(StaticGroupCreate(name="SG1", created_by=1))
         updated = await repo.update(created.id, StaticGroupUpdate())
@@ -252,7 +254,9 @@ class TestStaticGroupRepository:
         serials = [x.serial_number for x in result.devices]
         assert serials == ["SN002"]
 
-    async def test_update_with_empty_device_list(self, db_session: AsyncSession) -> None:
+    async def test_update_with_empty_device_list(
+        self, db_session: AsyncSession
+    ) -> None:
         from app.devices.models import Device
 
         repo = StaticGroupRepository(db_session)
@@ -280,7 +284,9 @@ class TestStaticGroupRepository:
         serials = [x.serial_number for x in result.devices]
         assert serials == []
 
-    async def test_update_name_and_devices_together(self, db_session: AsyncSession) -> None:
+    async def test_update_name_and_devices_together(
+        self, db_session: AsyncSession
+    ) -> None:
         from app.devices.models import Device
 
         repo = StaticGroupRepository(db_session)

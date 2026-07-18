@@ -1,4 +1,6 @@
 from httpx import AsyncClient
+
+
 class TestSmartGroupsAPI:
     BASE = "/api/v1/smart-groups"
 
@@ -9,7 +11,12 @@ class TestSmartGroupsAPI:
                 "name": "Smart Group A",
                 "description": "desc",
                 "criteria": [
-                    {"field": "os_version", "operator": "is", "type": "string", "value": "Android 14"},
+                    {
+                        "field": "os_version",
+                        "operator": "is",
+                        "type": "string",
+                        "value": "Android 14",
+                    },
                 ],
             },
         )
@@ -36,7 +43,14 @@ class TestSmartGroupsAPI:
             self.BASE,
             json={
                 "name": "SG1",
-                "criteria": [{"field": "os_version", "operator": "is", "type": "string", "value": "Android 14"}],
+                "criteria": [
+                    {
+                        "field": "os_version",
+                        "operator": "is",
+                        "type": "string",
+                        "value": "Android 14",
+                    }
+                ],
             },
         )
         resp = await client.get(self.BASE)
@@ -49,7 +63,14 @@ class TestSmartGroupsAPI:
             self.BASE,
             json={
                 "name": "G",
-                "criteria": [{"field": "os_version", "operator": "is", "type": "string", "value": "Android 14"}],
+                "criteria": [
+                    {
+                        "field": "os_version",
+                        "operator": "is",
+                        "type": "string",
+                        "value": "Android 14",
+                    }
+                ],
             },
         )
         gid = create.json()["id"]
@@ -200,7 +221,9 @@ class TestSmartGroupsAPI:
         )
         assert create.status_code == 422
 
-    async def test_create_with_empty_criteria_rejected(self, client: AsyncClient) -> None:
+    async def test_create_with_empty_criteria_rejected(
+        self, client: AsyncClient
+    ) -> None:
         create = await client.post(
             self.BASE,
             json={"name": "Empty Criteria Group", "criteria": []},
@@ -224,7 +247,9 @@ class TestSmartGroupsAPI:
         )
         assert create.status_code == 422
 
-    async def test_create_with_missing_criteria_field(self, client: AsyncClient) -> None:
+    async def test_create_with_missing_criteria_field(
+        self, client: AsyncClient
+    ) -> None:
         create = await client.post(
             self.BASE,
             json={

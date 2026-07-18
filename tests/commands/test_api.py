@@ -24,7 +24,9 @@ class TestCommandsAPI:
     BASE = "/api/v1/devices"
 
     @patch("app.commands.services.rabbitmq_producer")
-    async def test_trigger_and_list(self, mock_producer: MagicMock, client: AsyncClient, db_session: AsyncSession) -> None:
+    async def test_trigger_and_list(
+        self, mock_producer: MagicMock, client: AsyncClient, db_session: AsyncSession
+    ) -> None:
         mock_producer.publish_device_command = AsyncMock(return_value="msg-123")
         device = await _create_device(client, db_session)
 
@@ -47,7 +49,9 @@ class TestCommandsAPI:
         assert list_resp.json()["total"] >= 1
 
     @patch("app.commands.services.rabbitmq_producer")
-    async def test_cancel(self, mock_producer: MagicMock, client: AsyncClient, db_session: AsyncSession) -> None:
+    async def test_cancel(
+        self, mock_producer: MagicMock, client: AsyncClient, db_session: AsyncSession
+    ) -> None:
         mock_producer.publish_device_command = AsyncMock(return_value="msg-123")
         device = await _create_device(client, db_session)
 
@@ -62,7 +66,9 @@ class TestCommandsAPI:
         assert resp.status_code == 200
         assert resp.json()["detail"] == "Command cancelled"
 
-    async def test_get_not_found(self, client: AsyncClient, db_session: AsyncSession) -> None:
+    async def test_get_not_found(
+        self, client: AsyncClient, db_session: AsyncSession
+    ) -> None:
         device = await _create_device(client, db_session)
         resp = await client.get(f"{self.BASE}/{device.id}/commands/999")
         assert resp.status_code == 404
