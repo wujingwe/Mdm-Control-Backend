@@ -9,6 +9,53 @@ class TestDevicesAPI:
         assert data["items"] == []
         assert data["total"] == 0
 
+    async def test_list_returns_multiple(self, client, db_session):
+        from app.devices.repositories import DeviceRepository
+
+        repo = DeviceRepository(db_session)
+        await repo.create({"name": "A", "serial_number": "SN-A", "os_version": "15.0", "connection_status": "Online", "enrollment_status": "Enrolled"})
+        await repo.create({"name": "B", "serial_number": "SN-B", "os_version": "15.0", "connection_status": "Offline", "enrollment_status": "Enrolled"})
+        resp = await client.get("/api/v1/devices")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["total"] == 2
+        assert len(data["items"]) == 2
+
+    async def test_list_pagination(self, client, db_session):
+        from app.devices.repositories import DeviceRepository
+
+        repo = DeviceRepository(db_session)
+        for i in range(5):
+            await repo.create({"name": f"Dev{i}", "serial_number": f"SN-{i:03d}", "os_version": "15.0", "connection_status": "Online", "enrollment_status": "Enrolled"})
+        resp = await client.get("/api/v1/devices?skip=0&limit=2")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert len(data["items"]) == 2
+        assert data["total"] == 5
+
+    async def test_list_pagination_second_page(self, client, db_session):
+        from app.devices.repositories import DeviceRepository
+
+        repo = DeviceRepository(db_session)
+        for i in range(5):
+            await repo.create({"name": f"Dev{i}", "serial_number": f"SN-{i:03d}", "os_version": "15.0", "connection_status": "Online", "enrollment_status": "Enrolled"})
+        resp = await client.get("/api/v1/devices?skip=3&limit=2")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert len(data["items"]) == 2
+        assert data["total"] == 5
+
+    async def test_get_device(self, client, db_session):
+        from app.devices.repositories import DeviceRepository
+
+        repo = DeviceRepository(db_session)
+        device = await repo.create({"name": "MacBook", "serial_number": "SN-GET-001", "os_version": "15.0", "connection_status": "Online", "enrollment_status": "Enrolled"})
+        resp = await client.get(f"/api/v1/devices/{device.id}")
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["id"] == device.id
+        assert body["serial_number"] == "SN-GET-001"
+
     async def test_get_device_not_found(self, client):
         resp = await client.get("/api/v1/devices/999")
         assert resp.status_code == 404
@@ -40,6 +87,19 @@ class TestDevicesAPI:
         assert "last_enrolled_at" in body
         assert body["network"]["wifi"]["ssid"] == "Office"
         assert body["certificates"][0]["common_name"] == "example.com"
+
+    async def test_device_response_optional_fields(self, client, db_session):
+        from app.devices.repositories import DeviceRepository
+
+        repo = DeviceRepository(db_session)
+        device = await repo.create({"name": "Basic", "serial_number": "SN-BAS-001", "os_version": "15.0", "connection_status": "Online", "enrollment_status": "Enrolled"})
+        resp = await client.get(f"/api/v1/devices/{device.id}")
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["battery_status"] is None
+        assert body["network"] is None
+        assert body["certificates"] is None
+        assert body["extension_attributes"] == []
 
     async def test_update_device(self, client, db_session):
         from app.devices.repositories import DeviceRepository
@@ -74,6 +134,45 @@ class TestDevicesAPI:
         )
         assert resp.status_code == 404
         assert resp.json()["detail"] == "Device not found"
+
+    async def test_update_device_network(self, client, db_session):
+        from app.devices.repositories import DeviceRepository
+
+        repo = DeviceRepository(db_session)
+        device = await repo.create(
+            {"name": "MacBook", "serial_number": "SN-NET-001", "os_version": "15.0", "connection_status": "Online", "enrollment_status": "Enrolled"}
+        )
+        resp = await client.put(
+            f"/api/v1/devices/{device.id}",
+            json={
+                "network": {
+                    "wifi": {"ssid": "NewWifi", "signal_strength": -50},
+                    "cellular": {"carrier": "Verizon", "roaming": False},
+                },
+            },
+        )
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["network"]["wifi"]["ssid"] == "NewWifi"
+        assert body["network"]["wifi"]["signal_strength"] == -50
+        assert body["network"]["cellular"]["carrier"] == "Verizon"
+        assert body["network"]["cellular"]["roaming"] is False
+
+    async def test_update_device_clear_network(self, client, db_session):
+        from app.devices.repositories import DeviceRepository
+        from app.devices.schemas import Network, Wifi
+
+        repo = DeviceRepository(db_session)
+        device = await repo.create(
+            {"name": "MacBook", "serial_number": "SN-CN-001", "os_version": "15.0", "connection_status": "Online", "enrollment_status": "Enrolled", "network": Network(wifi=Wifi(ssid="Old"))}
+        )
+        resp = await client.put(
+            f"/api/v1/devices/{device.id}",
+            json={"network": None},
+        )
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["network"] is None
 
     async def test_update_device_ext_attributes(self, client, db_session):
         from app.devices.repositories import DeviceRepository
@@ -111,9 +210,13 @@ class TestDevicesAPI:
             },
         )
         assert resp.status_code == 200
+        body = resp.json()
+        assert len(body["extension_attributes"]) == 1
+        assert body["extension_attributes"][0]["value"] == "test_value"
 
         get_resp = await client.get(f"/api/v1/devices/{device.id}")
         assert get_resp.status_code == 200
+        assert len(get_resp.json()["extension_attributes"]) == 1
 
     async def test_update_device_clear_ext_attributes(self, client, db_session):
         from app.devices.repositories import DeviceRepository
@@ -188,6 +291,20 @@ class TestDevicesAPI:
         assert len(body["certificates"]) == 2
         assert body["certificates"][0]["common_name"] == "new.com"
 
+    async def test_update_device_clear_certificates(self, client, db_session):
+        from app.devices.repositories import DeviceRepository
+
+        repo = DeviceRepository(db_session)
+        device = await repo.create(
+            {"name": "MacBook", "serial_number": "SN-CC-001", "os_version": "15.0", "connection_status": "Online", "enrollment_status": "Enrolled", "certificates": [Certificate(common_name="old.com")]}
+        )
+        resp = await client.put(
+            f"/api/v1/devices/{device.id}",
+            json={"certificates": None},
+        )
+        assert resp.status_code == 200
+        assert resp.json()["certificates"] is None
+
     async def test_update_device_multiple_fields(self, client, db_session):
         from app.devices.repositories import DeviceRepository
 
@@ -218,23 +335,29 @@ class TestDevicesAPI:
         assert body["battery_status"] == 15
         assert body["total_memory"] == 16
 
-    async def test_update_device_invalid_enum(self, client, db_session):
+    async def test_update_device_invalid_connection_status(self, client, db_session):
         from app.devices.repositories import DeviceRepository
 
         repo = DeviceRepository(db_session)
         device = await repo.create(
-            {
-                "name": "MacBook",
-                "serial_number": "SN-INV-001",
-                "os_version": "15.0",
-                "connection_status": "Online",
-                "enrollment_status": "Enrolled",
-            }
+            {"name": "MacBook", "serial_number": "SN-INV-001", "os_version": "15.0", "connection_status": "Online", "enrollment_status": "Enrolled"}
         )
-
         resp = await client.put(
             f"/api/v1/devices/{device.id}",
             json={"connection_status": "INVALID_STATUS"},
+        )
+        assert resp.status_code == 422
+
+    async def test_update_device_invalid_enrollment_status(self, client, db_session):
+        from app.devices.repositories import DeviceRepository
+
+        repo = DeviceRepository(db_session)
+        device = await repo.create(
+            {"name": "MacBook", "serial_number": "SN-INV-002", "os_version": "15.0", "connection_status": "Online", "enrollment_status": "Enrolled"}
+        )
+        resp = await client.put(
+            f"/api/v1/devices/{device.id}",
+            json={"enrollment_status": "INVALID_STATUS"},
         )
         assert resp.status_code == 422
 
@@ -263,16 +386,26 @@ class TestDevicesAPI:
 
 
 class TestCommandsAPI:
-    async def test_list_empty(self, client):
-        resp = await client.get("/api/v1/devices/1/commands")
+    async def _create_device(self, db_session):
+        from app.devices.repositories import DeviceRepository
+
+        repo = DeviceRepository(db_session)
+        return await repo.create(
+            {"name": "CmdDevice", "serial_number": "SN-CMD-001", "os_version": "15.0", "connection_status": "Online", "enrollment_status": "Enrolled"}
+        )
+
+    async def test_list_empty(self, client, db_session):
+        device = await self._create_device(db_session)
+        resp = await client.get(f"/api/v1/devices/{device.id}/commands")
         assert resp.status_code == 200
         data = resp.json()
         assert data["items"] == []
         assert data["total"] == 0
 
-    async def test_trigger_and_get(self, client):
+    async def test_trigger_and_get(self, client, db_session):
+        device = await self._create_device(db_session)
         create_resp = await client.post(
-            "/api/v1/devices/1/commands",
+            f"/api/v1/devices/{device.id}/commands",
             json={"command_type": "LOCK"},
         )
         assert create_resp.status_code == 201
@@ -281,27 +414,74 @@ class TestCommandsAPI:
         assert cmd["status"] == "PENDING"
         command_id = cmd["id"]
 
-        get_resp = await client.get(f"/api/v1/devices/1/commands/{command_id}")
+        get_resp = await client.get(f"/api/v1/devices/{device.id}/commands/{command_id}")
         assert get_resp.status_code == 200
         assert get_resp.json()["id"] == command_id
 
-    async def test_get_not_found(self, client):
-        resp = await client.get("/api/v1/devices/1/commands/999")
+    async def test_trigger_invalid_command_type(self, client, db_session):
+        device = await self._create_device(db_session)
+        resp = await client.post(
+            f"/api/v1/devices/{device.id}/commands",
+            json={"command_type": "INVALID_TYPE"},
+        )
+        assert resp.status_code == 422
+
+    async def test_get_command_not_found(self, client, db_session):
+        device = await self._create_device(db_session)
+        resp = await client.get(f"/api/v1/devices/{device.id}/commands/999")
+        assert resp.status_code == 404
+        assert resp.json()["detail"] == "Command not found"
+
+    async def test_get_command_wrong_device(self, client, db_session):
+        device = await self._create_device(db_session)
+        create_resp = await client.post(
+            f"/api/v1/devices/{device.id}/commands",
+            json={"command_type": "LOCK"},
+        )
+        command_id = create_resp.json()["id"]
+        resp = await client.get(f"/api/v1/devices/99999/commands/{command_id}")
         assert resp.status_code == 404
 
-    async def test_cancel_pending(self, client):
+    async def test_cancel_pending(self, client, db_session):
+        device = await self._create_device(db_session)
         create_resp = await client.post(
-            "/api/v1/devices/1/commands",
+            f"/api/v1/devices/{device.id}/commands",
             json={"command_type": "LOCK"},
         )
         command_id = create_resp.json()["id"]
 
-        cancel_resp = await client.delete(f"/api/v1/devices/1/commands/{command_id}")
+        cancel_resp = await client.delete(f"/api/v1/devices/{device.id}/commands/{command_id}")
         assert cancel_resp.status_code == 200
+        assert cancel_resp.json()["detail"] == "Command cancelled"
 
-    async def test_list_device_commands(self, client):
-        await client.post("/api/v1/devices/1/commands", json={"command_type": "LOCK"})
-        await client.post("/api/v1/devices/1/commands", json={"command_type": "UNLOCK"})
-        resp = await client.get("/api/v1/devices/1/commands")
+    async def test_cancel_not_found(self, client, db_session):
+        device = await self._create_device(db_session)
+        resp = await client.delete(f"/api/v1/devices/{device.id}/commands/999")
+        assert resp.status_code == 404
+
+    async def test_cancel_wrong_device(self, client, db_session):
+        device = await self._create_device(db_session)
+        create_resp = await client.post(
+            f"/api/v1/devices/{device.id}/commands",
+            json={"command_type": "LOCK"},
+        )
+        command_id = create_resp.json()["id"]
+        resp = await client.delete(f"/api/v1/devices/99999/commands/{command_id}")
+        assert resp.status_code == 404
+
+    async def test_list_device_commands(self, client, db_session):
+        device = await self._create_device(db_session)
+        await client.post(f"/api/v1/devices/{device.id}/commands", json={"command_type": "LOCK"})
+        await client.post(f"/api/v1/devices/{device.id}/commands", json={"command_type": "UNLOCK"})
+        resp = await client.get(f"/api/v1/devices/{device.id}/commands")
         data = resp.json()
         assert data["total"] == 2
+
+    async def test_list_device_commands_pagination(self, client, db_session):
+        device = await self._create_device(db_session)
+        for _ in range(5):
+            await client.post(f"/api/v1/devices/{device.id}/commands", json={"command_type": "LOCK"})
+        resp = await client.get(f"/api/v1/devices/{device.id}/commands?skip=0&limit=2")
+        data = resp.json()
+        assert len(data["items"]) == 2
+        assert data["total"] == 5

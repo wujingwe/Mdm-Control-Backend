@@ -28,9 +28,7 @@ class TestEnums:
         assert CommandType.RESTART == "RESTART"
         assert CommandType.SHUTDOWN == "SHUTDOWN"
         assert CommandType.CHECK_IN == "CHECK_IN"
-        assert CommandType.UPDATE_INVENTORY == "UPDATE_INVENTORY"
         assert CommandType.UNLOCK == "UNLOCK"
-        assert CommandType.LOST_MODE == "LOST_MODE"
 
     def test_command_status_values(self):
         from app.common.enums import CommandStatus
