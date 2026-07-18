@@ -1,7 +1,9 @@
+from httpx import AsyncClient
+from sqlalchemy.ext.asyncio import AsyncSession
 class TestStaticGroupsAPI:
     BASE = "/api/v1/static-groups"
 
-    async def test_crud_flow(self, client, db_session):
+    async def test_crud_flow(self, client: AsyncClient, db_session: AsyncSession) -> None:
         from app.devices.models import Device
 
         dev1 = Device(
@@ -66,7 +68,7 @@ class TestStaticGroupsAPI:
         get2 = await client.get(f"{self.BASE}/{gid}")
         assert get2.status_code == 404
 
-    async def test_list_distinct(self, client):
+    async def test_list_distinct(self, client: AsyncClient) -> None:
         await client.post(self.BASE, json={"name": "Static1"})
         await client.post("/api/v1/smart-groups", json={"name": "Smart1"})
         resp = await client.get(self.BASE)
@@ -74,7 +76,7 @@ class TestStaticGroupsAPI:
         assert data["total"] >= 1
         assert all(g["name"] is not None for g in data["items"])
 
-    async def test_update_empty_body(self, client):
+    async def test_update_empty_body(self, client: AsyncClient) -> None:
         create = await client.post(self.BASE, json={"name": "G"})
         gid = create.json()["id"]
         resp = await client.put(f"{self.BASE}/{gid}", json={})

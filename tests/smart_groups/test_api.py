@@ -1,7 +1,8 @@
+from httpx import AsyncClient
 class TestSmartGroupsAPI:
     BASE = "/api/v1/smart-groups"
 
-    async def test_crud_flow(self, client):
+    async def test_crud_flow(self, client: AsyncClient) -> None:
         create = await client.post(
             self.BASE,
             json={
@@ -30,7 +31,7 @@ class TestSmartGroupsAPI:
         get2 = await client.get(f"{self.BASE}/{gid}")
         assert get2.status_code == 404
 
-    async def test_list(self, client):
+    async def test_list(self, client: AsyncClient) -> None:
         await client.post(
             self.BASE,
             json={
@@ -43,7 +44,7 @@ class TestSmartGroupsAPI:
         assert data["total"] >= 1 and len(data["items"]) >= 1
         assert all(g["name"] is not None for g in data["items"])
 
-    async def test_update_empty_body(self, client):
+    async def test_update_empty_body(self, client: AsyncClient) -> None:
         create = await client.post(
             self.BASE,
             json={
@@ -55,7 +56,7 @@ class TestSmartGroupsAPI:
         resp = await client.put(f"{self.BASE}/{gid}", json={})
         assert resp.status_code == 200
 
-    async def test_create_with_criteria(self, client):
+    async def test_create_with_criteria(self, client: AsyncClient) -> None:
         create = await client.post(
             self.BASE,
             json={
@@ -78,7 +79,7 @@ class TestSmartGroupsAPI:
         assert criteria[0]["type"] == "string"
         assert criteria[0]["value"] == "Android 14"
 
-    async def test_create_with_multiple_criteria(self, client):
+    async def test_create_with_multiple_criteria(self, client: AsyncClient) -> None:
         create = await client.post(
             self.BASE,
             json={
@@ -114,7 +115,7 @@ class TestSmartGroupsAPI:
         assert criteria[1]["left_parentheses"] is True
         assert criteria[2]["right_parentheses"] is True
 
-    async def test_get_returns_criteria(self, client):
+    async def test_get_returns_criteria(self, client: AsyncClient) -> None:
         create = await client.post(
             self.BASE,
             json={
@@ -136,7 +137,7 @@ class TestSmartGroupsAPI:
         assert len(criteria) == 1
         assert criteria[0]["field"] == "compliance"
 
-    async def test_update_criteria(self, client):
+    async def test_update_criteria(self, client: AsyncClient) -> None:
         create = await client.post(
             self.BASE,
             json={
@@ -170,7 +171,7 @@ class TestSmartGroupsAPI:
         assert len(criteria) == 1
         assert criteria[0]["field"] == "battery_status"
 
-    async def test_update_empty_criteria_rejected(self, client):
+    async def test_update_empty_criteria_rejected(self, client: AsyncClient) -> None:
         create = await client.post(
             self.BASE,
             json={
@@ -192,21 +193,21 @@ class TestSmartGroupsAPI:
         )
         assert update.status_code == 422
 
-    async def test_create_without_criteria_rejected(self, client):
+    async def test_create_without_criteria_rejected(self, client: AsyncClient) -> None:
         create = await client.post(
             self.BASE,
             json={"name": "No Criteria Group"},
         )
         assert create.status_code == 422
 
-    async def test_create_with_empty_criteria_rejected(self, client):
+    async def test_create_with_empty_criteria_rejected(self, client: AsyncClient) -> None:
         create = await client.post(
             self.BASE,
             json={"name": "Empty Criteria Group", "criteria": []},
         )
         assert create.status_code == 422
 
-    async def test_create_with_invalid_criteria_type(self, client):
+    async def test_create_with_invalid_criteria_type(self, client: AsyncClient) -> None:
         create = await client.post(
             self.BASE,
             json={
@@ -223,7 +224,7 @@ class TestSmartGroupsAPI:
         )
         assert create.status_code == 422
 
-    async def test_create_with_missing_criteria_field(self, client):
+    async def test_create_with_missing_criteria_field(self, client: AsyncClient) -> None:
         create = await client.post(
             self.BASE,
             json={

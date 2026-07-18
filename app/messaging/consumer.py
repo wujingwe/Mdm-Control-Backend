@@ -9,7 +9,7 @@ from typing import Any
 
 from sqlalchemy import select
 
-from app.commands.models import DeviceCommand
+from app.commands.models import Command
 from app.common.enums import AssignmentStatus, CommandStatus
 from app.config.settings import settings
 from app.database import async_session
@@ -233,7 +233,7 @@ async def process_device_command_status(data: dict[str, Any]) -> None:
         return
 
     async with async_session() as db:
-        cmd = await db.get(DeviceCommand, int(command_id))
+        cmd = await db.get(Command, int(command_id))
         if not cmd:
             logger.warning("Command %s not found", command_id)
             return

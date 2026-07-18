@@ -1,3 +1,5 @@
+from typing import Any
+
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 from app.notification.webhook import send_validation_webhook
@@ -6,7 +8,7 @@ from app.notification.webhook import send_validation_webhook
 class TestNotificationWebhook:
     @pytest.mark.asyncio
     @patch("app.notification.webhook.httpx.AsyncClient")
-    async def test_send_validation_webhook_success(self, mock_client_cls):
+    async def test_send_validation_webhook_success(self, mock_client_cls: Any) -> None:
         mock_response = MagicMock()
         mock_response.raise_for_status = MagicMock()
         mock_response.status_code = 200

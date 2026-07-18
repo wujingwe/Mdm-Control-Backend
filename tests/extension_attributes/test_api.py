@@ -1,7 +1,8 @@
+from httpx import AsyncClient
 class TestExtensionAttributesAPI:
     BASE = "/api/v1/extension-attributes"
 
-    async def test_crud_flow(self, client):
+    async def test_crud_flow(self, client: AsyncClient) -> None:
         create = await client.post(
             self.BASE,
             json={
@@ -28,7 +29,7 @@ class TestExtensionAttributesAPI:
         get2 = await client.get(f"{self.BASE}/{eid}")
         assert get2.status_code == 404
 
-    async def test_list(self, client):
+    async def test_list(self, client: AsyncClient) -> None:
         await client.post(
             self.BASE,
             json={

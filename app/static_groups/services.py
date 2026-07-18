@@ -17,7 +17,7 @@ class StaticGroupService:
     async def get_group(self, group_id: int) -> StaticGroup | None:
         return await self.repo.get_by_id(group_id)
 
-    async def create_group(self, data: StaticGroupCreate) -> StaticGroup:
+    async def create_group(self, data: StaticGroupCreate) -> StaticGroup | None:
         return await self.repo.create(data)
 
     async def update_group(

@@ -23,7 +23,7 @@ class ScopeType(TypeDecorator[Scope]):
     ) -> Scope | None:
         if value is None:
             return None
-        return Scope.model.validate(value)
+        return Scope.model_validate(value)
 
 
 class MobileApp(Base):

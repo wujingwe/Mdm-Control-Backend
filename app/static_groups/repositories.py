@@ -32,7 +32,7 @@ class StaticGroupRepository:
         result = await self.db.execute(stmt)
         return result.scalar_one_or_none()
 
-    async def create(self, data: StaticGroupCreate) -> StaticGroup:
+    async def create(self, data: StaticGroupCreate) -> StaticGroup | None:
         instance = StaticGroup(
             name=data.name,
             description=data.description,

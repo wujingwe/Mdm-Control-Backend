@@ -6,7 +6,7 @@ from app.common.enums import CriteriaType
 
 
 class TestCriteria:
-    def test_valid_string_criteria(self):
+    def test_valid_string_criteria(self) -> None:
         c = Criteria(
             field="os_version",
             operator="is",
@@ -20,7 +20,7 @@ class TestCriteria:
         assert c.left_parentheses is False
         assert c.right_parentheses is False
 
-    def test_valid_number_criteria(self):
+    def test_valid_number_criteria(self) -> None:
         c = Criteria(
             field="battery_status",
             operator="lessThan",
@@ -29,7 +29,7 @@ class TestCriteria:
         )
         assert c.type == CriteriaType.NUMBER
 
-    def test_valid_boolean_criteria(self):
+    def test_valid_boolean_criteria(self) -> None:
         c = Criteria(
             field="is_managed",
             operator="is",
@@ -38,7 +38,7 @@ class TestCriteria:
         )
         assert c.type == CriteriaType.BOOLEAN
 
-    def test_valid_date_criteria(self):
+    def test_valid_date_criteria(self) -> None:
         c = Criteria(
             field="last_seen",
             operator="greaterThanOrEqual",
@@ -47,7 +47,7 @@ class TestCriteria:
         )
         assert c.type == CriteriaType.DATE
 
-    def test_parentheses_default_false(self):
+    def test_parentheses_default_false(self) -> None:
         c = Criteria(
             field="os_version",
             operator="is",
@@ -57,7 +57,7 @@ class TestCriteria:
         assert c.left_parentheses is False
         assert c.right_parentheses is False
 
-    def test_parentheses_explicit_true(self):
+    def test_parentheses_explicit_true(self) -> None:
         c = Criteria(
             field="os_version",
             operator="is",
@@ -69,7 +69,7 @@ class TestCriteria:
         assert c.left_parentheses is True
         assert c.right_parentheses is True
 
-    def test_missing_field_raises(self):
+    def test_missing_field_raises(self) -> None:
         with pytest.raises(ValidationError):
             Criteria(
                 operator="is",
@@ -77,7 +77,7 @@ class TestCriteria:
                 value="test",
             )
 
-    def test_missing_operator_raises(self):
+    def test_missing_operator_raises(self) -> None:
         with pytest.raises(ValidationError):
             Criteria(
                 field="os_version",
@@ -85,7 +85,7 @@ class TestCriteria:
                 value="test",
             )
 
-    def test_missing_type_raises(self):
+    def test_missing_type_raises(self) -> None:
         with pytest.raises(ValidationError):
             Criteria(
                 field="os_version",
@@ -93,7 +93,7 @@ class TestCriteria:
                 value="test",
             )
 
-    def test_missing_value_raises(self):
+    def test_missing_value_raises(self) -> None:
         with pytest.raises(ValidationError):
             Criteria(
                 field="os_version",
@@ -101,7 +101,7 @@ class TestCriteria:
                 type=CriteriaType.STRING,
             )
 
-    def test_invalid_type_raises(self):
+    def test_invalid_type_raises(self) -> None:
         with pytest.raises(ValidationError):
             Criteria(
                 field="os_version",
@@ -110,7 +110,7 @@ class TestCriteria:
                 value="test",
             )
 
-    def test_model_dump_roundtrip(self):
+    def test_model_dump_roundtrip(self) -> None:
         c = Criteria(
             field="os_version",
             operator="is",
@@ -126,7 +126,7 @@ class TestCriteria:
         assert loaded.value == c.value
         assert loaded.left_parentheses is True
 
-    def test_model_dump_json(self):
+    def test_model_dump_json(self) -> None:
         c = Criteria(
             field="os_version",
             operator="is",
@@ -138,7 +138,7 @@ class TestCriteria:
         assert "is" in json_str
         assert "string" in json_str
 
-    def test_from_dict(self):
+    def test_from_dict(self) -> None:
         data = {
             "field": "os_version",
             "operator": "is",
@@ -149,7 +149,7 @@ class TestCriteria:
         assert c.field == "os_version"
         assert c.type == CriteriaType.STRING
 
-    def test_empty_string_value_allowed(self):
+    def test_empty_string_value_allowed(self) -> None:
         c = Criteria(
             field="os_version",
             operator="is",
@@ -158,7 +158,7 @@ class TestCriteria:
         )
         assert c.value == ""
 
-    def test_empty_string_field_allowed(self):
+    def test_empty_string_field_allowed(self) -> None:
         c = Criteria(
             field="",
             operator="is",
@@ -169,18 +169,18 @@ class TestCriteria:
 
 
 class TestCriteriaTypeEnum:
-    def test_string_value(self):
+    def test_string_value(self) -> None:
         assert CriteriaType.STRING == "string"
 
-    def test_number_value(self):
+    def test_number_value(self) -> None:
         assert CriteriaType.NUMBER == "number"
 
-    def test_boolean_value(self):
+    def test_boolean_value(self) -> None:
         assert CriteriaType.BOOLEAN == "boolean"
 
-    def test_date_value(self):
+    def test_date_value(self) -> None:
         assert CriteriaType.DATE == "date"
 
-    def test_all_values(self):
+    def test_all_values(self) -> None:
         values = {e.value for e in CriteriaType}
         assert values == {"string", "number", "boolean", "date"}

@@ -53,7 +53,7 @@ class DeviceRepository:
                 .values(**values)
             )
             result = await self.db.execute(stmt)
-            if result.rowcount == 0:
+            if result.rowcount == 0:  # type: ignore[attr-defined]
                 return None
             self.db.expire(await self.db.get(Device, record_id))
 

@@ -1,3 +1,5 @@
+from typing import Any
+
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 from app.notification.sse import notify_sse_server
@@ -6,7 +8,7 @@ from app.notification.sse import notify_sse_server
 class TestNotificationSSE:
     @pytest.mark.asyncio
     @patch("app.notification.sse.httpx.AsyncClient")
-    async def test_notify_sse_server_success(self, mock_client_cls):
+    async def test_notify_sse_server_success(self, mock_client_cls: Any) -> None:
         mock_response = MagicMock()
         mock_response.raise_for_status = MagicMock()
         mock_response.status_code = 200

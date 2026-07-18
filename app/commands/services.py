@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 
-from app.commands.models import DeviceCommand
+from app.commands.models import Command
 from app.commands.repositories import CommandRepository
 from app.commands.schemas import CommandCreate
 from app.messaging.producer import rabbitmq_producer
@@ -39,7 +39,7 @@ class CommandService:
             logger.exception("Failed to publish command %s", command.id)
             return {"command": command, "message_id": None}
 
-    async def get_command(self, command_id: int) -> DeviceCommand | None:
+    async def get_command(self, command_id: int) -> Command | None:
         return await self.repo.get_by_id(command_id)
 
     async def list_commands(
@@ -47,7 +47,7 @@ class CommandService:
         *,
         skip: int = 0,
         limit: int = 100,
-    ) -> tuple[list[DeviceCommand], int]:
+    ) -> tuple[list[Command], int]:
         items = await self.repo.list_all(skip=skip, limit=limit)
         total = await self.repo.count_all()
         return items, total
@@ -58,10 +58,10 @@ class CommandService:
         *,
         skip: int = 0,
         limit: int = 50,
-    ) -> tuple[list[DeviceCommand], int]:
+    ) -> tuple[list[Command], int]:
         items = await self.repo.list_for_device(device_id, skip=skip, limit=limit)
         total = await self.repo.count_for_device(device_id)
         return items, total
 
-    async def cancel_command(self, command_id: int) -> DeviceCommand | None:
+    async def cancel_command(self, command_id: int) -> Command | None:
         return await self.repo.cancel(command_id)

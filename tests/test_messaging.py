@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from types import SimpleNamespace
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -15,7 +16,7 @@ from app.messaging.producer import RabbitMQProducer, RabbitMQPublisherConfig
 
 
 class _FakeMessage:
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Any) -> None:
         self.kwargs = kwargs
 
 
@@ -24,7 +25,7 @@ class _FakeAioPika:
         PERSISTENT = "persistent"
 
     class ExchangeType:
-        def __init__(self, value: str):
+        def __init__(self, value: str) -> None:
             if value not in {"direct", "topic", "fanout", "headers"}:
                 raise ValueError(value)
             self.value = value
@@ -49,7 +50,7 @@ class _FakeAioPika:
         return connection
 
 
-def _make_producer_config(**overrides) -> RabbitMQPublisherConfig:
+def _make_producer_config(**overrides: Any) -> RabbitMQPublisherConfig:
     defaults = {
         "exchange_name": "mdm.device.commands",
         "exchange_type": "topic",
@@ -59,7 +60,7 @@ def _make_producer_config(**overrides) -> RabbitMQPublisherConfig:
     return RabbitMQPublisherConfig(**defaults)
 
 
-def _make_consumer_config(**overrides) -> RabbitMQConsumerConfig:
+def _make_consumer_config(**overrides: Any) -> RabbitMQConsumerConfig:
     defaults = {
         "url": "amqp://guest:guest@localhost/",
         "exchange_name": "mdm.device.commands",
@@ -804,7 +805,7 @@ class TestProcessProfileStatusMessage:
     @patch("app.messaging.consumer.async_session")
     @patch("app.messaging.consumer.send_validation_webhook", new_callable=AsyncMock)
     async def test_successful_status_update_applied(
-        self, mock_webhook, mock_session_factory
+        self, mock_webhook: Any, mock_session_factory: Any
     ) -> None:
         assignment = MagicMock()
         assignment.profile_id = 5
@@ -836,7 +837,7 @@ class TestProcessProfileStatusMessage:
     @patch("app.messaging.consumer.async_session")
     @patch("app.messaging.consumer.send_validation_webhook", new_callable=AsyncMock)
     async def test_successful_status_update_pending(
-        self, mock_webhook, mock_session_factory
+        self, mock_webhook: Any, mock_session_factory: Any
     ) -> None:
         assignment = MagicMock()
         assignment.profile_id = 5
@@ -864,7 +865,7 @@ class TestProcessProfileStatusMessage:
         mock_db.commit.assert_awaited_once()
 
     @patch("app.messaging.consumer.async_session")
-    async def test_assignment_not_found(self, mock_session_factory) -> None:
+    async def test_assignment_not_found(self, mock_session_factory: Any) -> None:
         mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = None
 
@@ -910,7 +911,7 @@ class TestProcessProfileStatusMessage:
     @patch("app.messaging.consumer.async_session")
     @patch("app.messaging.consumer.send_validation_webhook", new_callable=AsyncMock)
     async def test_webhook_failure_does_not_nack(
-        self, mock_webhook, mock_session_factory
+        self, mock_webhook: Any, mock_session_factory: Any
     ) -> None:
         mock_webhook.side_effect = RuntimeError("Webhook down")
 

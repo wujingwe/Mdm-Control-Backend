@@ -1,5 +1,6 @@
 import re
 from collections.abc import AsyncGenerator
+from typing import Any
 
 import jwt
 import pytest_asyncio
@@ -17,7 +18,7 @@ test_engine = create_async_engine(TEST_DB_URL, echo=False)
 
 
 @event.listens_for(test_engine.sync_engine, "connect")
-def _register_sqlite_regexp(dbapi_conn, _connection_record) -> None:
+def _register_sqlite_regexp(dbapi_conn: Any, _connection_record: Any) -> None:
     dbapi_conn.create_function(
         "regexp",
         2,

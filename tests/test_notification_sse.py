@@ -34,7 +34,7 @@ class TestNotifySSEServer:
             "profile": {"id": 1, "name": "Profile A", "config": {"key": "val"}},
         }
 
-    async def test_retry_then_succeed(self, mock_client):
+    async def test_retry_then_succeed(self, mock_client: AsyncMock) -> None:
         fail = httpx.HTTPStatusError(
             "fail", request=MagicMock(), response=MagicMock(status_code=500)
         )
@@ -44,7 +44,7 @@ class TestNotifySSEServer:
         await notify_sse_server(device_serial="SN001")
         assert mock_client.post.call_count == 3
 
-    async def test_all_retries_fail_raises_retry_error(self, mock_client):
+    async def test_all_retries_fail_raises_retry_error(self, mock_client: AsyncMock) -> None:
         mock_client.post = AsyncMock(
             side_effect=httpx.HTTPStatusError(
                 "fail", request=MagicMock(), response=MagicMock(status_code=500)

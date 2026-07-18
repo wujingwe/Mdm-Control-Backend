@@ -7,9 +7,10 @@ from app.common.enums import (
     EnrollmentStatus,
 )
 from app.devices.models import Device
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
-async def _create_device(db_session):
+async def _create_device(db_session: AsyncSession) -> None:
     device = Device(
         name="Test Device",
         serial_number="SER001",
@@ -24,7 +25,7 @@ async def _create_device(db_session):
 
 
 class TestCommandRepository:
-    async def test_create(self, db_session):
+    async def test_create(self, db_session: AsyncSession) -> None:
         device = await _create_device(db_session)
         repo = CommandRepository(db_session)
         created = await repo.create(
@@ -35,7 +36,7 @@ class TestCommandRepository:
         assert created.command_type == CommandType.LOCK
         assert created.status == CommandStatus.PENDING
 
-    async def test_get_by_id(self, db_session):
+    async def test_get_by_id(self, db_session: AsyncSession) -> None:
         device = await _create_device(db_session)
         repo = CommandRepository(db_session)
         created = await repo.create(
@@ -46,11 +47,11 @@ class TestCommandRepository:
         assert found is not None
         assert found.device_id == device.id
 
-    async def test_get_by_id_not_found(self, db_session):
+    async def test_get_by_id_not_found(self, db_session: AsyncSession) -> None:
         repo = CommandRepository(db_session)
         assert await repo.get_by_id(999) is None
 
-    async def test_list_for_device(self, db_session):
+    async def test_list_for_device(self, db_session: AsyncSession) -> None:
         device = await _create_device(db_session)
         repo = CommandRepository(db_session)
         await repo.create(
@@ -62,7 +63,7 @@ class TestCommandRepository:
         items = await repo.list_for_device(device.id)
         assert len(items) == 2
 
-    async def test_mark_sent(self, db_session):
+    async def test_mark_sent(self, db_session: AsyncSession) -> None:
         device = await _create_device(db_session)
         repo = CommandRepository(db_session)
         created = await repo.create(
@@ -72,7 +73,7 @@ class TestCommandRepository:
         updated = await repo.mark_sent(created.id, "msg-123")
         assert updated.status == CommandStatus.SENT
 
-    async def test_update_status(self, db_session):
+    async def test_update_status(self, db_session: AsyncSession) -> None:
         device = await _create_device(db_session)
         repo = CommandRepository(db_session)
         created = await repo.create(
@@ -85,7 +86,7 @@ class TestCommandRepository:
         assert updated.status == CommandStatus.COMPLETED
         assert updated.result_message == "done"
 
-    async def test_cancel(self, db_session):
+    async def test_cancel(self, db_session: AsyncSession) -> None:
         device = await _create_device(db_session)
         repo = CommandRepository(db_session)
         created = await repo.create(
@@ -95,7 +96,7 @@ class TestCommandRepository:
         updated = await repo.cancel(created.id)
         assert updated.status == CommandStatus.CANCELLED
 
-    async def test_count_all(self, db_session):
+    async def test_count_all(self, db_session: AsyncSession) -> None:
         device = await _create_device(db_session)
         repo = CommandRepository(db_session)
         assert await repo.count_all() == 0
@@ -104,7 +105,7 @@ class TestCommandRepository:
         )
         assert await repo.count_all() == 1
 
-    async def test_count_for_device(self, db_session):
+    async def test_count_for_device(self, db_session: AsyncSession) -> None:
         device = await _create_device(db_session)
         repo = CommandRepository(db_session)
         await repo.create(

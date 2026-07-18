@@ -10,13 +10,13 @@ from app.common.enums import CommandType, CommandStatus
 from app.devices.models import Device
 
 
-class DeviceCommand(Base):
-    __tablename__ = "device_commands"
+class Command(Base):
+    __tablename__ = "commands"
     __table_args__ = (
-        Index("ix_device_commands_device_id", "device_id"),
-        Index("ix_device_commands_status", "status"),
-        Index("ix_device_commands_command_type", "command_type"),
-        Index("ix_device_commands_created_at", "created_at"),
+        Index("ix_commands_device_id", "device_id"),
+        Index("ix_commands_status", "status"),
+        Index("ix_commands_command_type", "command_type"),
+        Index("ix_commands_created_at", "created_at"),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)

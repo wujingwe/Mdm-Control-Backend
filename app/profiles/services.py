@@ -1,5 +1,6 @@
 import logging
 from collections.abc import Callable
+from functools import reduce
 from operator import and_
 
 from sqlalchemy import select
@@ -133,14 +134,14 @@ class ProfileService:
                 )
                 filters: list[BinaryExpression] = []
                 for c in criteria_list:
-                    col = getattr(Device, c.get("field", ""), None)
+                    col = getattr(Device, c.field, None)
                     if col is None:
                         continue
-                    builder = _FILTER_BUILDERS.get(c.get("operator", "is"))
+                    builder = _FILTER_BUILDERS.get(c.operator)
                     if builder is not None:
-                        filters.append(builder(col, c.get("value", "")))
+                        filters.append(builder(col, c.value))
                 if filters:
-                    where = and_(*filters) if len(filters) > 1 else filters[0]
+                    where = reduce(and_, filters)
                     dev_stmt = select(Device.id).where(where)
                 else:
                     dev_stmt = select(Device.id)

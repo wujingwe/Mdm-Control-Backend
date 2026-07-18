@@ -1,7 +1,8 @@
+from httpx import AsyncClient
 class TestInventorySearchAPI:
     BASE = "/api/v1/inventory-search"
 
-    async def test_crud_flow(self, client):
+    async def test_crud_flow(self, client: AsyncClient) -> None:
         create = await client.post(
             self.BASE,
             json={
@@ -31,7 +32,7 @@ class TestInventorySearchAPI:
         get2 = await client.get(f"{self.BASE}/{sid}")
         assert get2.status_code == 404
 
-    async def test_list(self, client):
+    async def test_list(self, client: AsyncClient) -> None:
         await client.post(
             self.BASE,
             json={
@@ -44,7 +45,7 @@ class TestInventorySearchAPI:
         data = resp.json()
         assert data["total"] >= 1 and len(data["items"]) >= 1
 
-    async def test_create_with_criteria(self, client):
+    async def test_create_with_criteria(self, client: AsyncClient) -> None:
         create = await client.post(
             self.BASE,
             json={
@@ -72,7 +73,7 @@ class TestInventorySearchAPI:
         assert criteria[0]["field"] == "connection_status"
         assert criteria[1]["field"] == "os_version"
 
-    async def test_get_returns_criteria(self, client):
+    async def test_get_returns_criteria(self, client: AsyncClient) -> None:
         create = await client.post(
             self.BASE,
             json={
@@ -95,7 +96,7 @@ class TestInventorySearchAPI:
         assert len(criteria) == 1
         assert criteria[0]["field"] == "battery_status"
 
-    async def test_update_criteria(self, client):
+    async def test_update_criteria(self, client: AsyncClient) -> None:
         create = await client.post(
             self.BASE,
             json={
@@ -130,7 +131,7 @@ class TestInventorySearchAPI:
         assert len(criteria) == 1
         assert criteria[0]["field"] == "battery_status"
 
-    async def test_update_empty_criteria_rejected(self, client):
+    async def test_update_empty_criteria_rejected(self, client: AsyncClient) -> None:
         create = await client.post(
             self.BASE,
             json={
@@ -153,7 +154,7 @@ class TestInventorySearchAPI:
         )
         assert update.status_code == 422
 
-    async def test_create_with_invalid_criteria_type(self, client):
+    async def test_create_with_invalid_criteria_type(self, client: AsyncClient) -> None:
         create = await client.post(
             self.BASE,
             json={
@@ -171,7 +172,7 @@ class TestInventorySearchAPI:
         )
         assert create.status_code == 422
 
-    async def test_create_with_criteria_parentheses(self, client):
+    async def test_create_with_criteria_parentheses(self, client: AsyncClient) -> None:
         create = await client.post(
             self.BASE,
             json={

@@ -4,7 +4,7 @@ from app.users.schemas import UserResponse
 
 
 class TestUserSchemas:
-    def test_response(self):
+    def test_response(self) -> None:
         now = datetime.now(timezone.utc)
         data = UserResponse(
             id=1,
@@ -15,7 +15,7 @@ class TestUserSchemas:
         )
         assert data.name == "jdoe"
 
-    def test_response_with_email(self):
+    def test_response_with_email(self) -> None:
         now = datetime.now(timezone.utc)
         data = UserResponse(
             id=1,

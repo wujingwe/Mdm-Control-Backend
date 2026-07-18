@@ -8,6 +8,7 @@ from app.devices.schemas import (
     Network,
     Wifi,
 )
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
 def _make_device_data(serial: str = "SN001", name: str = "Test Device") -> dict:
@@ -21,14 +22,14 @@ def _make_device_data(serial: str = "SN001", name: str = "Test Device") -> dict:
 
 
 class TestDeviceRepository:
-    async def test_create(self, db_session):
+    async def test_create(self, db_session: AsyncSession) -> None:
         repo = DeviceRepository(db_session)
         device = await repo.create(_make_device_data())
         assert device.id is not None
         assert device.serial_number == "SN001"
         assert device.name == "Test Device"
 
-    async def test_create_all_fields(self, db_session):
+    async def test_create_all_fields(self, db_session: AsyncSession) -> None:
         repo = DeviceRepository(db_session)
         data = _make_device_data()
         data["battery_status"] = 85
@@ -47,18 +48,18 @@ class TestDeviceRepository:
         assert device.network.wifi.ssid == "Office"
         assert len(device.certificates) == 1
 
-    async def test_get_by_id(self, db_session):
+    async def test_get_by_id(self, db_session: AsyncSession) -> None:
         repo = DeviceRepository(db_session)
         created = await repo.create(_make_device_data())
         found = await repo.get_by_id(created.id)
         assert found is not None
         assert found.serial_number == "SN001"
 
-    async def test_get_by_id_not_found(self, db_session):
+    async def test_get_by_id_not_found(self, db_session: AsyncSession) -> None:
         repo = DeviceRepository(db_session)
         assert await repo.get_by_id(999) is None
 
-    async def test_get_by_id_loads_extension_attributes(self, db_session):
+    async def test_get_by_id_loads_extension_attributes(self, db_session: AsyncSession) -> None:
         from app.extension_attributes.repositories import ExtensionAttributeRepository
         from app.extension_attributes.schemas import ExtensionAttributeCreate
 
@@ -85,7 +86,7 @@ class TestDeviceRepository:
         assert len(found.extension_attributes) == 1
         assert found.extension_attributes[0].value == "v1"
 
-    async def test_list_all(self, db_session):
+    async def test_list_all(self, db_session: AsyncSession) -> None:
         repo = DeviceRepository(db_session)
         await repo.create(_make_device_data(serial="SN001"))
         await repo.create(_make_device_data(serial="SN002"))
@@ -93,7 +94,7 @@ class TestDeviceRepository:
         items = await repo.list_all()
         assert len(items) == 3
 
-    async def test_list_all_pagination(self, db_session):
+    async def test_list_all_pagination(self, db_session: AsyncSession) -> None:
         repo = DeviceRepository(db_session)
         for i in range(5):
             await repo.create(_make_device_data(serial=f"SN{i:03d}"))
@@ -104,12 +105,12 @@ class TestDeviceRepository:
         page3 = await repo.list_all(skip=4, limit=2)
         assert len(page3) == 1
 
-    async def test_list_all_empty(self, db_session):
+    async def test_list_all_empty(self, db_session: AsyncSession) -> None:
         repo = DeviceRepository(db_session)
         items = await repo.list_all()
         assert items == []
 
-    async def test_update(self, db_session):
+    async def test_update(self, db_session: AsyncSession) -> None:
         repo = DeviceRepository(db_session)
         created = await repo.create(_make_device_data())
         updated = await repo.update(
@@ -120,11 +121,11 @@ class TestDeviceRepository:
         assert updated.connection_status == "Offline"
         assert updated.serial_number == "SN001"
 
-    async def test_update_not_found(self, db_session):
+    async def test_update_not_found(self, db_session: AsyncSession) -> None:
         repo = DeviceRepository(db_session)
         assert await repo.update(999, DeviceUpdate(connection_status="Offline")) is None
 
-    async def test_update_network(self, db_session):
+    async def test_update_network(self, db_session: AsyncSession) -> None:
         repo = DeviceRepository(db_session)
         created = await repo.create(_make_device_data())
         updated = await repo.update(
@@ -138,7 +139,7 @@ class TestDeviceRepository:
         assert updated.network.wifi.ssid == "Updated"
         assert updated.network.cellular.carrier == "Verizon"
 
-    async def test_update_clear_network(self, db_session):
+    async def test_update_clear_network(self, db_session: AsyncSession) -> None:
         repo = DeviceRepository(db_session)
         created = await repo.create(
             {**_make_device_data(), "network": Network(wifi=Wifi(ssid="Office"))}
@@ -148,7 +149,7 @@ class TestDeviceRepository:
         updated = await repo.update(created.id, DeviceUpdate(network=None))
         assert updated.network is None
 
-    async def test_update_certificates(self, db_session):
+    async def test_update_certificates(self, db_session: AsyncSession) -> None:
         repo = DeviceRepository(db_session)
         created = await repo.create(_make_device_data())
         updated = await repo.update(
@@ -164,7 +165,7 @@ class TestDeviceRepository:
         assert updated.certificates[0].common_name == "new.com"
         assert updated.certificates[1].common_name == "backup.com"
 
-    async def test_update_clear_certificates(self, db_session):
+    async def test_update_clear_certificates(self, db_session: AsyncSession) -> None:
         repo = DeviceRepository(db_session)
         created = await repo.create(
             {**_make_device_data(), "certificates": [Certificate(common_name="old.com")]}
@@ -174,7 +175,7 @@ class TestDeviceRepository:
         updated = await repo.update(created.id, DeviceUpdate(certificates=None))
         assert updated.certificates is None
 
-    async def test_update_multiple_scalar_fields(self, db_session):
+    async def test_update_multiple_scalar_fields(self, db_session: AsyncSession) -> None:
         repo = DeviceRepository(db_session)
         created = await repo.create(_make_device_data())
         updated = await repo.update(
@@ -193,7 +194,7 @@ class TestDeviceRepository:
         assert updated.total_storage == 512
         assert updated.available_storage == 256
 
-    async def test_update_ext_attributes_replace(self, db_session):
+    async def test_update_ext_attributes_replace(self, db_session: AsyncSession) -> None:
         from app.extension_attributes.repositories import ExtensionAttributeRepository
         from app.extension_attributes.schemas import ExtensionAttributeCreate
 
@@ -222,7 +223,7 @@ class TestDeviceRepository:
         assert len(updated.extension_attributes) == 1
         assert updated.extension_attributes[0].value == "val1"
 
-    async def test_update_ext_attributes_clear(self, db_session):
+    async def test_update_ext_attributes_clear(self, db_session: AsyncSession) -> None:
         from app.extension_attributes.repositories import ExtensionAttributeRepository
         from app.extension_attributes.schemas import ExtensionAttributeCreate
 
@@ -254,7 +255,7 @@ class TestDeviceRepository:
         )
         assert updated.extension_attributes == []
 
-    async def test_update_ext_attrs_and_scalar_together(self, db_session):
+    async def test_update_ext_attrs_and_scalar_together(self, db_session: AsyncSession) -> None:
         from app.extension_attributes.repositories import ExtensionAttributeRepository
         from app.extension_attributes.schemas import ExtensionAttributeCreate
 
@@ -285,7 +286,7 @@ class TestDeviceRepository:
         assert len(updated.extension_attributes) == 1
         assert updated.extension_attributes[0].value == "val1"
 
-    async def test_update_ext_attrs_replace_multiple(self, db_session):
+    async def test_update_ext_attrs_replace_multiple(self, db_session: AsyncSession) -> None:
         from app.extension_attributes.repositories import ExtensionAttributeRepository
         from app.extension_attributes.schemas import ExtensionAttributeCreate
 
@@ -325,24 +326,24 @@ class TestDeviceRepository:
         values = {a.extension_attribute_name: a.value for a in updated.extension_attributes}
         assert values == {"field1": "v1-new", "field2": "v2"}
 
-    async def test_update_no_change(self, db_session):
+    async def test_update_no_change(self, db_session: AsyncSession) -> None:
         repo = DeviceRepository(db_session)
         created = await repo.create(_make_device_data())
         updated = await repo.update(created.id, DeviceUpdate())
         assert updated is not None
         assert updated.serial_number == "SN001"
 
-    async def test_delete(self, db_session):
+    async def test_delete(self, db_session: AsyncSession) -> None:
         repo = DeviceRepository(db_session)
         created = await repo.create(_make_device_data())
         assert await repo.delete(created.id) is True
         assert await repo.get_by_id(created.id) is None
 
-    async def test_delete_not_found(self, db_session):
+    async def test_delete_not_found(self, db_session: AsyncSession) -> None:
         repo = DeviceRepository(db_session)
         assert await repo.delete(999) is False
 
-    async def test_delete_removes_device(self, db_session):
+    async def test_delete_removes_device(self, db_session: AsyncSession) -> None:
         from app.extension_attributes.repositories import ExtensionAttributeRepository
         from app.extension_attributes.schemas import ExtensionAttributeCreate
 
@@ -368,13 +369,13 @@ class TestDeviceRepository:
         assert await repo.delete(device.id) is True
         assert await repo.get_by_id(device.id) is None
 
-    async def test_count(self, db_session):
+    async def test_count(self, db_session: AsyncSession) -> None:
         repo = DeviceRepository(db_session)
         assert await repo.count() == 0
         await repo.create(_make_device_data())
         assert await repo.count() == 1
 
-    async def test_count_after_delete(self, db_session):
+    async def test_count_after_delete(self, db_session: AsyncSession) -> None:
         repo = DeviceRepository(db_session)
         d1 = await repo.create(_make_device_data(serial="SN001"))
         await repo.create(_make_device_data(serial="SN002"))
@@ -382,13 +383,13 @@ class TestDeviceRepository:
         await repo.delete(d1.id)
         assert await repo.count() == 1
 
-    async def test_unique_serial(self, db_session):
+    async def test_unique_serial(self, db_session: AsyncSession) -> None:
         repo = DeviceRepository(db_session)
         await repo.create(_make_device_data())
         with pytest.raises(ConflictError):
             await repo.create(_make_device_data())
 
-    async def test_create_with_network_and_certificates(self, db_session):
+    async def test_create_with_network_and_certificates(self, db_session: AsyncSession) -> None:
         repo = DeviceRepository(db_session)
         data = _make_device_data()
         data["network"] = Network(wifi=Wifi(ssid="Office", bssid="00:11:22:33:44:55"))
@@ -403,7 +404,7 @@ class TestDeviceRepository:
         assert device.certificates[0].common_name == "example.com"
         assert device.certificates[0].issuer == "CA Inc"
 
-    async def test_update_with_network_wifi_only(self, db_session):
+    async def test_update_with_network_wifi_only(self, db_session: AsyncSession) -> None:
         repo = DeviceRepository(db_session)
         created = await repo.create(_make_device_data())
         updated = await repo.update(
@@ -413,7 +414,7 @@ class TestDeviceRepository:
         assert updated.network.wifi.ssid == "NewWifi"
         assert updated.network.cellular is None
 
-    async def test_update_with_network_cellular_only(self, db_session):
+    async def test_update_with_network_cellular_only(self, db_session: AsyncSession) -> None:
         repo = DeviceRepository(db_session)
         created = await repo.create(_make_device_data())
         updated = await repo.update(

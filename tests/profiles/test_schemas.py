@@ -4,7 +4,7 @@ from app.profiles.schemas import ProfileResponse
 
 
 class TestProfileSchemas:
-    def test_response(self):
+    def test_response(self) -> None:
         data = ProfileResponse(
             id=1,
             name="Profile A",

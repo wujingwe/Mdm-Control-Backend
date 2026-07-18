@@ -6,7 +6,7 @@ from app.users.schemas import UserCreate, UserUpdate
 
 class TestUserService:
     @pytest.fixture
-    def repo(self):
+    def repo(self) -> None:
         m = MagicMock()
         m.list_all = AsyncMock(return_value=[])
         m.count = AsyncMock(return_value=0)
@@ -16,7 +16,7 @@ class TestUserService:
         m.delete = AsyncMock()
         return m
 
-    async def test_list_users(self, repo):
+    async def test_list_users(self, repo: MagicMock) -> None:
         svc = UserService(repo)
         items, total = await svc.list_users()
         assert items == []
@@ -24,24 +24,24 @@ class TestUserService:
         repo.list_all.assert_called_once_with(skip=0, limit=100)
         repo.count.assert_called_once()
 
-    async def test_list_users_paginated(self, repo):
+    async def test_list_users_paginated(self, repo: MagicMock) -> None:
         svc = UserService(repo)
         await svc.list_users(skip=10, limit=20)
         repo.list_all.assert_called_once_with(skip=10, limit=20)
 
-    async def test_get_user_found(self, repo):
+    async def test_get_user_found(self, repo: MagicMock) -> None:
         fake = MagicMock()
         repo.get_by_id = AsyncMock(return_value=fake)
         svc = UserService(repo)
         result = await svc.get_user(1)
         assert result is fake
 
-    async def test_get_user_not_found(self, repo):
+    async def test_get_user_not_found(self, repo: MagicMock) -> None:
         svc = UserService(repo)
         result = await svc.get_user(999)
         assert result is None
 
-    async def test_create_user(self, repo):
+    async def test_create_user(self, repo: MagicMock) -> None:
         fake = MagicMock()
         repo.create = AsyncMock(return_value=fake)
         svc = UserService(repo)
@@ -53,7 +53,7 @@ class TestUserService:
         assert create_arg.email == "a@b.com"
         assert create_arg.password_hash is not None
 
-    async def test_update_user_with_password(self, repo):
+    async def test_update_user_with_password(self, repo: MagicMock) -> None:
         fake = MagicMock()
         repo.update = AsyncMock(return_value=fake)
         svc = UserService(repo)
@@ -62,7 +62,7 @@ class TestUserService:
         update_arg = repo.update.call_args[0][1]
         assert update_arg.password_hash is not None
 
-    async def test_update_user_without_password(self, repo):
+    async def test_update_user_without_password(self, repo: MagicMock) -> None:
         fake = MagicMock()
         repo.update = AsyncMock(return_value=fake)
         svc = UserService(repo)
@@ -72,19 +72,19 @@ class TestUserService:
         assert update_arg.name == "new name"
         assert update_arg.password_hash is None
 
-    async def test_update_user_empty_data(self, repo):
+    async def test_update_user_empty_data(self, repo: MagicMock) -> None:
         svc = UserService(repo)
         result = await svc.update_user(1, UserUpdate())
         assert result is None
         repo.update.assert_not_called()
 
-    async def test_delete_user(self, repo):
+    async def test_delete_user(self, repo: MagicMock) -> None:
         repo.delete = AsyncMock(return_value=True)
         svc = UserService(repo)
         assert await svc.delete_user(1) is True
         repo.delete.assert_called_once_with(1)
 
-    async def test_delete_user_not_found(self, repo):
+    async def test_delete_user_not_found(self, repo: MagicMock) -> None:
         repo.delete = AsyncMock(return_value=False)
         svc = UserService(repo)
         assert await svc.delete_user(999) is False

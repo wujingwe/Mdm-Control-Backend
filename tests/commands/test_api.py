@@ -1,9 +1,12 @@
 from unittest.mock import AsyncMock, patch
 from app.common.enums import ConnectionStatus, EnrollmentStatus
 from app.devices.models import Device
+from httpx import AsyncClient
+from sqlalchemy.ext.asyncio import AsyncSession
+from unittest.mock import MagicMock
 
 
-async def _create_device(client, db_session):
+async def _create_device(client: AsyncClient, db_session: AsyncSession) -> None:
     device = Device(
         name="Test Device",
         serial_number="SER001",
@@ -21,7 +24,7 @@ class TestCommandsAPI:
     BASE = "/api/v1/devices"
 
     @patch("app.commands.services.rabbitmq_producer")
-    async def test_trigger_and_list(self, mock_producer, client, db_session):
+    async def test_trigger_and_list(self, mock_producer: MagicMock, client: AsyncClient, db_session: AsyncSession) -> None:
         mock_producer.publish_device_command = AsyncMock(return_value="msg-123")
         device = await _create_device(client, db_session)
 
@@ -44,7 +47,7 @@ class TestCommandsAPI:
         assert list_resp.json()["total"] >= 1
 
     @patch("app.commands.services.rabbitmq_producer")
-    async def test_cancel(self, mock_producer, client, db_session):
+    async def test_cancel(self, mock_producer: MagicMock, client: AsyncClient, db_session: AsyncSession) -> None:
         mock_producer.publish_device_command = AsyncMock(return_value="msg-123")
         device = await _create_device(client, db_session)
 
@@ -59,7 +62,7 @@ class TestCommandsAPI:
         assert resp.status_code == 200
         assert resp.json()["detail"] == "Command cancelled"
 
-    async def test_get_not_found(self, client, db_session):
+    async def test_get_not_found(self, client: AsyncClient, db_session: AsyncSession) -> None:
         device = await _create_device(client, db_session)
         resp = await client.get(f"{self.BASE}/{device.id}/commands/999")
         assert resp.status_code == 404

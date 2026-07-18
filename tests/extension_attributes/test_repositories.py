@@ -6,10 +6,11 @@ from app.extension_attributes.schemas import (
     ExtensionAttributeUpdate,
 )
 from app.common.enums import ExtensionDataType, ExtensionInputType
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
 class TestExtensionAttributeRepository:
-    async def test_create(self, db_session):
+    async def test_create(self, db_session: AsyncSession) -> None:
         repo = ExtensionAttributeRepository(db_session)
         created = await repo.create(
             ExtensionAttributeCreate(
@@ -22,7 +23,7 @@ class TestExtensionAttributeRepository:
         assert created.id is not None
         assert created.name == "ext1"
 
-    async def test_create_unique_name(self, db_session):
+    async def test_create_unique_name(self, db_session: AsyncSession) -> None:
         repo = ExtensionAttributeRepository(db_session)
         data = ExtensionAttributeCreate(
             name="ext1",
@@ -34,7 +35,7 @@ class TestExtensionAttributeRepository:
         with pytest.raises(ConflictError):
             await repo.create(data)
 
-    async def test_list(self, db_session):
+    async def test_list(self, db_session: AsyncSession) -> None:
         repo = ExtensionAttributeRepository(db_session)
         base = dict(
             data_type=ExtensionDataType.STRING,
@@ -46,7 +47,7 @@ class TestExtensionAttributeRepository:
         items = await repo.list_all()
         assert len(items) == 2
 
-    async def test_list_pagination(self, db_session):
+    async def test_list_pagination(self, db_session: AsyncSession) -> None:
         repo = ExtensionAttributeRepository(db_session)
         base = dict(
             data_type=ExtensionDataType.STRING,
@@ -58,7 +59,7 @@ class TestExtensionAttributeRepository:
         items = await repo.list_all(skip=1, limit=2)
         assert len(items) == 2
 
-    async def test_get_by_id(self, db_session):
+    async def test_get_by_id(self, db_session: AsyncSession) -> None:
         repo = ExtensionAttributeRepository(db_session)
         created = await repo.create(
             ExtensionAttributeCreate(
@@ -72,11 +73,11 @@ class TestExtensionAttributeRepository:
         assert found is not None
         assert found.name == "ext1"
 
-    async def test_get_by_id_not_found(self, db_session):
+    async def test_get_by_id_not_found(self, db_session: AsyncSession) -> None:
         repo = ExtensionAttributeRepository(db_session)
         assert await repo.get_by_id(999) is None
 
-    async def test_update(self, db_session):
+    async def test_update(self, db_session: AsyncSession) -> None:
         repo = ExtensionAttributeRepository(db_session)
         created = await repo.create(
             ExtensionAttributeCreate(
@@ -90,11 +91,11 @@ class TestExtensionAttributeRepository:
         assert updated is not None
         assert updated.name == "ext2"
 
-    async def test_update_not_found(self, db_session):
+    async def test_update_not_found(self, db_session: AsyncSession) -> None:
         repo = ExtensionAttributeRepository(db_session)
         assert await repo.update(999, ExtensionAttributeUpdate(name="x")) is None
 
-    async def test_delete(self, db_session):
+    async def test_delete(self, db_session: AsyncSession) -> None:
         repo = ExtensionAttributeRepository(db_session)
         created = await repo.create(
             ExtensionAttributeCreate(
@@ -107,11 +108,11 @@ class TestExtensionAttributeRepository:
         assert await repo.delete(created.id) is True
         assert await repo.get_by_id(created.id) is None
 
-    async def test_delete_not_found(self, db_session):
+    async def test_delete_not_found(self, db_session: AsyncSession) -> None:
         repo = ExtensionAttributeRepository(db_session)
         assert await repo.delete(999) is False
 
-    async def test_count(self, db_session):
+    async def test_count(self, db_session: AsyncSession) -> None:
         repo = ExtensionAttributeRepository(db_session)
         assert await repo.count() == 0
         await repo.create(

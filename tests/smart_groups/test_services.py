@@ -6,7 +6,7 @@ from app.smart_groups.schemas import SmartGroupCreate, SmartGroupUpdate
 
 class TestSmartGroupService:
     @pytest.fixture
-    def repo(self):
+    def repo(self) -> None:
         m = MagicMock()
         m.list_all = AsyncMock(return_value=[])
         m.get_by_id = AsyncMock(return_value=None)
@@ -17,19 +17,19 @@ class TestSmartGroupService:
         m.db = AsyncMock()
         return m
 
-    async def test_list_groups(self, repo):
+    async def test_list_groups(self, repo: MagicMock) -> None:
         svc = SmartGroupService(repo)
         await svc.list_groups()
         repo.list_all.assert_called_once_with(skip=0, limit=100)
 
-    async def test_get_group(self, repo):
+    async def test_get_group(self, repo: MagicMock) -> None:
         fake = MagicMock()
         repo.get_by_id = AsyncMock(return_value=fake)
         svc = SmartGroupService(repo)
         result = await svc.get_group(1)
         assert result is fake
 
-    async def test_create_group(self, repo):
+    async def test_create_group(self, repo: MagicMock) -> None:
         fake = MagicMock()
         repo.create = AsyncMock(return_value=fake)
         svc = SmartGroupService(repo)
@@ -42,14 +42,14 @@ class TestSmartGroupService:
         )
         assert result is fake
 
-    async def test_update_group(self, repo):
+    async def test_update_group(self, repo: MagicMock) -> None:
         fake = MagicMock()
         repo.update = AsyncMock(return_value=fake)
         svc = SmartGroupService(repo)
         result = await svc.update_group(1, SmartGroupUpdate(name="G2"))
         assert result is fake
 
-    async def test_delete_group(self, repo):
+    async def test_delete_group(self, repo: MagicMock) -> None:
         repo.delete = AsyncMock(return_value=True)
         svc = SmartGroupService(repo)
         assert await svc.delete_group(1) is True

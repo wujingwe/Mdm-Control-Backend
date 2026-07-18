@@ -1,3 +1,5 @@
+from typing import Any
+
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 from app.common.enums import CommandStatus
@@ -8,8 +10,8 @@ class TestProcessProfileStatusMessage:
     @patch("app.messaging.consumer.send_validation_webhook", new_callable=AsyncMock)
     @patch("app.messaging.consumer.async_session")
     async def test_profile_status_reported_updates_assignment(
-        self, mock_session_factory, mock_webhook
-    ):
+        self, mock_session_factory: Any, mock_webhook: Any
+    ) -> None:
         from app.messaging.consumer import process_profile_status_message
 
         mock_assignment = MagicMock()
@@ -37,7 +39,7 @@ class TestProcessProfileStatusMessage:
 
     @pytest.mark.asyncio
     @patch("app.messaging.consumer.send_validation_webhook", new_callable=AsyncMock)
-    async def test_profile_status_ignored_event(self, mock_webhook):
+    async def test_profile_status_ignored_event(self, mock_webhook: Any) -> None:
         from app.messaging.consumer import process_profile_status_message
 
         data = {"event_type": "other.event"}
@@ -46,7 +48,7 @@ class TestProcessProfileStatusMessage:
 
     @pytest.mark.asyncio
     @patch("app.messaging.consumer.send_validation_webhook", new_callable=AsyncMock)
-    async def test_profile_status_invalid_status(self, mock_webhook):
+    async def test_profile_status_invalid_status(self, mock_webhook: Any) -> None:
         from app.messaging.consumer import process_profile_status_message
 
         data = {
@@ -62,7 +64,7 @@ class TestProcessProfileStatusMessage:
 class TestProcessDeviceCommandStatus:
     @pytest.mark.asyncio
     @patch("app.messaging.consumer.async_session")
-    async def test_completed_updates_command(self, mock_session_factory):
+    async def test_completed_updates_command(self, mock_session_factory: Any) -> None:
         from app.messaging.consumer import process_device_command_status
 
         mock_cmd = MagicMock()
@@ -88,13 +90,13 @@ class TestProcessDeviceCommandStatus:
         assert mock_cmd.completed_at is not None
 
     @pytest.mark.asyncio
-    async def test_missing_command_id(self):
+    async def test_missing_command_id(self) -> None:
         from app.messaging.consumer import process_device_command_status
 
         await process_device_command_status({"event_type": "device.command.completed"})
 
     @pytest.mark.asyncio
-    async def test_unknown_event_type(self):
+    async def test_unknown_event_type(self) -> None:
         from app.messaging.consumer import process_device_command_status
 
         await process_device_command_status(
@@ -107,7 +109,7 @@ class TestCompositeHandler:
     @patch(
         "app.messaging.consumer.process_profile_status_message", new_callable=AsyncMock
     )
-    async def test_routes_profile_event(self, mock_profile):
+    async def test_routes_profile_event(self, mock_profile: Any) -> None:
         from app.messaging.consumer import composite_handler
 
         data = {"event_type": "profile.status.reported"}
@@ -118,7 +120,7 @@ class TestCompositeHandler:
     @patch(
         "app.messaging.consumer.process_device_command_status", new_callable=AsyncMock
     )
-    async def test_routes_command_event(self, mock_cmd):
+    async def test_routes_command_event(self, mock_cmd: Any) -> None:
         from app.messaging.consumer import composite_handler
 
         data = {"event_type": "device.command.completed"}
@@ -126,7 +128,7 @@ class TestCompositeHandler:
         mock_cmd.assert_called_once_with(data)
 
     @pytest.mark.asyncio
-    async def test_ignores_unknown_event(self):
+    async def test_ignores_unknown_event(self) -> None:
         from app.messaging.consumer import composite_handler
 
         await composite_handler({"event_type": "other.event"})

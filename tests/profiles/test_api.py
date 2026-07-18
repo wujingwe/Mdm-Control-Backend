@@ -1,7 +1,8 @@
+from httpx import AsyncClient
 class TestProfilesAPI:
     BASE = "/api/v1/profiles"
 
-    async def test_crud_flow(self, client):
+    async def test_crud_flow(self, client: AsyncClient) -> None:
         create = await client.post(
             self.BASE,
             json={
@@ -27,13 +28,13 @@ class TestProfilesAPI:
         get2 = await client.get(f"{self.BASE}/{pid}")
         assert get2.status_code == 404
 
-    async def test_list(self, client):
+    async def test_list(self, client: AsyncClient) -> None:
         await client.post(self.BASE, json={"name": "P1"})
         resp = await client.get(self.BASE)
         data = resp.json()
         assert data["total"] >= 1 and len(data["items"]) >= 1
 
-    async def test_set_scope(self, client):
+    async def test_set_scope(self, client: AsyncClient) -> None:
         create = await client.post(self.BASE, json={"name": "P"})
         pid = create.json()["id"]
         resp = await client.put(
@@ -45,7 +46,7 @@ class TestProfilesAPI:
         assert resp.status_code == 200
         assert len(resp.json()["scope"]) == 1
 
-    async def test_get_assignments_empty(self, client):
+    async def test_get_assignments_empty(self, client: AsyncClient) -> None:
         create = await client.post(self.BASE, json={"name": "P"})
         pid = create.json()["id"]
         resp = await client.get(f"{self.BASE}/{pid}/assignments")
