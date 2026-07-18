@@ -41,7 +41,7 @@ class ExtensionAttributeRepository:
             await self.db.rollback()
             raise ConflictError(
                 "Extension attribute with this name already exists"
-            ) from err  # noqa: TRY003, EM101
+            ) from err
         return instance
 
     async def update(
@@ -63,7 +63,7 @@ class ExtensionAttributeRepository:
             await self.db.rollback()
             raise ConflictError(
                 "Extension attribute with this name already exists"
-            ) from err  # noqa: TRY003, EM101
+            ) from err
         return result.scalars().one_or_none()
 
     async def delete(self, record_id: int) -> bool:

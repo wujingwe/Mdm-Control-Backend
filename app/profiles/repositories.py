@@ -37,7 +37,7 @@ class ProfileRepository:
             await self.db.refresh(instance)
         except IntegrityError as err:
             await self.db.rollback()
-            raise ConflictError("Profile with this name already exists") from err  # noqa: TRY003, EM101
+            raise ConflictError("Profile with this name already exists") from err
         return instance
 
     async def update(self, record_id: int, data: ProfileUpdate) -> Profile | None:
@@ -55,7 +55,7 @@ class ProfileRepository:
             await self.db.commit()
         except IntegrityError as err:
             await self.db.rollback()
-            raise ConflictError("Profile with this name already exists") from err  # noqa: TRY003, EM101
+            raise ConflictError("Profile with this name already exists") from err
         return result.scalars().one_or_none()
 
     async def delete(self, record_id: int) -> bool:

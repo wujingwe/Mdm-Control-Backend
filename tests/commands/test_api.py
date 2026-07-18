@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from unittest.mock import MagicMock
 
 
-async def _create_device(client: AsyncClient, db_session: AsyncSession) -> None:
+async def _create_device(client: AsyncClient, db_session: AsyncSession) -> Device:
     device = Device(
         name="Test Device",
         serial_number="SER001",
@@ -47,24 +47,6 @@ class TestCommandsAPI:
         list_resp = await client.get(f"{self.BASE}/{device.id}/commands")
         assert list_resp.status_code == 200
         assert list_resp.json()["total"] >= 1
-
-    @patch("app.commands.services.rabbitmq_producer")
-    async def test_cancel(
-        self, mock_producer: MagicMock, client: AsyncClient, db_session: AsyncSession
-    ) -> None:
-        mock_producer.publish_device_command = AsyncMock(return_value="msg-123")
-        device = await _create_device(client, db_session)
-
-        create = await client.post(
-            f"{self.BASE}/{device.id}/commands",
-            json={
-                "command_type": "LOCK",
-            },
-        )
-        cid = create.json()["id"]
-        resp = await client.delete(f"{self.BASE}/{device.id}/commands/{cid}")
-        assert resp.status_code == 200
-        assert resp.json()["detail"] == "Command cancelled"
 
     async def test_get_not_found(
         self, client: AsyncClient, db_session: AsyncSession

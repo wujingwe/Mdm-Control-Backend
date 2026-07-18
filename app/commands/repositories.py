@@ -117,22 +117,3 @@ class CommandRepository:
         result = await self.db.execute(stmt)
         await self.db.commit()
         return result.scalars().one_or_none()
-
-    async def cancel(self, command_id: int) -> Command | None:
-        now = datetime.now(timezone.utc)
-        stmt = (
-            update(Command)
-            .where(
-                Command.id == command_id,
-                Command.status.in_([CommandStatus.PENDING, CommandStatus.SENT]),
-            )
-            .values(
-                status=CommandStatus.CANCELLED,
-                completed_at=now,
-                result_message="Cancelled by administrator",
-            )
-            .returning(Command)
-        )
-        result = await self.db.execute(stmt)
-        await self.db.commit()
-        return result.scalars().one_or_none()

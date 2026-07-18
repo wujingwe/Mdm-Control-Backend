@@ -34,7 +34,7 @@ class DeviceRepository:
             await self.db.refresh(instance)
         except IntegrityError as err:
             await self.db.rollback()
-            raise ConflictError("Resource already exists") from err  # noqa: TRY003, EM101
+            raise ConflictError("Resource already exists") from err
         return instance
 
     async def update(self, record_id: int, data: DeviceUpdate) -> Device | None:
@@ -72,7 +72,7 @@ class DeviceRepository:
             await self.db.commit()
         except IntegrityError as err:
             await self.db.rollback()
-            raise ConflictError("Resource already exists") from err  # noqa: TRY003, EM101
+            raise ConflictError("Resource already exists") from err
 
         return await self.get_by_id(record_id)
 

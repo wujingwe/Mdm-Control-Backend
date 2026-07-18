@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
-from app.common.schemas import Message, PaginatedResponse
+from app.common.schemas import PaginatedResponse
 from app.dependencies import get_extension_attribute_service
 from app.extension_attributes.schemas import (
     ExtensionAttributeCreate,
@@ -69,17 +69,15 @@ async def update_extension_attribute(
     return ExtensionAttributeResponse.model_validate(updated)
 
 
-@router.delete("/{attribute_id}", response_model=Message)
+@router.delete("/{attribute_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_extension_attribute(
     attribute_id: int,
     service: ExtensionAttributeService = Depends(get_extension_attribute_service),
-) -> Message:
+) -> None:
     deleted = await service.delete_attribute(attribute_id)
     if not deleted:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Extension attribute not found",
         )
-
     await revalidate(["extension-attributes"])
-    return Message(detail="Extension attribute deleted")

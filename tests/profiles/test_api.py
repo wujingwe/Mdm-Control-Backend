@@ -25,7 +25,7 @@ class TestProfilesAPI:
         assert update.json()["name"] == "Profile2"
 
         delete = await client.delete(f"{self.BASE}/{pid}")
-        assert delete.status_code == 200
+        assert delete.status_code == 204
 
         get2 = await client.get(f"{self.BASE}/{pid}")
         assert get2.status_code == 404

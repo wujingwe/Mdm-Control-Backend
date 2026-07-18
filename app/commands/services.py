@@ -62,6 +62,3 @@ class CommandService:
         items = await self.repo.list_for_device(device_id, skip=skip, limit=limit)
         total = await self.repo.count_for_device(device_id)
         return items, total
-
-    async def cancel_command(self, command_id: int) -> Command | None:
-        return await self.repo.cancel(command_id)

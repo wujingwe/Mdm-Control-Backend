@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app.common.enums import TargetType
-from app.common.schemas import Message, PaginatedResponse
+from app.common.schemas import PaginatedResponse
 from app.dependencies import get_profile_service
 from app.profiles.schemas import (
     AssignmentResponse,
@@ -71,18 +71,17 @@ async def update_profile(
     return ProfileResponse.model_validate(updated)
 
 
-@router.delete("/{profile_id}", response_model=Message)
+@router.delete("/{profile_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_profile(
     profile_id: int,
     service: ProfileService = Depends(get_profile_service),
-) -> Message:
+) -> None:
     deleted = await service.delete_profile(profile_id)
     if not deleted:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Profile not found"
         )
     await revalidate(["profiles"])
-    return Message(detail="Profile deleted")
 
 
 @router.get("/{profile_id}/scope", response_model=ProfileScopeResponse)

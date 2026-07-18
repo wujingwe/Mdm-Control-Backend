@@ -10,7 +10,7 @@ class MobileAppService:
     async def list_mobile_apps(
         self, skip: int = 0, limit: int = 100
     ) -> tuple[list[MobileApp], int]:
-        items = await self.repo.list_all(skip=skip, limit=limit)
+        items = await self.repo.list_apps(skip=skip, limit=limit)
         total = await self.repo.count()
         return items, total
 

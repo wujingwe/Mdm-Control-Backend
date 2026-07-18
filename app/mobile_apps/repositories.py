@@ -11,7 +11,7 @@ class MobileAppRepository:
     def __init__(self, db: AsyncSession) -> None:
         self.db = db
 
-    async def list_all(self, skip: int = 0, limit: int = 100) -> list[MobileApp]:
+    async def list_apps(self, skip: int = 0, limit: int = 100) -> list[MobileApp]:
         stmt = select(MobileApp).order_by(MobileApp.id).offset(skip).limit(limit)
         result = await self.db.execute(stmt)
         return list(result.scalars().all())
@@ -29,7 +29,7 @@ class MobileAppRepository:
             await self.db.refresh(instance)
         except IntegrityError as err:
             await self.db.rollback()
-            raise ConflictError("Resource already exists") from err  # noqa: TRY003, EM101
+            raise ConflictError("Resource already exists") from err
         return instance
 
     async def update(self, record_id: int, data: MobileAppUpdate) -> MobileApp | None:
@@ -47,7 +47,7 @@ class MobileAppRepository:
             await self.db.commit()
         except IntegrityError as err:
             await self.db.rollback()
-            raise ConflictError("Resource already exists") from err  # noqa: TRY003, EM101
+            raise ConflictError("Resource already exists") from err
         return result.scalars().one_or_none()
 
     async def delete(self, record_id: int) -> bool:

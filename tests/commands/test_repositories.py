@@ -86,16 +86,6 @@ class TestCommandRepository:
         assert updated.status == CommandStatus.COMPLETED
         assert updated.result_message == "done"
 
-    async def test_cancel(self, db_session: AsyncSession) -> None:
-        device = await _create_device(db_session)
-        repo = CommandRepository(db_session)
-        created = await repo.create(
-            device_id=device.id,
-            data=CommandCreate(command_type=CommandType.LOCK),
-        )
-        updated = await repo.cancel(created.id)
-        assert updated.status == CommandStatus.CANCELLED
-
     async def test_count_all(self, db_session: AsyncSession) -> None:
         device = await _create_device(db_session)
         repo = CommandRepository(db_session)

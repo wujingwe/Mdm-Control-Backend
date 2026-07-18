@@ -582,41 +582,6 @@ class TestCommandsAPI:
         resp = await client.get(f"/api/v1/devices/99999/commands/{command_id}")
         assert resp.status_code == 404
 
-    async def test_cancel_pending(
-        self, client: AsyncClient, db_session: AsyncSession
-    ) -> None:
-        device = await self._create_device(db_session)
-        create_resp = await client.post(
-            f"/api/v1/devices/{device.id}/commands",
-            json={"command_type": "LOCK"},
-        )
-        command_id = create_resp.json()["id"]
-
-        cancel_resp = await client.delete(
-            f"/api/v1/devices/{device.id}/commands/{command_id}"
-        )
-        assert cancel_resp.status_code == 200
-        assert cancel_resp.json()["detail"] == "Command cancelled"
-
-    async def test_cancel_not_found(
-        self, client: AsyncClient, db_session: AsyncSession
-    ) -> None:
-        device = await self._create_device(db_session)
-        resp = await client.delete(f"/api/v1/devices/{device.id}/commands/999")
-        assert resp.status_code == 404
-
-    async def test_cancel_wrong_device(
-        self, client: AsyncClient, db_session: AsyncSession
-    ) -> None:
-        device = await self._create_device(db_session)
-        create_resp = await client.post(
-            f"/api/v1/devices/{device.id}/commands",
-            json={"command_type": "LOCK"},
-        )
-        command_id = create_resp.json()["id"]
-        resp = await client.delete(f"/api/v1/devices/99999/commands/{command_id}")
-        assert resp.status_code == 404
-
     async def test_list_device_commands(
         self, client: AsyncClient, db_session: AsyncSession
     ) -> None:

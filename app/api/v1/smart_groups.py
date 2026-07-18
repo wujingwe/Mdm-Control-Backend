@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
-from app.common.schemas import Message, PaginatedResponse
+from app.common.schemas import PaginatedResponse
 from app.dependencies import get_smart_group_service
 from app.smart_groups.schemas import (
     SmartGroupCreate,
@@ -66,15 +66,14 @@ async def update_smart_group(
     return SmartGroupResponse.model_validate(updated)
 
 
-@router.delete("/{group_id}", response_model=Message)
+@router.delete("/{group_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_smart_group(
     group_id: int,
     service: SmartGroupService = Depends(get_smart_group_service),
-) -> Message:
+) -> None:
     deleted = await service.delete_group(group_id)
     if not deleted:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Smart group not found"
         )
     await revalidate(["smart-groups"])
-    return Message(detail="Smart group deleted")

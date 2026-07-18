@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
-from app.common.schemas import Message, PaginatedResponse
+from app.common.schemas import PaginatedResponse
 from app.dependencies import get_inventory_search_service
 from app.devices.schemas import DeviceResponse
 from app.inventory_search.schemas import (
@@ -70,18 +70,17 @@ async def update_inventory_search(
     return InventorySearchResponse.model_validate(updated)
 
 
-@router.delete("/{search_id}", response_model=Message)
+@router.delete("/{search_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_inventory_search(
     search_id: int,
     service: InventorySearchService = Depends(get_inventory_search_service),
-) -> Message:
+) -> None:
     deleted = await service.delete_search(search_id)
     if not deleted:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Inventory search not found"
         )
     await revalidate(["inventory-search"])
-    return Message(detail="Inventory search deleted")
 
 
 @router.post("/execute", response_model=list[DeviceResponse])

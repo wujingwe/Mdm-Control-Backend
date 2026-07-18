@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
-from app.common.schemas import Message, PaginatedResponse
+from app.common.schemas import PaginatedResponse
 from app.dependencies import get_static_group_service
 from app.static_groups.schemas import (
     StaticGroupCreate,
@@ -69,15 +69,14 @@ async def update_static_group(
     return StaticGroupResponse.model_validate(updated)
 
 
-@router.delete("/{group_id}", response_model=Message)
+@router.delete("/{group_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_static_group(
     group_id: int,
     service: StaticGroupService = Depends(get_static_group_service),
-) -> Message:
+) -> None:
     deleted = await service.delete_group(group_id)
     if not deleted:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Static group not found"
         )
     await revalidate(["static-groups"])
-    return Message(detail="Static group deleted")

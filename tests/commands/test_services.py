@@ -63,16 +63,3 @@ class TestCommandService:
         assert items == []
         assert total == 0
         repo.list_for_device.assert_called_once_with(1, skip=5, limit=10)
-
-    async def test_cancel_command(self, repo: MagicMock) -> None:
-        fake = MagicMock()
-        repo.cancel = AsyncMock(return_value=fake)
-        svc = CommandService(repo)
-        result = await svc.cancel_command(1)
-        assert result is fake
-
-    async def test_cancel_command_not_cancellable(self, repo: MagicMock) -> None:
-        repo.cancel = AsyncMock(return_value=None)
-        svc = CommandService(repo)
-        result = await svc.cancel_command(1)
-        assert result is None

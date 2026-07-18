@@ -43,7 +43,7 @@ class StaticGroupRepository:
             await self.db.flush()
         except IntegrityError as err:
             await self.db.rollback()
-            raise ConflictError("Resource already exists") from err  # noqa: TRY003, EM101
+            raise ConflictError("Resource already exists") from err
 
         for serial in data.device_serial_numbers:
             self.db.add(
@@ -57,7 +57,7 @@ class StaticGroupRepository:
             await self.db.commit()
         except IntegrityError as err:
             await self.db.rollback()
-            raise ConflictError("Resource already exists") from err  # noqa: TRY003, EM101
+            raise ConflictError("Resource already exists") from err
         group_id = instance.id
         self.db.expire(instance)
         return await self.get_by_id(group_id)
@@ -77,7 +77,7 @@ class StaticGroupRepository:
                 await self.db.execute(stmt)
             except IntegrityError as err:
                 await self.db.rollback()
-                raise ConflictError("Resource already exists") from err  # noqa: TRY003, EM101
+                raise ConflictError("Resource already exists") from err
             has_changes = True
 
         # 2. Replace device collection

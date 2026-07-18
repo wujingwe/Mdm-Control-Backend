@@ -46,7 +46,7 @@ class TestInventorySearchAPI:
         assert update.json()["name"] == "Search2"
 
         delete = await client.delete(f"{self.BASE}/{sid}")
-        assert delete.status_code == 200
+        assert delete.status_code == 204
 
         get2 = await client.get(f"{self.BASE}/{sid}")
         assert get2.status_code == 404

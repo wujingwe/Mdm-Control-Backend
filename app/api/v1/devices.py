@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app.commands.schemas import CommandCreate, CommandResponse
 from app.commands.services import CommandService
-from app.common.schemas import Message, PaginatedResponse
+from app.common.schemas import PaginatedResponse
 from app.dependencies import get_command_service, get_device_service
 from app.devices.schemas import DeviceResponse, DeviceUpdate
 from app.devices.services import DeviceService
@@ -82,8 +82,8 @@ async def get_device_command(
     return CommandResponse.model_validate(command)
 
 
-@router.post("/{device_id}/commands", response_model=CommandResponse, status_code=201)
-async def trigger_device_command(
+@router.post("/{device_id}/commands", response_model=CommandResponse, status_code=status.HTTP_201_CREATED)
+async def execute_command(
     device_id: int,
     data: CommandCreate,
     service: CommandService = Depends(get_command_service),
@@ -91,24 +91,3 @@ async def trigger_device_command(
     result = await service.trigger_command(device_id, data)
     command = result["command"]
     return CommandResponse.model_validate(command)
-
-
-@router.delete("/{device_id}/commands/{command_id}", response_model=Message)
-async def cancel_device_command(
-    device_id: int,
-    command_id: int,
-    service: CommandService = Depends(get_command_service),
-) -> Message:
-    command = await service.get_command(command_id)
-    if not command or command.device_id != device_id:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Command not found"
-        )
-
-    cancelled = await service.cancel_command(command_id)
-    if not cancelled:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Command cannot be cancelled in its current state",
-        )
-    return Message(detail="Command cancelled")

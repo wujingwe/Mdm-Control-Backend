@@ -33,7 +33,7 @@ class TestSmartGroupsAPI:
         assert update.json()["name"] == "Smart Group B"
 
         delete = await client.delete(f"{self.BASE}/{gid}")
-        assert delete.status_code == 200
+        assert delete.status_code == 204
 
         get2 = await client.get(f"{self.BASE}/{gid}")
         assert get2.status_code == 404

@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
-from app.common.schemas import Message, PaginatedResponse
+from app.common.schemas import PaginatedResponse
 from app.dependencies import get_mobile_app_service
 from app.mobile_apps.schemas import (
     MobileAppCreate,
@@ -66,15 +66,14 @@ async def update_mobile_app(
     return MobileAppResponse.model_validate(updated)
 
 
-@router.delete("/{mobile_app_id}", response_model=Message)
+@router.delete("/{mobile_app_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_mobile_app(
     mobile_app_id: int,
     service: MobileAppService = Depends(get_mobile_app_service),
-) -> Message:
+) -> None:
     deleted = await service.delete_mobile_app(mobile_app_id)
     if not deleted:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Mobile app not found"
         )
     await revalidate(["mobile-apps"])
-    return Message(detail="Mobile app deleted")

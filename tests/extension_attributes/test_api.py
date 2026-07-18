@@ -26,7 +26,7 @@ class TestExtensionAttributesAPI:
         assert update.json()["name"] == "Ext2"
 
         delete = await client.delete(f"{self.BASE}/{eid}")
-        assert delete.status_code == 200
+        assert delete.status_code == 204
 
         get2 = await client.get(f"{self.BASE}/{eid}")
         assert get2.status_code == 404

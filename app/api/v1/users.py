@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
-from app.common.schemas import Message, PaginatedResponse
+from app.common.schemas import PaginatedResponse
 from app.dependencies import get_user_service
 from app.users.schemas import UserCreate, UserResponse, UserUpdate
 from app.users.services import UserService
@@ -75,15 +75,14 @@ async def update_user(
     return UserResponse.model_validate(updated)
 
 
-@router.delete("/{user_id}", response_model=Message)
+@router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_user(
     user_id: int,
     service: UserService = Depends(get_user_service),
-) -> Message:
+) -> None:
     deleted = await service.delete_user(user_id)
     if not deleted:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
         )
     await revalidate(["users"])
-    return Message(detail="User deleted")
