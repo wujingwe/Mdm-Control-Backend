@@ -2041,6 +2041,233 @@
         }
       }
     },
+    "/api/v1/mobile-apps": {
+      "get": {
+        "tags": [
+          "MobileApps"
+        ],
+        "summary": "List Mobile Apps",
+        "operationId": "list_mobile_apps_api_v1_mobile_apps_get",
+        "parameters": [
+          {
+            "name": "skip",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Skip"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 1000,
+              "minimum": 1,
+              "default": 100,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedResponse_MobileAppResponse_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "MobileApps"
+        ],
+        "summary": "Create Mobile App",
+        "operationId": "create_mobile_app_api_v1_mobile_apps_post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MobileAppCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MobileAppResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/mobile-apps/{mobile_app_id}": {
+      "get": {
+        "tags": [
+          "MobileApps"
+        ],
+        "summary": "Get Mobile App",
+        "operationId": "get_mobile_app_api_v1_mobile_apps__mobile_app_id__get",
+        "parameters": [
+          {
+            "name": "mobile_app_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Mobile App Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MobileAppResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "MobileApps"
+        ],
+        "summary": "Update Mobile App",
+        "operationId": "update_mobile_app_api_v1_mobile_apps__mobile_app_id__put",
+        "parameters": [
+          {
+            "name": "mobile_app_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Mobile App Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MobileAppUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MobileAppResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "MobileApps"
+        ],
+        "summary": "Delete Mobile App",
+        "operationId": "delete_mobile_app_api_v1_mobile_apps__mobile_app_id__delete",
+        "parameters": [
+          {
+            "name": "mobile_app_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Mobile App Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/health/live": {
       "get": {
         "summary": "Liveness",
@@ -2893,6 +3120,54 @@
         ],
         "title": "EnrollmentStatus"
       },
+      "Exclusion": {
+        "properties": {
+          "smart_groups": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "integer"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Smart Groups"
+          },
+          "static_groups": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "integer"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Static Groups"
+          },
+          "device_serial_numbers": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Device Serial Numbers"
+          }
+        },
+        "type": "object",
+        "title": "Exclusion"
+      },
       "ExtensionAttributeCreate": {
         "properties": {
           "name": {
@@ -3297,6 +3572,124 @@
         ],
         "title": "Message"
       },
+      "MobileAppCreate": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled"
+          },
+          "version": {
+            "type": "string",
+            "title": "Version"
+          },
+          "package_name": {
+            "type": "string",
+            "title": "Package Name"
+          },
+          "scope": {
+            "$ref": "#/components/schemas/Scope"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "enabled",
+          "version",
+          "package_name",
+          "scope"
+        ],
+        "title": "MobileAppCreate"
+      },
+      "MobileAppResponse": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled"
+          },
+          "version": {
+            "type": "string",
+            "title": "Version"
+          },
+          "package_name": {
+            "type": "string",
+            "title": "Package Name"
+          },
+          "scope": {
+            "$ref": "#/components/schemas/Scope"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "enabled",
+          "version",
+          "package_name",
+          "scope"
+        ],
+        "title": "MobileAppResponse"
+      },
+      "MobileAppUpdate": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "enabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enabled"
+          },
+          "version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version"
+          },
+          "scope": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Scope"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "title": "MobileAppUpdate"
+      },
       "Network": {
         "properties": {
           "wifi": {
@@ -3446,6 +3839,37 @@
           "limit"
         ],
         "title": "PaginatedResponse[InventorySearchResponse]"
+      },
+      "PaginatedResponse_MobileAppResponse_": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/MobileAppResponse"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "skip": {
+            "type": "integer",
+            "title": "Skip"
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "skip",
+          "limit"
+        ],
+        "title": "PaginatedResponse[MobileAppResponse]"
       },
       "PaginatedResponse_ProfileResponse_": {
         "properties": {
@@ -3735,6 +4159,28 @@
         },
         "type": "object",
         "title": "ProfileUpdate"
+      },
+      "Scope": {
+        "properties": {
+          "targets": {
+            "items": {
+              "$ref": "#/components/schemas/Target"
+            },
+            "type": "array",
+            "title": "Targets",
+            "default": []
+          },
+          "exclusions": {
+            "items": {
+              "$ref": "#/components/schemas/Exclusion"
+            },
+            "type": "array",
+            "title": "Exclusions",
+            "default": []
+          }
+        },
+        "type": "object",
+        "title": "Scope"
       },
       "ScopeTarget": {
         "properties": {
@@ -4049,6 +4495,54 @@
           "status"
         ],
         "title": "StatusUpdate"
+      },
+      "Target": {
+        "properties": {
+          "smart_groups": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "integer"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Smart Groups"
+          },
+          "static_groups": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "integer"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Static Groups"
+          },
+          "device_serial_numbers": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Device Serial Numbers"
+          }
+        },
+        "type": "object",
+        "title": "Target"
       },
       "TargetType": {
         "type": "string",

@@ -96,18 +96,18 @@ class TestInventorySearchRepository:
                 name="Online Android",
                 created_by=1,
                 criteria=[
-                    {
-                        "field": "connection_status",
-                        "operator": "is",
-                        "type": "string",
-                        "value": "Online",
-                    },
-                    {
-                        "field": "os_version",
-                        "operator": "is",
-                        "type": "string",
-                        "value": "Android 14",
-                    },
+                    Criteria(
+                        field="connection_status",
+                        operator="is",
+                        type=CriteriaType.STRING,
+                        value="Online",
+                    ),
+                    Criteria(
+                        field="os_version",
+                        operator="is",
+                        type=CriteriaType.STRING,
+                        value="Android 14",
+                    ),
                 ],
             )
         )
@@ -125,12 +125,12 @@ class TestInventorySearchRepository:
                 name="Test Search",
                 created_by=1,
                 criteria=[
-                    {
-                        "field": "os_version",
-                        "operator": "is",
-                        "type": "string",
-                        "value": "Android 14",
-                    },
+                    Criteria(
+                        field="os_version",
+                        operator="is",
+                        type=CriteriaType.STRING,
+                        value="Android 14",
+                    ),
                 ],
             )
         )
@@ -138,12 +138,12 @@ class TestInventorySearchRepository:
             created.id,
             InventorySearchUpdate(
                 criteria=[
-                    {
-                        "field": "battery_status",
-                        "operator": "lessThan",
-                        "type": "number",
-                        "value": "15",
-                    },
+                    Criteria(
+                        field="battery_status",
+                        operator="lessThan",
+                        type=CriteriaType.NUMBER,
+                        value="15",
+                    ),
                 ],
             ),
         )
@@ -169,12 +169,12 @@ class TestInventorySearchRepository:
                 name="Original Name",
                 created_by=1,
                 criteria=[
-                    {
-                        "field": "os_version",
-                        "operator": "is",
-                        "type": "string",
-                        "value": "Android 14",
-                    },
+                    Criteria(
+                        field="os_version",
+                        operator="is",
+                        type=CriteriaType.STRING,
+                        value="Android 14",
+                    ),
                 ],
             )
         )

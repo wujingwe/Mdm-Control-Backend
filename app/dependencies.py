@@ -12,6 +12,8 @@ from app.extension_attributes.repositories import ExtensionAttributeRepository
 from app.extension_attributes.services import ExtensionAttributeService
 from app.inventory_search.repositories import InventorySearchRepository
 from app.inventory_search.services import InventorySearchService
+from app.mobile_apps.repositories import MobileAppRepository
+from app.mobile_apps.services import MobileAppService
 from app.profiles.repositories import ProfileRepository
 from app.profiles.services import ProfileService
 from app.smart_groups.repositories import SmartGroupRepository
@@ -43,6 +45,10 @@ def get_inventory_search_service(
     db: AsyncSession = Depends(get_db),
 ) -> InventorySearchService:
     return InventorySearchService(InventorySearchRepository(db))
+
+
+def get_mobile_app_service(db: AsyncSession = Depends(get_db)) -> MobileAppService:
+    return MobileAppService(MobileAppRepository(db))
 
 
 def get_extension_attribute_service(
