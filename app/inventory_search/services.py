@@ -1,6 +1,14 @@
+from sqlalchemy import select
+
+from app.criteria import build_device_query
+from app.devices.models import Device
 from app.inventory_search.models import InventorySearch
 from app.inventory_search.repositories import InventorySearchRepository
-from app.inventory_search.schemas import InventorySearchCreate, InventorySearchUpdate
+from app.inventory_search.schemas import (
+    InventorySearchCreate,
+    InventorySearchExecuteRequest,
+    InventorySearchUpdate,
+)
 
 
 class InventorySearchService:
@@ -27,3 +35,14 @@ class InventorySearchService:
 
     async def delete_search(self, search_id: int) -> bool:
         return await self.repo.delete(search_id)
+
+    async def execute_search(self, data: InventorySearchExecuteRequest) -> list[Device]:
+        where, _ = build_device_query(data.criteria, data.conjunction)
+
+        if where is not None:
+            stmt = select(Device).where(where).order_by(Device.id)
+        else:
+            stmt = select(Device).order_by(Device.id)
+
+        result = await self.repo.db.execute(stmt)
+        return list(result.scalars().all())

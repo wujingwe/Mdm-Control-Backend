@@ -1,5 +1,4 @@
 from datetime import datetime
-from typing import Any
 
 from pydantic import BaseModel, ConfigDict
 
@@ -90,8 +89,3 @@ class DeviceUpdate(BaseModel):
     network: Network | None = None
     certificates: list[Certificate] | None = None
     extension_attributes: list[DeviceExtensionAttributeCreate] | None = None
-
-
-class DeviceSearchCriteria(BaseModel):
-    conjunction: str = "AND"
-    criteria: list[dict[str, Any]]

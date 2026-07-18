@@ -2,8 +2,10 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app.common.schemas import Message, PaginatedResponse
 from app.dependencies import get_inventory_search_service
+from app.devices.schemas import DeviceResponse
 from app.inventory_search.schemas import (
     InventorySearchCreate,
+    InventorySearchExecuteRequest,
     InventorySearchResponse,
     InventorySearchUpdate,
 )
@@ -80,3 +82,12 @@ async def delete_inventory_search(
         )
     await revalidate(["inventory-search"])
     return Message(detail="Inventory search deleted")
+
+
+@router.post("/execute", response_model=list[DeviceResponse])
+async def execute_inventory_search(
+    data: InventorySearchExecuteRequest,
+    service: InventorySearchService = Depends(get_inventory_search_service),
+) -> list[DeviceResponse]:
+    devices = await service.execute_search(data)
+    return [DeviceResponse.model_validate(d) for d in devices]

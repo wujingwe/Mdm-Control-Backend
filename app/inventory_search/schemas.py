@@ -34,3 +34,8 @@ class InventorySearchResponse(BaseModel):
     updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class InventorySearchExecuteRequest(BaseModel):
+    conjunction: str = "AND"
+    criteria: list[Criteria] = Field(min_length=1)

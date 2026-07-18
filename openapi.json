@@ -1769,6 +1769,51 @@
         }
       }
     },
+    "/api/v1/inventory-search/execute": {
+      "post": {
+        "tags": [
+          "Inventory Search"
+        ],
+        "summary": "Execute Inventory Search",
+        "operationId": "execute_inventory_search_api_v1_inventory_search_execute_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InventorySearchExecuteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/DeviceResponse"
+                  },
+                  "type": "array",
+                  "title": "Response Execute Inventory Search Api V1 Inventory Search Execute Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/extension-attributes": {
       "get": {
         "tags": [
@@ -2445,13 +2490,11 @@
         "type": "string",
         "enum": [
           "CHECK_IN",
-          "UPDATE_INVENTORY",
           "LOCK",
           "UNLOCK",
           "WIPE",
           "RESTART",
-          "SHUTDOWN",
-          "LOST_MODE"
+          "SHUTDOWN"
         ],
         "title": "CommandType",
         "description": "Types of commands that can be sent to a device."
@@ -3122,6 +3165,28 @@
           "created_by"
         ],
         "title": "InventorySearchCreate"
+      },
+      "InventorySearchExecuteRequest": {
+        "properties": {
+          "conjunction": {
+            "type": "string",
+            "title": "Conjunction",
+            "default": "AND"
+          },
+          "criteria": {
+            "items": {
+              "$ref": "#/components/schemas/Criteria"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Criteria"
+          }
+        },
+        "type": "object",
+        "required": [
+          "criteria"
+        ],
+        "title": "InventorySearchExecuteRequest"
       },
       "InventorySearchResponse": {
         "properties": {

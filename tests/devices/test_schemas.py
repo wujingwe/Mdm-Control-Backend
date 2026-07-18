@@ -7,7 +7,6 @@ from app.devices.schemas import (
     Certificate,
     Cellular,
     DeviceResponse,
-    DeviceSearchCriteria,
     DeviceUpdate,
     Network,
     Wifi,
@@ -71,19 +70,6 @@ class TestDeviceResponseSchema:
         assert data.certificates[0].common_name == "example.com"
         assert data.certificates[0].type == "identity"
         assert data.certificates[1].fingerprint == "AB:CD:EF"
-
-
-class TestDeviceSearchCriteriaSchema:
-    def test_search_criteria_valid(self) -> None:
-        data = DeviceSearchCriteria(
-            criteria=[{"field": "status", "operator": "is", "value": "Online"}]
-        )
-        assert len(data.criteria) == 1
-        assert data.criteria[0]["field"] == "status"
-
-    def test_search_criteria_empty(self) -> None:
-        data = DeviceSearchCriteria(criteria=[])
-        assert data.criteria == []
 
 
 class TestWifiSchema:

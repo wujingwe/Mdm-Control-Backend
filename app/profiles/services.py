@@ -1,12 +1,9 @@
 import logging
-from collections.abc import Callable
-from functools import reduce
-from operator import and_
 
 from sqlalchemy import select
-from sqlalchemy.sql.expression import BinaryExpression
 
 from app.common.enums import AssignmentSource, AssignmentStatus, TargetType
+from app.criteria import build_device_query
 from app.devices.models import Device
 from app.profiles.models import Profile
 from app.profiles.models import ProfileAssignment
@@ -21,19 +18,6 @@ from app.profiles.schemas import (
 from app.static_groups.models import StaticGroupDevice
 
 logger = logging.getLogger(__name__)
-
-_FILTER_BUILDERS: dict[str, Callable] = {
-    "is": lambda col, v: col == v,
-    "isNot": lambda col, v: col != v,
-    "like": lambda col, v: col.like(f"%{v}%"),
-    "notLike": lambda col, v: col.not_like(f"%{v}%"),
-    "matchesRegex": lambda col, v: col.regexp_match(v),
-    "doesNotMatchRegex": lambda col, v: ~col.regexp_match(v),
-    "greaterThan": lambda col, v: col.isnot(None) & (col > v),
-    "greaterThanOrEqual": lambda col, v: col.isnot(None) & (col >= v),
-    "lessThan": lambda col, v: col.isnot(None) & (col < v),
-    "lessThanOrEqual": lambda col, v: col.isnot(None) & (col <= v),
-}
 
 
 class ProfileService:
@@ -132,16 +116,8 @@ class ProfileService:
                     if isinstance(smart_group.criteria, list)
                     else []
                 )
-                filters: list[BinaryExpression] = []
-                for c in criteria_list:
-                    col = getattr(Device, c.field, None)
-                    if col is None:
-                        continue
-                    builder = _FILTER_BUILDERS.get(c.operator)
-                    if builder is not None:
-                        filters.append(builder(col, c.value))
-                if filters:
-                    where = reduce(and_, filters)
+                where, _ = build_device_query(criteria_list, "AND")
+                if where is not None:
                     dev_stmt = select(Device.id).where(where)
                 else:
                     dev_stmt = select(Device.id)

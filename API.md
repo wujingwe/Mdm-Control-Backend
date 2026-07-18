@@ -59,21 +59,24 @@ Base URL: `/api/v1`
 
 **Response `404`:** `{"detail": "Device not found"}
 
-### `POST /devices/search`
+### `POST /inventory-search/execute`
 
-**Request body (`DeviceSearchCriteria`):**
+**Request body (`InventorySearchExecuteRequest`):**
 
 ```json
 {
-  "name": "Mac",
-  "status": "Online",
-  "compliance": "Compliant",
-  "owner": "Alice",
-  "serial": "SN"
+  "conjunction": "AND",
+  "criteria": [
+    {"field": "connection_status", "operator": "is", "type": "STRING", "value": "Online"},
+    {"field": "battery_status", "operator": "greaterThan", "type": "NUMBER", "value": "50"}
+  ]
 }
 ```
 
-All fields optional.
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `conjunction` | string | No | `"AND"` (default) or `"OR"` |
+| `criteria` | list | Yes | Non-empty list of `Criteria` objects |
 
 **Response `200`:** Array of `DeviceResponse` objects.
 
