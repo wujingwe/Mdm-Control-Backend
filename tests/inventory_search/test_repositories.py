@@ -1,14 +1,16 @@
+from app.common.enums import CriteriaType
+from app.criteria import Criteria
 from app.inventory_search.repositories import InventorySearchRepository
 from app.inventory_search.schemas import InventorySearchCreate, InventorySearchUpdate
 from sqlalchemy.ext.asyncio import AsyncSession
 
 _CRITERIA = [
-    {
-        "field": "connection_status",
-        "operator": "is",
-        "type": "string",
-        "value": "Online",
-    },
+    Criteria(
+        field="connection_status",
+        operator="is",
+        type=CriteriaType.STRING,
+        value="Online",
+    ),
 ]
 
 

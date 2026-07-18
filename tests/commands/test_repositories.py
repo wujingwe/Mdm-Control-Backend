@@ -10,7 +10,7 @@ from app.devices.models import Device
 from sqlalchemy.ext.asyncio import AsyncSession
 
 
-async def _create_device(db_session: AsyncSession) -> None:
+async def _create_device(db_session: AsyncSession) -> Device:
     device = Device(
         name="Test Device",
         serial_number="SER001",

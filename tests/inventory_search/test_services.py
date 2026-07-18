@@ -1,5 +1,8 @@
 from unittest.mock import AsyncMock, MagicMock
 import pytest
+
+from app.common.enums import CriteriaType
+from app.criteria import Criteria
 from app.inventory_search.services import InventorySearchService
 from app.inventory_search.schemas import InventorySearchCreate, InventorySearchUpdate
 
@@ -47,12 +50,12 @@ class TestInventorySearchService:
             InventorySearchCreate(
                 name="s1",
                 criteria=[
-                    {
-                        "field": "os_version",
-                        "operator": "is",
-                        "type": "string",
-                        "value": "Android 14",
-                    }
+                    Criteria(
+                        field="os_version",
+                        operator="is",
+                        type=CriteriaType.STRING,
+                        value="Android 14",
+                    ),
                 ],
                 created_by=1,
             )

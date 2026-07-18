@@ -12,7 +12,7 @@ from app.inventory_search.schemas import (
 from app.inventory_search.services import InventorySearchService
 from app.webhook_client import revalidate
 
-router = APIRouter(prefix="/inventory-search", tags=["Inventory Search"])
+router = APIRouter(prefix="/inventory-search", tags=["InventorySearch"])
 
 
 @router.get("", response_model=PaginatedResponse[InventorySearchResponse])
