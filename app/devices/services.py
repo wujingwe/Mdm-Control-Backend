@@ -1,5 +1,6 @@
 import logging
 from collections.abc import Callable
+from functools import reduce
 from operator import and_, or_
 
 from sqlalchemy import select
@@ -61,7 +62,7 @@ class DeviceService:
             stmt = select(Device).order_by(Device.id)
         else:
             combine = and_ if criteria.conjunction == "AND" else or_
-            where = combine(*filters) if len(filters) > 1 else filters[0]
+            where = reduce(combine, filters)
             stmt = select(Device).where(where).order_by(Device.id)
 
         result = await db.execute(stmt)
