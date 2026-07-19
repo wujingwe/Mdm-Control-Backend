@@ -4,6 +4,7 @@ from operator import and_, or_
 from sqlalchemy.sql.expression import BinaryExpression
 
 from app.criteria.schemas import Criteria
+from app.devices.models import Device
 
 __all__ = ["Criteria", "FILTER_BUILDERS", "build_device_query"]
 
@@ -23,17 +24,14 @@ FILTER_BUILDERS: dict[str, Callable] = {
 
 def build_device_query(
     criteria: list[Criteria],
-) -> tuple[BinaryExpression | None, list[BinaryExpression]]:
+) -> BinaryExpression | None:
     """Build a SQLAlchemy WHERE expression from a list of Criteria.
 
     Each criterion's ``and_or`` field determines the conjunction to the
     *next* criterion (AND / OR).  ``left_parentheses`` / ``right_parentheses``
     group criteria into sub-expressions so that parentheses override the
     default left-to-right evaluation.
-
-    Returns ``(where_expression, all_filters)``.
     """
-    from app.devices.models import Device
 
     # 1. Build individual column filters
     filters: list[BinaryExpression | None] = []
@@ -70,7 +68,7 @@ def build_device_query(
         groups.append(current_group)
 
     if not groups:
-        return None, []
+        return None
 
     # 3. Within each group, combine filters using the conjunction stored on
     #    each criterion (except the last, whose ``and_or`` connects to the
@@ -95,5 +93,4 @@ def build_device_query(
         combine = and_ if conj.upper() == "AND" else or_
         result = combine(result, group_exprs[idx])
 
-    all_filters = [f for f in filters if f is not None]
-    return result, all_filters
+    return result

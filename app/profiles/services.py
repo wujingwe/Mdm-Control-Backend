@@ -115,7 +115,7 @@ class ProfileService:
                     if isinstance(smart_group.criteria, list)
                     else []
                 )
-                where, _ = build_device_query(criteria_list)
+                where = build_device_query(criteria_list)
                 dev_stmt = (
                     select(Device.id).where(where) if where else select(Device.id)
                 )
@@ -154,7 +154,7 @@ class ProfileService:
                     if isinstance(smart_group.criteria, list)
                     else []
                 )
-                where, _ = build_device_query(criteria_list)
+                where = build_device_query(criteria_list)
                 dev_stmt = (
                     select(Device.id).where(where) if where else select(Device.id)
                 )
