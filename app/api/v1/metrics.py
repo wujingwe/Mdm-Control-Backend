@@ -24,7 +24,7 @@ async def fleet_metrics(db: AsyncSession = Depends(get_db)) -> FleetMetricsRespo
 
     online = await db.execute(
         select(func.count(Device.id)).where(
-            Device.connection_status == ConnectionStatus.ONLINE
+            Device.connection_status == ConnectionStatus.CONNECTED
         ),
     )
     online_devices = online.scalar() or 0

@@ -14,21 +14,21 @@ class TestStaticGroupsAPI:
             name="D1",
             serial_number="SN001",
             os_version="14",
-            connection_status="Online",
+            connection_status="Connected",
             status="Enrolled",
         )
         dev2 = Device(
             name="D2",
             serial_number="SN002",
             os_version="14",
-            connection_status="Online",
+            connection_status="Connected",
             status="Enrolled",
         )
         dev3 = Device(
             name="D3",
             serial_number="SN003",
             os_version="14",
-            connection_status="Online",
+            connection_status="Connected",
             status="Enrolled",
         )
         db_session.add_all([dev1, dev2, dev3])

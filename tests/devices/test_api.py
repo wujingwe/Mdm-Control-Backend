@@ -22,7 +22,7 @@ class TestDevicesAPI:
                 "name": "A",
                 "serial_number": "SN-A",
                 "os_version": "15.0",
-                "connection_status": "Online",
+                "connection_status": "Connected",
                 "status": "Enrolled",
             }
         )
@@ -31,7 +31,7 @@ class TestDevicesAPI:
                 "name": "B",
                 "serial_number": "SN-B",
                 "os_version": "15.0",
-                "connection_status": "Offline",
+                "connection_status": "Disconnected",
                 "status": "Enrolled",
             }
         )
@@ -53,7 +53,7 @@ class TestDevicesAPI:
                     "name": f"Dev{i}",
                     "serial_number": f"SN-{i:03d}",
                     "os_version": "15.0",
-                    "connection_status": "Online",
+                    "connection_status": "Connected",
                     "status": "Enrolled",
                 }
             )
@@ -75,7 +75,7 @@ class TestDevicesAPI:
                     "name": f"Dev{i}",
                     "serial_number": f"SN-{i:03d}",
                     "os_version": "15.0",
-                    "connection_status": "Online",
+                    "connection_status": "Connected",
                     "status": "Enrolled",
                 }
             )
@@ -96,7 +96,7 @@ class TestDevicesAPI:
                 "name": "MacBook",
                 "serial_number": "SN-GET-001",
                 "os_version": "15.0",
-                "connection_status": "Online",
+                "connection_status": "Connected",
                 "status": "Enrolled",
             }
         )
@@ -122,7 +122,7 @@ class TestDevicesAPI:
                 "name": "MacBook",
                 "serial_number": "SN-API-001",
                 "os_version": "15.0",
-                "connection_status": "Online",
+                "connection_status": "Connected",
                 "status": "Enrolled",
                 "network": Network(wifi=Wifi(ssid="Office")),
                 "certificates": [Certificate(common_name="example.com")],
@@ -132,7 +132,7 @@ class TestDevicesAPI:
         assert resp.status_code == 200
         body = resp.json()
         assert body["serial_number"] == "SN-API-001"
-        assert body["connection_status"] == "Online"
+        assert body["connection_status"] == "Connected"
         assert body["status"] == "Enrolled"
         assert "created_at" in body
         assert "updated_at" in body
@@ -151,7 +151,7 @@ class TestDevicesAPI:
                 "name": "Basic",
                 "serial_number": "SN-BAS-001",
                 "os_version": "15.0",
-                "connection_status": "Online",
+                "connection_status": "Connected",
                 "status": "Enrolled",
             }
         )
@@ -174,27 +174,27 @@ class TestDevicesAPI:
                 "name": "MacBook",
                 "serial_number": "SN-UPD-001",
                 "os_version": "15.0",
-                "connection_status": "Online",
+                "connection_status": "Connected",
                 "status": "Enrolled",
             }
         )
         resp = await client.put(
             f"/api/v1/devices/{device.id}",
             json={
-                "connection_status": "Offline",
+                "connection_status": "Disconnected",
                 "battery_status": 50,
             },
         )
         assert resp.status_code == 200
         body = resp.json()
-        assert body["connection_status"] == "Offline"
+        assert body["connection_status"] == "Disconnected"
         assert body["battery_status"] == 50
         assert body["serial_number"] == "SN-UPD-001"
 
     async def test_update_device_not_found(self, client: AsyncClient) -> None:
         resp = await client.put(
             "/api/v1/devices/999",
-            json={"connection_status": "Offline"},
+            json={"connection_status": "Disconnected"},
         )
         assert resp.status_code == 404
         assert resp.json()["detail"] == "Device not found"
@@ -210,7 +210,7 @@ class TestDevicesAPI:
                 "name": "MacBook",
                 "serial_number": "SN-NET-001",
                 "os_version": "15.0",
-                "connection_status": "Online",
+                "connection_status": "Connected",
                 "status": "Enrolled",
             }
         )
@@ -242,7 +242,7 @@ class TestDevicesAPI:
                 "name": "MacBook",
                 "serial_number": "SN-CN-001",
                 "os_version": "15.0",
-                "connection_status": "Online",
+                "connection_status": "Connected",
                 "status": "Enrolled",
                 "network": Network(wifi=Wifi(ssid="Old")),
             }
@@ -278,7 +278,7 @@ class TestDevicesAPI:
                 "name": "MacBook",
                 "serial_number": "SN-EXT-001",
                 "os_version": "15.0",
-                "connection_status": "Online",
+                "connection_status": "Connected",
                 "status": "Enrolled",
             }
         )
@@ -327,7 +327,7 @@ class TestDevicesAPI:
                 "name": "MacBook",
                 "serial_number": "SN-CLR-001",
                 "os_version": "15.0",
-                "connection_status": "Online",
+                "connection_status": "Connected",
                 "status": "Enrolled",
             }
         )
@@ -365,7 +365,7 @@ class TestDevicesAPI:
                 "name": "MacBook",
                 "serial_number": "SN-CRT-001",
                 "os_version": "15.0",
-                "connection_status": "Online",
+                "connection_status": "Connected",
                 "status": "Enrolled",
             }
         )
@@ -395,7 +395,7 @@ class TestDevicesAPI:
                 "name": "MacBook",
                 "serial_number": "SN-CC-001",
                 "os_version": "15.0",
-                "connection_status": "Online",
+                "connection_status": "Connected",
                 "status": "Enrolled",
                 "certificates": [Certificate(common_name="old.com")],
             }
@@ -418,7 +418,7 @@ class TestDevicesAPI:
                 "name": "MacBook",
                 "serial_number": "SN-MUL-001",
                 "os_version": "15.0",
-                "connection_status": "Online",
+                "connection_status": "Connected",
                 "status": "Enrolled",
             }
         )
@@ -426,7 +426,7 @@ class TestDevicesAPI:
         resp = await client.put(
             f"/api/v1/devices/{device.id}",
             json={
-                "connection_status": "Offline",
+                "connection_status": "Disconnected",
                 "status": "Unenrolled",
                 "battery_status": 15,
                 "total_memory": 16,
@@ -434,7 +434,7 @@ class TestDevicesAPI:
         )
         assert resp.status_code == 200
         body = resp.json()
-        assert body["connection_status"] == "Offline"
+        assert body["connection_status"] == "Disconnected"
         assert body["status"] == "Unenrolled"
         assert body["battery_status"] == 15
         assert body["total_memory"] == 16
@@ -450,7 +450,7 @@ class TestDevicesAPI:
                 "name": "MacBook",
                 "serial_number": "SN-INV-001",
                 "os_version": "15.0",
-                "connection_status": "Online",
+                "connection_status": "Connected",
                 "status": "Enrolled",
             }
         )
@@ -471,7 +471,7 @@ class TestDevicesAPI:
                 "name": "MacBook",
                 "serial_number": "SN-INV-002",
                 "os_version": "15.0",
-                "connection_status": "Online",
+                "connection_status": "Connected",
                 "status": "Enrolled",
             }
         )
@@ -492,7 +492,7 @@ class TestDevicesAPI:
                 "name": "MacBook",
                 "serial_number": "SN-EMP-001",
                 "os_version": "15.0",
-                "connection_status": "Online",
+                "connection_status": "Connected",
                 "status": "Enrolled",
             }
         )
@@ -503,7 +503,7 @@ class TestDevicesAPI:
         )
         assert resp.status_code == 200
         body = resp.json()
-        assert body["connection_status"] == "Online"
+        assert body["connection_status"] == "Connected"
         assert body["serial_number"] == "SN-EMP-001"
 
 
@@ -517,7 +517,7 @@ class TestCommandsAPI:
                 "name": "CmdDevice",
                 "serial_number": "SN-CMD-001",
                 "os_version": "15.0",
-                "connection_status": "Online",
+                "connection_status": "Connected",
                 "status": "Enrolled",
             }
         )

@@ -10,9 +10,9 @@ class AssignmentStatus(str, Enum):
 
 
 class ConnectionStatus(str, Enum):
-    ONLINE = "Online"
-    OFFLINE = "Offline"
-    PENDING = "Pending"
+    CONNECTED = "Connected"
+    DISCONNECTED = "Disconnected"
+    UNKNOWN = "Unknown"
 
 
 class DeviceStatus(str, Enum):

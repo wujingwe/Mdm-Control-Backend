@@ -48,7 +48,7 @@ class TestDeviceService:
         repo.get_by_id = AsyncMock(return_value=fake)
         repo.update = AsyncMock(return_value=fake)
         svc = DeviceService(repo)
-        data = DeviceUpdate(connection_status="Offline")
+        data = DeviceUpdate(connection_status="Disconnected")
         result = await svc.update_device(1, data)
         assert result is fake
         repo.get_by_id.assert_called_once_with(1)
@@ -57,6 +57,6 @@ class TestDeviceService:
     async def test_update_device_not_found(self, repo: MagicMock) -> None:
         repo.get_by_id = AsyncMock(return_value=None)
         svc = DeviceService(repo)
-        result = await svc.update_device(999, DeviceUpdate(connection_status="Offline"))
+        result = await svc.update_device(999, DeviceUpdate(connection_status="Disconnected"))
         assert result is None
         repo.update.assert_not_called()

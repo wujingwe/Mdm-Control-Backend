@@ -9,7 +9,7 @@ _CRITERIA = [
         field="connection_status",
         operator="is",
         type=CriteriaType.STRING,
-        value="Online",
+        value="Connected",
     ),
 ]
 
@@ -100,7 +100,7 @@ class TestInventorySearchRepository:
                         field="connection_status",
                         operator="is",
                         type=CriteriaType.STRING,
-                        value="Online",
+                        value="Connected",
                     ),
                     Criteria(
                         field="os_version",

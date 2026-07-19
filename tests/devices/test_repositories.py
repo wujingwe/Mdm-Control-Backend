@@ -16,7 +16,7 @@ def _make_device_data(serial: str = "SN001", name: str = "Test Device") -> dict:
         "name": name,
         "serial_number": serial,
         "os_version": "14.0",
-        "connection_status": "Online",
+        "connection_status": "Connected",
         "status": "Enrolled",
     }
 
@@ -121,15 +121,15 @@ class TestDeviceRepository:
         created = await repo.create(_make_device_data())
         updated = await repo.update(
             created.id,
-            DeviceUpdate(connection_status="Offline"),
+            DeviceUpdate(connection_status="Disconnected"),
         )
         assert updated is not None
-        assert updated.connection_status == "Offline"
+        assert updated.connection_status == "Disconnected"
         assert updated.serial_number == "SN001"
 
     async def test_update_not_found(self, db_session: AsyncSession) -> None:
         repo = DeviceRepository(db_session)
-        assert await repo.update(999, DeviceUpdate(connection_status="Offline")) is None
+        assert await repo.update(999, DeviceUpdate(connection_status="Disconnected")) is None
 
     async def test_update_network(self, db_session: AsyncSession) -> None:
         repo = DeviceRepository(db_session)
@@ -192,14 +192,14 @@ class TestDeviceRepository:
         updated = await repo.update(
             created.id,
             DeviceUpdate(
-                connection_status="Offline",
+                connection_status="Disconnected",
                 status="Unenrolled",
                 battery_status=42,
                 total_storage=512,
                 available_storage=256,
             ),
         )
-        assert updated.connection_status == "Offline"
+        assert updated.connection_status == "Disconnected"
         assert updated.status == "Unenrolled"
         assert updated.battery_status == 42
         assert updated.total_storage == 512

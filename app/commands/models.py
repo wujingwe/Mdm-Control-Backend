@@ -16,7 +16,6 @@ class Command(Base):
         Index("ix_commands_device_id", "device_id"),
         Index("ix_commands_status", "status"),
         Index("ix_commands_command_type", "command_type"),
-        Index("ix_commands_created_at", "created_at"),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)

@@ -19,7 +19,7 @@ async def devices(
             name="MacBook Pro",
             serial_number="SN-MBP-001",
             os_version="macOS 15.0",
-            connection_status="Online",
+            connection_status="Connected",
             status="Enrolled",
             battery_status=95,
             total_storage=1000,
@@ -29,7 +29,7 @@ async def devices(
             name="MacBook Air",
             serial_number="SN-MBA-002",
             os_version="macOS 14.5",
-            connection_status="Online",
+            connection_status="Connected",
             status="Enrolled",
             battery_status=30,
             total_storage=512,
@@ -39,7 +39,7 @@ async def devices(
             name="iPhone 15",
             serial_number="SN-IP15-003",
             os_version="iOS 18.1",
-            connection_status="Offline",
+            connection_status="Disconnected",
             status="Enrolled",
             battery_status=10,
             total_storage=256,
@@ -49,7 +49,7 @@ async def devices(
             name="iPhone SE",
             serial_number="SN-IPSE-004",
             os_version="iOS 17.4",
-            connection_status=ConnectionStatus.ONLINE,
+            connection_status=ConnectionStatus.CONNECTED,
             status="Pending",
             battery_status=80,
             total_storage=128,
@@ -59,7 +59,7 @@ async def devices(
             name="Galaxy S24",
             serial_number="SN-GS24-005",
             os_version="Android 14",
-            connection_status="Offline",
+            connection_status="Disconnected",
             status="Unknown",
             battery_status=50,
             total_storage=256,
@@ -69,7 +69,7 @@ async def devices(
             name="Pixel 8",
             serial_number="SN-PIX-006",
             os_version="Android 15",
-            connection_status="Online",
+            connection_status="Connected",
             status="Enrolled",
             battery_status=None,
             total_storage=128,
@@ -119,14 +119,14 @@ class TestSearchIsOperator:
         self, devices: tuple[InventorySearchService, dict[str, Device]]
     ) -> None:
         svc, _ = devices
-        result = await _search(svc, "connection_status", "is", "Online")
+        result = await _search(svc, "connection_status", "is", "Connected")
         assert _names(result) == ["iPhone SE", "MacBook Air", "MacBook Pro", "Pixel 8"]
 
     async def test_is_offline(
         self, devices: tuple[InventorySearchService, dict[str, Device]]
     ) -> None:
         svc, _ = devices
-        result = await _search(svc, "connection_status", "is", "Offline")
+        result = await _search(svc, "connection_status", "is", "Disconnected")
         assert _names(result) == ["Galaxy S24", "iPhone 15"]
 
     async def test_is_enrolled(
@@ -150,7 +150,7 @@ class TestSearchIsNotOperator:
         self, devices: tuple[InventorySearchService, dict[str, Device]]
     ) -> None:
         svc, _ = devices
-        result = await _search(svc, "connection_status", "isNot", "Offline")
+        result = await _search(svc, "connection_status", "isNot", "Disconnected")
         assert _names(result) == ["iPhone SE", "MacBook Air", "MacBook Pro", "Pixel 8"]
 
     async def test_is_not_enrolled(
@@ -312,7 +312,7 @@ class TestSearchConjunctions:
                         field="connection_status",
                         operator="is",
                         type="string",
-                        value="Online",
+                        value="Connected",
                         and_or="AND",
                     ),
                     Criteria(
@@ -362,7 +362,7 @@ class TestSearchConjunctions:
         self, devices: tuple[InventorySearchService, dict[str, Device]]
     ) -> None:
         svc, _ = devices
-        result = await _search(svc, "connection_status", "is", "Online")
+        result = await _search(svc, "connection_status", "is", "Connected")
         online = _names(result)
         result2 = await _search(svc, "status", "is", "Needs attention")
         needs_attention = _names(result2)
@@ -440,7 +440,7 @@ class TestSearchMultiCriteria:
                         field="connection_status",
                         operator="is",
                         type="string",
-                        value="Online",
+                        value="Connected",
                         and_or="AND",
                     ),
                     Criteria(
@@ -486,7 +486,7 @@ class TestSearchParentheses:
                         field="connection_status",
                         operator="is",
                         type="string",
-                        value="Online",
+                        value="Connected",
                         and_or="OR",
                         right_parentheses=True,
                     ),
@@ -541,7 +541,7 @@ class TestSearchParentheses:
                         field="connection_status",
                         operator="is",
                         type="string",
-                        value="Online",
+                        value="Connected",
                         and_or="AND",
                     ),
                 ],

@@ -60,6 +60,8 @@ def build_device_query(
         if f is None:
             continue
         if c.left_parentheses:
+            if current_group:
+                groups.append(current_group)
             current_group = []
         current_group.append((f, c.and_or))
         if c.right_parentheses:

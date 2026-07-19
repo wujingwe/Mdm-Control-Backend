@@ -123,7 +123,7 @@ class TestSmartGroupsAPI:
                         "field": "connection_status",
                         "operator": "is",
                         "type": "string",
-                        "value": "Online",
+                        "value": "Connected",
                         "right_parentheses": True,
                     },
                 ],

@@ -82,7 +82,7 @@ class TestInventorySearchAPI:
                         "field": "connection_status",
                         "operator": "is",
                         "type": "string",
-                        "value": "Online",
+                        "value": "Connected",
                     },
                     {
                         "field": "os_version",
@@ -209,7 +209,7 @@ class TestInventorySearchAPI:
                         "field": "connection_status",
                         "operator": "is",
                         "type": "string",
-                        "value": "Online",
+                        "value": "Connected",
                         "left_parentheses": True,
                     },
                     {
@@ -241,7 +241,7 @@ class TestExecuteSearch:
                 name="MacBook Pro",
                 serial_number="SN-MBP-001",
                 os_version="macOS 15.0",
-                connection_status="Online",
+                connection_status="Connected",
                 status="Enrolled",
                 battery_status=95,
                 total_storage=1000,
@@ -251,7 +251,7 @@ class TestExecuteSearch:
                 name="MacBook Air",
                 serial_number="SN-MBA-002",
                 os_version="macOS 14.5",
-                connection_status="Online",
+                connection_status="Connected",
                 status="Enrolled",
                 battery_status=30,
                 total_storage=512,
@@ -261,7 +261,7 @@ class TestExecuteSearch:
                 name="iPhone 15",
                 serial_number="SN-IP15-003",
                 os_version="iOS 18.1",
-                connection_status="Offline",
+                connection_status="Disconnected",
                 status="Enrolled",
                 battery_status=10,
                 total_storage=256,
@@ -271,7 +271,7 @@ class TestExecuteSearch:
                 name="iPhone SE",
                 serial_number="SN-IPSE-004",
                 os_version="iOS 17.4",
-                connection_status="Online",
+                connection_status="Connected",
                 status="Pending",
                 battery_status=80,
                 total_storage=128,
@@ -281,7 +281,7 @@ class TestExecuteSearch:
                 name="Galaxy S24",
                 serial_number="SN-GS24-005",
                 os_version="Android 14",
-                connection_status="Offline",
+                connection_status="Disconnected",
                 status="Unknown",
                 battery_status=50,
                 total_storage=256,
@@ -291,7 +291,7 @@ class TestExecuteSearch:
                 name="Pixel 8",
                 serial_number="SN-PIX-006",
                 os_version="Android 15",
-                connection_status="Online",
+                connection_status="Connected",
                 status="Enrolled",
                 battery_status=None,
                 total_storage=128,
@@ -312,7 +312,7 @@ class TestExecuteSearch:
                         "field": "connection_status",
                         "operator": "is",
                         "type": "string",
-                        "value": "Online",
+                        "value": "Connected",
                         "and_or": "AND",
                     },
                 ],
@@ -428,7 +428,7 @@ class TestExecuteSearch:
                         "field": "connection_status",
                         "operator": "is",
                         "type": "string",
-                        "value": "Online",
+                        "value": "Connected",
                         "and_or": "AND",
                     },
                     {
@@ -553,7 +553,7 @@ class TestExecuteSearch:
                         "field": "connection_status",
                         "operator": "is",
                         "type": "string",
-                        "value": "Online",
+                        "value": "Connected",
                         "and_or": "OR",
                         "right_parentheses": True,
                     },
@@ -607,7 +607,7 @@ class TestExecuteSearch:
                         "field": "connection_status",
                         "operator": "is",
                         "type": "string",
-                        "value": "Online",
+                        "value": "Connected",
                         "and_or": "AND",
                     },
                 ],
@@ -688,7 +688,7 @@ class TestExecuteSearch:
         assert device["name"] == "iPhone 15"
         assert device["serial_number"] == "SN-IP15-003"
         assert device["os_version"] == "iOS 18.1"
-        assert device["connection_status"] == "Offline"
+        assert device["connection_status"] == "Disconnected"
         assert device["status"] == "Enrolled"
 
     async def test_empty_result(self, client: AsyncClient) -> None:

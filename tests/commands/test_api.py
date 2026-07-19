@@ -11,7 +11,7 @@ async def _create_device(client: AsyncClient, db_session: AsyncSession) -> Devic
         name="Test Device",
         serial_number="SER001",
         os_version="15.0",
-        connection_status=ConnectionStatus.ONLINE,
+        connection_status=ConnectionStatus.CONNECTED,
         status=DeviceStatus.ENROLLED,
     )
     db_session.add(device)

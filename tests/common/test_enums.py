@@ -42,9 +42,9 @@ class TestEnums:
     def test_connection_status_values(self) -> None:
         from app.common.enums import ConnectionStatus
 
-        assert ConnectionStatus.ONLINE == "Online"
-        assert ConnectionStatus.OFFLINE == "Offline"
-        assert ConnectionStatus.PENDING == "Pending"
+        assert ConnectionStatus.CONNECTED == "Connected"
+        assert ConnectionStatus.DISCONNECTED == "Disconnected"
+        assert ConnectionStatus.UNKNOWN == "Unknown"
 
     def test_device_status_values(self) -> None:
         from app.common.enums import DeviceStatus

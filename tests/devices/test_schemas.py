@@ -17,7 +17,7 @@ _DEVICE_FIELDS = {
     "serial_number": "SN001",
     "name": "Test",
     "os_version": "14.0",
-    "connection_status": "Online",
+    "connection_status": "Connected",
     "status": "Enrolled",
     "created_at": datetime.now(timezone.utc),
     "updated_at": datetime.now(timezone.utc),
@@ -157,7 +157,7 @@ class TestCertificateSchema:
 class TestDeviceUpdateSchema:
     def test_update_all_fields(self) -> None:
         data = DeviceUpdate(
-            connection_status="Offline",
+            connection_status="Disconnected",
             status="Unenrolled",
             battery_status=50,
             total_storage=256,
@@ -174,7 +174,7 @@ class TestDeviceUpdateSchema:
                 },
             ],
         )
-        assert data.connection_status == "Offline"
+        assert data.connection_status == "Disconnected"
         assert data.status == "Unenrolled"
         assert data.battery_status == 50
         assert data.network.wifi.ssid == "Home"
@@ -182,9 +182,9 @@ class TestDeviceUpdateSchema:
         assert len(data.extension_attributes) == 1
 
     def test_update_partial(self) -> None:
-        data = DeviceUpdate(connection_status="Online")
+        data = DeviceUpdate(connection_status="Connected")
         dumped = data.model_dump(exclude_unset=True)
-        assert dumped == {"connection_status": "Online"}
+        assert dumped == {"connection_status": "Connected"}
 
     def test_update_empty(self) -> None:
         data = DeviceUpdate()
