@@ -17,7 +17,7 @@ class TestProfileService:
         m.get_assignments = AsyncMock(return_value=[])
         m.get_assignment = AsyncMock(return_value=None)
         m.upsert_assignment = AsyncMock()
-        m.delete_non_direct_assignments = AsyncMock()
+        m.delete_old_version_assignments = AsyncMock()
         m.bulk_upsert_assignments = AsyncMock(return_value=0)
         return m
 

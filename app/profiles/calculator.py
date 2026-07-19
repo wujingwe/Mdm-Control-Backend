@@ -1,5 +1,5 @@
 from app.common.enums import AssignmentStatus
-from app.common.schemas import Scope, ScopeType
+from app.common.schemas import Scope
 from app.profiles.schemas import AssignmentUpsert
 
 
@@ -22,7 +22,7 @@ class AssignmentCalculator:
         assignments: list[AssignmentUpsert] = []
         seen: set[int | str] = set()
 
-        for (source_type, source_id), device_ids in wanted.items():
+        for device_ids in wanted.values():
             for device_id in device_ids:
                 if device_id in seen:
                     continue
@@ -31,8 +31,6 @@ class AssignmentCalculator:
                     AssignmentUpsert(
                         profile_id=profile_id,
                         device_id=int(device_id) if isinstance(device_id, int) else 0,
-                        source=ScopeType(source_type),
-                        source_id=source_id if source_id else None,
                         status=AssignmentStatus.PENDING,
                         profile_version=profile_version,
                     )

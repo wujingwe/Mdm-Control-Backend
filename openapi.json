@@ -2231,20 +2231,6 @@
             "type": "integer",
             "title": "Device Id"
           },
-          "source": {
-            "$ref": "#/components/schemas/ScopeType"
-          },
-          "source_id": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Source Id"
-          },
           "status": {
             "$ref": "#/components/schemas/AssignmentStatus"
           },
@@ -2287,7 +2273,6 @@
           "id",
           "profile_id",
           "device_id",
-          "source",
           "status",
           "profile_version",
           "assigned_at"

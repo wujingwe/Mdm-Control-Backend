@@ -5,7 +5,6 @@ from app.profiles.schemas import (
     AssignmentUpsert,
 )
 from app.common.enums import AssignmentStatus
-from app.common.schemas import ScopeType
 from sqlalchemy.ext.asyncio import AsyncSession
 
 
@@ -83,7 +82,6 @@ class TestProfileRepository:
         data = AssignmentUpsert(
             profile_id=profile.id,
             device_id=100,
-            source=ScopeType.DEVICE,
             status=AssignmentStatus.PENDING,
             profile_version=1,
         )
@@ -96,7 +94,6 @@ class TestProfileRepository:
         data = AssignmentUpsert(
             profile_id=profile.id,
             device_id=100,
-            source=ScopeType.DEVICE,
             status=AssignmentStatus.PENDING,
             profile_version=1,
         )
@@ -105,24 +102,58 @@ class TestProfileRepository:
         data2 = AssignmentUpsert(
             profile_id=profile.id,
             device_id=100,
-            source=ScopeType.DEVICE,
             status=AssignmentStatus.APPLIED,
             profile_version=1,
         )
         result = await repo.upsert_assignment(data2)
         assert result.status == AssignmentStatus.APPLIED
 
-    async def test_get_assignments(self, db_session: AsyncSession) -> None:
+    async def test_get_assignments_returns_latest_version(
+        self, db_session: AsyncSession
+    ) -> None:
         repo = ProfileRepository(db_session)
         profile = await repo.create(ProfileCreate(name="P", created_by=1))
         await repo.upsert_assignment(
             AssignmentUpsert(
                 profile_id=profile.id,
                 device_id=100,
-                source=ScopeType.DEVICE,
-                status=AssignmentStatus.PENDING,
+                status=AssignmentStatus.APPLIED,
                 profile_version=1,
+            )
+        )
+        await repo.upsert_assignment(
+            AssignmentUpsert(
+                profile_id=profile.id,
+                device_id=100,
+                status=AssignmentStatus.PENDING,
+                profile_version=2,
             )
         )
         assignments = await repo.get_assignments(profile.id)
         assert len(assignments) == 1
+        assert assignments[0].profile_version == 2
+        assert assignments[0].status == AssignmentStatus.PENDING
+
+    async def test_get_assignments_multiple_devices(
+        self, db_session: AsyncSession
+    ) -> None:
+        repo = ProfileRepository(db_session)
+        profile = await repo.create(ProfileCreate(name="P", created_by=1))
+        await repo.upsert_assignment(
+            AssignmentUpsert(
+                profile_id=profile.id,
+                device_id=100,
+                status=AssignmentStatus.PENDING,
+                profile_version=1,
+            )
+        )
+        await repo.upsert_assignment(
+            AssignmentUpsert(
+                profile_id=profile.id,
+                device_id=200,
+                status=AssignmentStatus.APPLIED,
+                profile_version=1,
+            )
+        )
+        assignments = await repo.get_assignments(profile.id)
+        assert len(assignments) == 2

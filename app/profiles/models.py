@@ -7,7 +7,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.base import Base, utcnow
 from app.common.enums import AssignmentStatus
-from app.common.schemas import Scope, ScopeType
+from app.common.schemas import Scope
 from app.users.models import User
 
 
@@ -56,7 +56,7 @@ class Profile(Base):
 class ProfileAssignment(Base):
     __tablename__ = "profile_assignments"
     __table_args__ = (
-        UniqueConstraint("profile_id", "device_id"),
+        UniqueConstraint("profile_id", "profile_version", "device_id"),
         Index("ix_profile_assignments_profile_id", "profile_id"),
         Index("ix_profile_assignments_device_id", "device_id"),
     )
@@ -68,10 +68,6 @@ class ProfileAssignment(Base):
     device_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("devices.id", ondelete="CASCADE")
     )
-    source: Mapped[str] = mapped_column(
-        Enum(ScopeType, native_enum=False, length=20)
-    )
-    source_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
     status: Mapped[str] = mapped_column(
         Enum(AssignmentStatus, native_enum=False, length=20),
         default=AssignmentStatus.PENDING,

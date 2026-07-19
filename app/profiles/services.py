@@ -57,8 +57,6 @@ class ProfileService:
             AssignmentUpsert(
                 profile_id=assignment.profile_id,
                 device_id=assignment.device_id,
-                source=ScopeType(assignment.source),
-                source_id=assignment.source_id,
                 profile_version=assignment.profile_version,
                 status=status_enum,
                 applied_at=now if status_enum == AssignmentStatus.APPLIED else None,
@@ -72,7 +70,9 @@ class ProfileService:
             return
 
         if not profile.scope.targets:
-            await self.repo.delete_non_direct_assignments(profile_id)
+            await self.repo.delete_old_version_assignments(
+                profile_id, profile.version
+            )
             return
 
         resolved = await self._resolve_scope(profile_id, profile.scope)
@@ -83,7 +83,7 @@ class ProfileService:
             resolved_device_ids=resolved,
         )
 
-        await self.repo.delete_non_direct_assignments(profile_id)
+        await self.repo.delete_old_version_assignments(profile_id, profile.version)
         await self.repo.bulk_upsert_assignments(profile_id, assignments)
 
     async def _resolve_scope(

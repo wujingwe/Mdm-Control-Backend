@@ -174,9 +174,16 @@ async def process_profile_status_message(data: dict[str, Any]) -> None:
             return
 
         async with async_session() as db:
-            stmt = select(ProfileAssignment).where(
-                ProfileAssignment.profile_id == int(profile_id),
-                ProfileAssignment.device_id == int(device_id),
+            from sqlalchemy import desc
+
+            stmt = (
+                select(ProfileAssignment)
+                .where(
+                    ProfileAssignment.profile_id == int(profile_id),
+                    ProfileAssignment.device_id == int(device_id),
+                )
+                .order_by(desc(ProfileAssignment.profile_version))
+                .limit(1)
             )
             result = await db.execute(stmt)
             assignment = result.scalar_one_or_none()

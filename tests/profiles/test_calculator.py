@@ -19,7 +19,6 @@ class TestAssignmentCalculator:
         assert len(result) == 3
         device_ids = {a.device_id for a in result}
         assert device_ids == {1, 2, 3}
-        assert all(a.source.value == "ALL_DEVICES" for a in result)
 
     def test_smart_group_target(self) -> None:
         scope = Scope(targets=[Target(scope_type=ScopeType.SMART_GROUP, target_id=5)])
@@ -28,8 +27,7 @@ class TestAssignmentCalculator:
             profile_id=1, profile_version=1, scope=scope, resolved_device_ids=resolved
         )
         assert len(result) == 2
-        assert result[0].source.value == "SMART_GROUP"
-        assert result[0].source_id == 5
+        assert result[0].profile_version == 1
 
     def test_static_group_target(self) -> None:
         scope = Scope(targets=[Target(scope_type=ScopeType.STATIC_GROUP, target_id=3)])
@@ -47,8 +45,6 @@ class TestAssignmentCalculator:
         )
         assert len(result) == 1
         assert result[0].device_id == 42
-        assert result[0].source.value == "DEVICE"
-        assert result[0].source_id == 42
 
     def test_multiple_targets(self) -> None:
         scope = Scope(
@@ -133,11 +129,3 @@ class TestAssignmentCalculator:
         device_ids = {a.device_id for a in result}
         assert device_ids == {10, 20, 30}
         assert len(result) == 3
-
-    def test_target_without_id_uses_zero(self) -> None:
-        scope = Scope(targets=[Target(scope_type=ScopeType.ALL_DEVICES)])
-        resolved = {(ScopeType.ALL_DEVICES.value, 0): {1}}
-        result = AssignmentCalculator.compute(
-            profile_id=1, profile_version=1, scope=scope, resolved_device_ids=resolved
-        )
-        assert result[0].source_id is None

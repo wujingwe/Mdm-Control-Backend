@@ -3,7 +3,7 @@ from datetime import datetime
 from pydantic import BaseModel, ConfigDict
 
 from app.common.enums import AssignmentStatus
-from app.common.schemas import Scope, ScopeType
+from app.common.schemas import Scope
 
 
 class ProfileSettings(BaseModel):
@@ -43,8 +43,6 @@ class AssignmentResponse(BaseModel):
     id: int
     profile_id: int
     device_id: int
-    source: ScopeType
-    source_id: int | None = None
     status: AssignmentStatus
     profile_version: int
     assigned_at: datetime
@@ -61,8 +59,6 @@ class StatusUpdate(BaseModel):
 class AssignmentUpsert(BaseModel):
     profile_id: int
     device_id: int
-    source: ScopeType
-    source_id: int | None = None
     status: AssignmentStatus
     profile_version: int
     applied_at: datetime | None = None
