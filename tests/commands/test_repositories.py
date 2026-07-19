@@ -4,7 +4,7 @@ from app.common.enums import (
     CommandType,
     CommandStatus,
     ConnectionStatus,
-    EnrollmentStatus,
+    DeviceStatus,
 )
 from app.devices.models import Device
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -16,7 +16,7 @@ async def _create_device(db_session: AsyncSession) -> Device:
         serial_number="SER001",
         os_version="15.0",
         connection_status=ConnectionStatus.ONLINE,
-        enrollment_status=EnrollmentStatus.ENROLLED,
+        status=DeviceStatus.ENROLLED,
     )
     db_session.add(device)
     await db_session.commit()

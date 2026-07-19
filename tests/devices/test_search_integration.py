@@ -20,7 +20,7 @@ async def devices(
             serial_number="SN-MBP-001",
             os_version="macOS 15.0",
             connection_status="Online",
-            enrollment_status="Enrolled",
+            status="Enrolled",
             battery_status=95,
             total_storage=1000,
             available_storage=500,
@@ -30,7 +30,7 @@ async def devices(
             serial_number="SN-MBA-002",
             os_version="macOS 14.5",
             connection_status="Online",
-            enrollment_status="Enrolled",
+            status="Enrolled",
             battery_status=30,
             total_storage=512,
             available_storage=200,
@@ -40,7 +40,7 @@ async def devices(
             serial_number="SN-IP15-003",
             os_version="iOS 18.1",
             connection_status="Offline",
-            enrollment_status="Enrolled",
+            status="Enrolled",
             battery_status=10,
             total_storage=256,
             available_storage=100,
@@ -50,7 +50,7 @@ async def devices(
             serial_number="SN-IPSE-004",
             os_version="iOS 17.4",
             connection_status=ConnectionStatus.ONLINE,
-            enrollment_status="Pending",
+            status="Pending",
             battery_status=80,
             total_storage=128,
             available_storage=64,
@@ -60,7 +60,7 @@ async def devices(
             serial_number="SN-GS24-005",
             os_version="Android 14",
             connection_status="Offline",
-            enrollment_status="Unknown",
+            status="Unknown",
             battery_status=50,
             total_storage=256,
             available_storage=256,
@@ -70,7 +70,7 @@ async def devices(
             serial_number="SN-PIX-006",
             os_version="Android 15",
             connection_status="Online",
-            enrollment_status="Enrolled",
+            status="Enrolled",
             battery_status=None,
             total_storage=128,
             available_storage=None,
@@ -133,7 +133,7 @@ class TestSearchIsOperator:
         self, devices: tuple[InventorySearchService, dict[str, Device]]
     ) -> None:
         svc, _ = devices
-        result = await _search(svc, "enrollment_status", "is", "Enrolled")
+        result = await _search(svc, "status", "is", "Enrolled")
         assert _names(result) == ["iPhone 15", "MacBook Air", "MacBook Pro", "Pixel 8"]
 
     async def test_is_exact_name(
@@ -157,7 +157,7 @@ class TestSearchIsNotOperator:
         self, devices: tuple[InventorySearchService, dict[str, Device]]
     ) -> None:
         svc, _ = devices
-        result = await _search(svc, "enrollment_status", "isNot", "Enrolled")
+        result = await _search(svc, "status", "isNot", "Enrolled")
         assert _names(result) == ["Galaxy S24", "iPhone SE"]
 
 
@@ -316,7 +316,7 @@ class TestSearchConjunctions:
                         and_or="AND",
                     ),
                     Criteria(
-                        field="enrollment_status",
+                        field="status",
                         operator="is",
                         type="string",
                         value="Enrolled",
@@ -364,7 +364,7 @@ class TestSearchConjunctions:
         svc, _ = devices
         result = await _search(svc, "connection_status", "is", "Online")
         online = _names(result)
-        result2 = await _search(svc, "enrollment_status", "is", "Needs attention")
+        result2 = await _search(svc, "status", "is", "Needs attention")
         needs_attention = _names(result2)
         assert len(set(online) & set(needs_attention)) == 0
 
@@ -385,7 +385,7 @@ class TestSearchMultiCriteria:
                         and_or="AND",
                     ),
                     Criteria(
-                        field="enrollment_status",
+                        field="status",
                         operator="is",
                         type="string",
                         value="Enrolled",
@@ -444,7 +444,7 @@ class TestSearchMultiCriteria:
                         and_or="AND",
                     ),
                     Criteria(
-                        field="enrollment_status",
+                        field="status",
                         operator="isNot",
                         type="string",
                         value="Pending",
@@ -469,7 +469,7 @@ class TestSearchParentheses:
     async def test_and_group_or_and_group(
         self, devices: tuple[InventorySearchService, dict[str, Device]]
     ) -> None:
-        """(name LIKE 'Mac' AND connection_status IS 'Online') OR (os_version LIKE 'iOS' AND enrollment_status IS 'Enrolled')"""
+        """(name LIKE 'Mac' AND connection_status IS 'Online') OR (os_version LIKE 'iOS' AND status IS 'Enrolled')"""
         svc, _ = devices
         result = await svc.execute_search(
             InventorySearchExecuteRequest(
@@ -499,7 +499,7 @@ class TestSearchParentheses:
                         left_parentheses=True,
                     ),
                     Criteria(
-                        field="enrollment_status",
+                        field="status",
                         operator="is",
                         type="string",
                         value="Enrolled",
@@ -554,7 +554,7 @@ class TestSearchParentheses:
     async def test_single_parenthesized_group(
         self, devices: tuple[InventorySearchService, dict[str, Device]]
     ) -> None:
-        """(name LIKE 'Mac' AND enrollment_status IS 'Enrolled')"""
+        """(name LIKE 'Mac' AND status IS 'Enrolled')"""
         svc, _ = devices
         result = await svc.execute_search(
             InventorySearchExecuteRequest(
@@ -568,7 +568,7 @@ class TestSearchParentheses:
                         left_parentheses=True,
                     ),
                     Criteria(
-                        field="enrollment_status",
+                        field="status",
                         operator="is",
                         type="string",
                         value="Enrolled",
@@ -596,7 +596,7 @@ class TestSearchParentheses:
                         and_or="AND",
                     ),
                     Criteria(
-                        field="enrollment_status",
+                        field="status",
                         operator="is",
                         type="string",
                         value="Enrolled",

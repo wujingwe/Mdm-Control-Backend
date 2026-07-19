@@ -2727,8 +2727,8 @@
           "connection_status": {
             "$ref": "#/components/schemas/ConnectionStatus"
           },
-          "enrollment_status": {
-            "$ref": "#/components/schemas/EnrollmentStatus"
+          "status": {
+            "$ref": "#/components/schemas/DeviceStatus"
           },
           "created_at": {
             "type": "string",
@@ -2855,12 +2855,24 @@
           "serial_number",
           "os_version",
           "connection_status",
-          "enrollment_status",
+          "status",
           "created_at",
           "updated_at",
           "last_enrolled_at"
         ],
         "title": "DeviceResponse"
+      },
+      "DeviceStatus": {
+        "type": "string",
+        "enum": [
+          "Compliant",
+          "Non-compliant",
+          "Needs attention",
+          "Enrolled",
+          "Pending",
+          "Unknown"
+        ],
+        "title": "DeviceStatus"
       },
       "DeviceUpdate": {
         "properties": {
@@ -2874,10 +2886,10 @@
               }
             ]
           },
-          "enrollment_status": {
+          "status": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/EnrollmentStatus"
+                "$ref": "#/components/schemas/DeviceStatus"
               },
               {
                 "type": "null"
@@ -2980,18 +2992,6 @@
         },
         "type": "object",
         "title": "DeviceUpdate"
-      },
-      "EnrollmentStatus": {
-        "type": "string",
-        "enum": [
-          "Compliant",
-          "Non-compliant",
-          "Needs attention",
-          "Enrolled",
-          "Pending",
-          "Unknown"
-        ],
-        "title": "EnrollmentStatus"
       },
       "Exclusion": {
         "properties": {

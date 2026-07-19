@@ -15,21 +15,21 @@ class TestStaticGroupsAPI:
             serial_number="SN001",
             os_version="14",
             connection_status="Online",
-            enrollment_status="Compliant",
+            status="Compliant",
         )
         dev2 = Device(
             name="D2",
             serial_number="SN002",
             os_version="14",
             connection_status="Online",
-            enrollment_status="Compliant",
+            status="Compliant",
         )
         dev3 = Device(
             name="D3",
             serial_number="SN003",
             os_version="14",
             connection_status="Online",
-            enrollment_status="Compliant",
+            status="Compliant",
         )
         db_session.add_all([dev1, dev2, dev3])
         await db_session.commit()

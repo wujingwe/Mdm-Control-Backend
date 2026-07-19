@@ -242,7 +242,7 @@ class TestExecuteSearch:
                 serial_number="SN-MBP-001",
                 os_version="macOS 15.0",
                 connection_status="Online",
-                enrollment_status="Enrolled",
+                status="Enrolled",
                 battery_status=95,
                 total_storage=1000,
                 available_storage=500,
@@ -252,7 +252,7 @@ class TestExecuteSearch:
                 serial_number="SN-MBA-002",
                 os_version="macOS 14.5",
                 connection_status="Online",
-                enrollment_status="Enrolled",
+                status="Enrolled",
                 battery_status=30,
                 total_storage=512,
                 available_storage=200,
@@ -262,7 +262,7 @@ class TestExecuteSearch:
                 serial_number="SN-IP15-003",
                 os_version="iOS 18.1",
                 connection_status="Offline",
-                enrollment_status="Enrolled",
+                status="Enrolled",
                 battery_status=10,
                 total_storage=256,
                 available_storage=100,
@@ -272,7 +272,7 @@ class TestExecuteSearch:
                 serial_number="SN-IPSE-004",
                 os_version="iOS 17.4",
                 connection_status="Online",
-                enrollment_status="Pending",
+                status="Pending",
                 battery_status=80,
                 total_storage=128,
                 available_storage=64,
@@ -282,7 +282,7 @@ class TestExecuteSearch:
                 serial_number="SN-GS24-005",
                 os_version="Android 14",
                 connection_status="Offline",
-                enrollment_status="Unknown",
+                status="Unknown",
                 battery_status=50,
                 total_storage=256,
                 available_storage=256,
@@ -292,7 +292,7 @@ class TestExecuteSearch:
                 serial_number="SN-PIX-006",
                 os_version="Android 15",
                 connection_status="Online",
-                enrollment_status="Enrolled",
+                status="Enrolled",
                 battery_status=None,
                 total_storage=128,
                 available_storage=None,
@@ -328,7 +328,7 @@ class TestExecuteSearch:
             json={
                 "criteria": [
                     {
-                        "field": "enrollment_status",
+                        "field": "status",
                         "operator": "isNot",
                         "type": "string",
                         "value": "Enrolled",
@@ -432,7 +432,7 @@ class TestExecuteSearch:
                         "and_or": "AND",
                     },
                     {
-                        "field": "enrollment_status",
+                        "field": "status",
                         "operator": "is",
                         "type": "string",
                         "value": "Enrolled",
@@ -458,7 +458,7 @@ class TestExecuteSearch:
                         "and_or": "AND",
                     },
                     {
-                        "field": "enrollment_status",
+                        "field": "status",
                         "operator": "is",
                         "type": "string",
                         "value": "Enrolled",
@@ -536,7 +536,7 @@ class TestExecuteSearch:
 
     async def test_and_group_or_and_group(self, client: AsyncClient) -> None:
         """(name LIKE 'Mac' AND connection_status IS 'Online')
-        OR (os_version LIKE 'iOS' AND enrollment_status IS 'Enrolled')"""
+        OR (os_version LIKE 'iOS' AND status IS 'Enrolled')"""
         resp = await client.post(
             EXECUTE,
             json={
@@ -566,7 +566,7 @@ class TestExecuteSearch:
                         "left_parentheses": True,
                     },
                     {
-                        "field": "enrollment_status",
+                        "field": "status",
                         "operator": "is",
                         "type": "string",
                         "value": "Enrolled",
@@ -689,7 +689,7 @@ class TestExecuteSearch:
         assert device["serial_number"] == "SN-IP15-003"
         assert device["os_version"] == "iOS 18.1"
         assert device["connection_status"] == "Offline"
-        assert device["enrollment_status"] == "Enrolled"
+        assert device["status"] == "Enrolled"
 
     async def test_empty_result(self, client: AsyncClient) -> None:
         resp = await client.post(

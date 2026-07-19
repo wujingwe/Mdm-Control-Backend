@@ -46,9 +46,9 @@ class TestEnums:
         assert ConnectionStatus.OFFLINE == "Offline"
         assert ConnectionStatus.PENDING == "Pending"
 
-    def test_enrollment_status_values(self) -> None:
-        from app.common.enums import EnrollmentStatus
+    def test_device_status_values(self) -> None:
+        from app.common.enums import DeviceStatus
 
-        assert EnrollmentStatus.COMPLIANT == "Compliant"
-        assert EnrollmentStatus.ENROLLED == "Enrolled"
-        assert EnrollmentStatus.PENDING == "Pending"
+        assert DeviceStatus.COMPLIANT == "Compliant"
+        assert DeviceStatus.ENROLLED == "Enrolled"
+        assert DeviceStatus.PENDING == "Pending"

@@ -13,7 +13,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.base import Base, utcnow
-from app.common.enums import ConnectionStatus, EnrollmentStatus
+from app.common.enums import ConnectionStatus, DeviceStatus
 from app.profiles.models import Profile
 from app.types import CertificateListType, NetworkInfoType
 from app.devices.schemas import Certificate, Network
@@ -23,7 +23,7 @@ class Device(Base):
     __tablename__ = "devices"
     __table_args__ = (
         Index("ix_devices_connection_status", "connection_status"),
-        Index("ix_devices_enrollment_status", "enrollment_status"),
+        Index("ix_devices_status", "status"),
         Index("ix_devices_os_version", "os_version"),
     )
 
@@ -34,8 +34,8 @@ class Device(Base):
     connection_status: Mapped[ConnectionStatus] = mapped_column(
         Enum(ConnectionStatus, native_enum=False, length=20)
     )
-    enrollment_status: Mapped[EnrollmentStatus] = mapped_column(
-        Enum(EnrollmentStatus, native_enum=False, length=20)
+    status: Mapped[DeviceStatus] = mapped_column(
+        Enum(DeviceStatus, native_enum=False, length=20)
     )
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
     updated_at: Mapped[datetime] = mapped_column(

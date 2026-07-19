@@ -2,7 +2,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict
 
-from app.common.enums import ConnectionStatus, EnrollmentStatus
+from app.common.enums import ConnectionStatus, DeviceStatus
 
 
 class Wifi(BaseModel):
@@ -56,7 +56,7 @@ class DeviceResponse(BaseModel):
     serial_number: str
     os_version: str
     connection_status: ConnectionStatus
-    enrollment_status: EnrollmentStatus
+    status: DeviceStatus
     created_at: datetime
     updated_at: datetime
     last_enrolled_at: datetime
@@ -80,7 +80,7 @@ class DeviceExtensionAttributeCreate(BaseModel):
 
 class DeviceUpdate(BaseModel):
     connection_status: ConnectionStatus | None = None
-    enrollment_status: EnrollmentStatus | None = None
+    status: DeviceStatus | None = None
     battery_status: int | None = None
     total_storage: int | None = None
     available_storage: int | None = None

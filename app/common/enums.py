@@ -15,7 +15,7 @@ class ConnectionStatus(str, Enum):
     PENDING = "Pending"
 
 
-class EnrollmentStatus(str, Enum):
+class DeviceStatus(str, Enum):
     COMPLIANT = "Compliant"
     NON_COMPLIANT = "Non-compliant"
     NEEDS_ATTENTION = "Needs attention"

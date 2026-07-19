@@ -23,7 +23,7 @@ class TestDevicesAPI:
                 "serial_number": "SN-A",
                 "os_version": "15.0",
                 "connection_status": "Online",
-                "enrollment_status": "Enrolled",
+                "status": "Enrolled",
             }
         )
         await repo.create(
@@ -32,7 +32,7 @@ class TestDevicesAPI:
                 "serial_number": "SN-B",
                 "os_version": "15.0",
                 "connection_status": "Offline",
-                "enrollment_status": "Enrolled",
+                "status": "Enrolled",
             }
         )
         resp = await client.get("/api/v1/devices")
@@ -54,7 +54,7 @@ class TestDevicesAPI:
                     "serial_number": f"SN-{i:03d}",
                     "os_version": "15.0",
                     "connection_status": "Online",
-                    "enrollment_status": "Enrolled",
+                    "status": "Enrolled",
                 }
             )
         resp = await client.get("/api/v1/devices?skip=0&limit=2")
@@ -76,7 +76,7 @@ class TestDevicesAPI:
                     "serial_number": f"SN-{i:03d}",
                     "os_version": "15.0",
                     "connection_status": "Online",
-                    "enrollment_status": "Enrolled",
+                    "status": "Enrolled",
                 }
             )
         resp = await client.get("/api/v1/devices?skip=3&limit=2")
@@ -97,7 +97,7 @@ class TestDevicesAPI:
                 "serial_number": "SN-GET-001",
                 "os_version": "15.0",
                 "connection_status": "Online",
-                "enrollment_status": "Enrolled",
+                "status": "Enrolled",
             }
         )
         resp = await client.get(f"/api/v1/devices/{device.id}")
@@ -123,7 +123,7 @@ class TestDevicesAPI:
                 "serial_number": "SN-API-001",
                 "os_version": "15.0",
                 "connection_status": "Online",
-                "enrollment_status": "Enrolled",
+                "status": "Enrolled",
                 "network": Network(wifi=Wifi(ssid="Office")),
                 "certificates": [Certificate(common_name="example.com")],
             }
@@ -133,7 +133,7 @@ class TestDevicesAPI:
         body = resp.json()
         assert body["serial_number"] == "SN-API-001"
         assert body["connection_status"] == "Online"
-        assert body["enrollment_status"] == "Enrolled"
+        assert body["status"] == "Enrolled"
         assert "created_at" in body
         assert "updated_at" in body
         assert "last_enrolled_at" in body
@@ -152,7 +152,7 @@ class TestDevicesAPI:
                 "serial_number": "SN-BAS-001",
                 "os_version": "15.0",
                 "connection_status": "Online",
-                "enrollment_status": "Enrolled",
+                "status": "Enrolled",
             }
         )
         resp = await client.get(f"/api/v1/devices/{device.id}")
@@ -175,7 +175,7 @@ class TestDevicesAPI:
                 "serial_number": "SN-UPD-001",
                 "os_version": "15.0",
                 "connection_status": "Online",
-                "enrollment_status": "Enrolled",
+                "status": "Enrolled",
             }
         )
         resp = await client.put(
@@ -211,7 +211,7 @@ class TestDevicesAPI:
                 "serial_number": "SN-NET-001",
                 "os_version": "15.0",
                 "connection_status": "Online",
-                "enrollment_status": "Enrolled",
+                "status": "Enrolled",
             }
         )
         resp = await client.put(
@@ -243,7 +243,7 @@ class TestDevicesAPI:
                 "serial_number": "SN-CN-001",
                 "os_version": "15.0",
                 "connection_status": "Online",
-                "enrollment_status": "Enrolled",
+                "status": "Enrolled",
                 "network": Network(wifi=Wifi(ssid="Old")),
             }
         )
@@ -279,7 +279,7 @@ class TestDevicesAPI:
                 "serial_number": "SN-EXT-001",
                 "os_version": "15.0",
                 "connection_status": "Online",
-                "enrollment_status": "Enrolled",
+                "status": "Enrolled",
             }
         )
 
@@ -328,7 +328,7 @@ class TestDevicesAPI:
                 "serial_number": "SN-CLR-001",
                 "os_version": "15.0",
                 "connection_status": "Online",
-                "enrollment_status": "Enrolled",
+                "status": "Enrolled",
             }
         )
         await repo.update(
@@ -366,7 +366,7 @@ class TestDevicesAPI:
                 "serial_number": "SN-CRT-001",
                 "os_version": "15.0",
                 "connection_status": "Online",
-                "enrollment_status": "Enrolled",
+                "status": "Enrolled",
             }
         )
 
@@ -396,7 +396,7 @@ class TestDevicesAPI:
                 "serial_number": "SN-CC-001",
                 "os_version": "15.0",
                 "connection_status": "Online",
-                "enrollment_status": "Enrolled",
+                "status": "Enrolled",
                 "certificates": [Certificate(common_name="old.com")],
             }
         )
@@ -419,7 +419,7 @@ class TestDevicesAPI:
                 "serial_number": "SN-MUL-001",
                 "os_version": "15.0",
                 "connection_status": "Online",
-                "enrollment_status": "Enrolled",
+                "status": "Enrolled",
             }
         )
 
@@ -427,7 +427,7 @@ class TestDevicesAPI:
             f"/api/v1/devices/{device.id}",
             json={
                 "connection_status": "Offline",
-                "enrollment_status": "Non-compliant",
+                "status": "Non-compliant",
                 "battery_status": 15,
                 "total_memory": 16,
             },
@@ -435,7 +435,7 @@ class TestDevicesAPI:
         assert resp.status_code == 200
         body = resp.json()
         assert body["connection_status"] == "Offline"
-        assert body["enrollment_status"] == "Non-compliant"
+        assert body["status"] == "Non-compliant"
         assert body["battery_status"] == 15
         assert body["total_memory"] == 16
 
@@ -451,7 +451,7 @@ class TestDevicesAPI:
                 "serial_number": "SN-INV-001",
                 "os_version": "15.0",
                 "connection_status": "Online",
-                "enrollment_status": "Enrolled",
+                "status": "Enrolled",
             }
         )
         resp = await client.put(
@@ -460,7 +460,7 @@ class TestDevicesAPI:
         )
         assert resp.status_code == 422
 
-    async def test_update_device_invalid_enrollment_status(
+    async def test_update_device_invalid_status(
         self, client: AsyncClient, db_session: AsyncSession
     ) -> None:
         from app.devices.repositories import DeviceRepository
@@ -472,12 +472,12 @@ class TestDevicesAPI:
                 "serial_number": "SN-INV-002",
                 "os_version": "15.0",
                 "connection_status": "Online",
-                "enrollment_status": "Enrolled",
+                "status": "Enrolled",
             }
         )
         resp = await client.put(
             f"/api/v1/devices/{device.id}",
-            json={"enrollment_status": "INVALID_STATUS"},
+            json={"status": "INVALID_STATUS"},
         )
         assert resp.status_code == 422
 
@@ -493,7 +493,7 @@ class TestDevicesAPI:
                 "serial_number": "SN-EMP-001",
                 "os_version": "15.0",
                 "connection_status": "Online",
-                "enrollment_status": "Enrolled",
+                "status": "Enrolled",
             }
         )
 
@@ -518,7 +518,7 @@ class TestCommandsAPI:
                 "serial_number": "SN-CMD-001",
                 "os_version": "15.0",
                 "connection_status": "Online",
-                "enrollment_status": "Enrolled",
+                "status": "Enrolled",
             }
         )
 

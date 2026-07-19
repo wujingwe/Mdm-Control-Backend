@@ -17,7 +17,7 @@ def _make_device_data(serial: str = "SN001", name: str = "Test Device") -> dict:
         "serial_number": serial,
         "os_version": "14.0",
         "connection_status": "Online",
-        "enrollment_status": "Enrolled",
+        "status": "Enrolled",
     }
 
 
@@ -193,14 +193,14 @@ class TestDeviceRepository:
             created.id,
             DeviceUpdate(
                 connection_status="Offline",
-                enrollment_status="Non-compliant",
+                status="Non-compliant",
                 battery_status=42,
                 total_storage=512,
                 available_storage=256,
             ),
         )
         assert updated.connection_status == "Offline"
-        assert updated.enrollment_status == "Non-compliant"
+        assert updated.status == "Non-compliant"
         assert updated.battery_status == 42
         assert updated.total_storage == 512
         assert updated.available_storage == 256

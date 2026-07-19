@@ -1,5 +1,5 @@
 from unittest.mock import AsyncMock, patch
-from app.common.enums import ConnectionStatus, EnrollmentStatus
+from app.common.enums import ConnectionStatus, DeviceStatus
 from app.devices.models import Device
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -12,7 +12,7 @@ async def _create_device(client: AsyncClient, db_session: AsyncSession) -> Devic
         serial_number="SER001",
         os_version="15.0",
         connection_status=ConnectionStatus.ONLINE,
-        enrollment_status=EnrollmentStatus.ENROLLED,
+        status=DeviceStatus.ENROLLED,
     )
     db_session.add(device)
     await db_session.commit()

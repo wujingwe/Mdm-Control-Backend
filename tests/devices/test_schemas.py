@@ -18,7 +18,7 @@ _DEVICE_FIELDS = {
     "name": "Test",
     "os_version": "14.0",
     "connection_status": "Online",
-    "enrollment_status": "Enrolled",
+    "status": "Enrolled",
     "created_at": datetime.now(timezone.utc),
     "updated_at": datetime.now(timezone.utc),
     "last_enrolled_at": datetime.now(timezone.utc),
@@ -158,7 +158,7 @@ class TestDeviceUpdateSchema:
     def test_update_all_fields(self) -> None:
         data = DeviceUpdate(
             connection_status="Offline",
-            enrollment_status="Non-compliant",
+            status="Non-compliant",
             battery_status=50,
             total_storage=256,
             available_storage=128,
@@ -175,7 +175,7 @@ class TestDeviceUpdateSchema:
             ],
         )
         assert data.connection_status == "Offline"
-        assert data.enrollment_status == "Non-compliant"
+        assert data.status == "Non-compliant"
         assert data.battery_status == 50
         assert data.network.wifi.ssid == "Home"
         assert len(data.certificates) == 1
@@ -208,6 +208,6 @@ class TestDeviceUpdateSchema:
         with pytest.raises(ValidationError):
             DeviceUpdate(connection_status="INVALID")
 
-    def test_update_invalid_enrollment_status(self) -> None:
+    def test_update_invalid_status(self) -> None:
         with pytest.raises(ValidationError):
-            DeviceUpdate(enrollment_status="INVALID")
+            DeviceUpdate(status="INVALID")
