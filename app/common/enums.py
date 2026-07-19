@@ -16,10 +16,8 @@ class ConnectionStatus(str, Enum):
 
 
 class DeviceStatus(str, Enum):
-    COMPLIANT = "Compliant"
-    NON_COMPLIANT = "Non-compliant"
-    NEEDS_ATTENTION = "Needs attention"
     ENROLLED = "Enrolled"
+    UNENROLLED = "Unenrolled"
     PENDING = "Pending"
     UNKNOWN = "Unknown"
 

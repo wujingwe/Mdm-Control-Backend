@@ -193,14 +193,14 @@ class TestDeviceRepository:
             created.id,
             DeviceUpdate(
                 connection_status="Offline",
-                status="Non-compliant",
+                status="Unenrolled",
                 battery_status=42,
                 total_storage=512,
                 available_storage=256,
             ),
         )
         assert updated.connection_status == "Offline"
-        assert updated.status == "Non-compliant"
+        assert updated.status == "Unenrolled"
         assert updated.battery_status == 42
         assert updated.total_storage == 512
         assert updated.available_storage == 256

@@ -427,7 +427,7 @@ class TestDevicesAPI:
             f"/api/v1/devices/{device.id}",
             json={
                 "connection_status": "Offline",
-                "status": "Non-compliant",
+                "status": "Unenrolled",
                 "battery_status": 15,
                 "total_memory": 16,
             },
@@ -435,7 +435,7 @@ class TestDevicesAPI:
         assert resp.status_code == 200
         body = resp.json()
         assert body["connection_status"] == "Offline"
-        assert body["status"] == "Non-compliant"
+        assert body["status"] == "Unenrolled"
         assert body["battery_status"] == 15
         assert body["total_memory"] == 16
 

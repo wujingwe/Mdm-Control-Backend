@@ -49,6 +49,7 @@ class TestEnums:
     def test_device_status_values(self) -> None:
         from app.common.enums import DeviceStatus
 
-        assert DeviceStatus.COMPLIANT == "Compliant"
         assert DeviceStatus.ENROLLED == "Enrolled"
+        assert DeviceStatus.UNENROLLED == "Unenrolled"
         assert DeviceStatus.PENDING == "Pending"
+        assert DeviceStatus.UNKNOWN == "Unknown"

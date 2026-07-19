@@ -158,7 +158,7 @@ class TestDeviceUpdateSchema:
     def test_update_all_fields(self) -> None:
         data = DeviceUpdate(
             connection_status="Offline",
-            status="Non-compliant",
+            status="Unenrolled",
             battery_status=50,
             total_storage=256,
             available_storage=128,
@@ -175,7 +175,7 @@ class TestDeviceUpdateSchema:
             ],
         )
         assert data.connection_status == "Offline"
-        assert data.status == "Non-compliant"
+        assert data.status == "Unenrolled"
         assert data.battery_status == 50
         assert data.network.wifi.ssid == "Home"
         assert len(data.certificates) == 1
