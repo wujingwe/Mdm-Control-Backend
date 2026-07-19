@@ -22,6 +22,15 @@ FILTER_BUILDERS: dict[str, Callable] = {
 }
 
 
+def _build_filter(c: Criteria) -> BinaryExpression | None:
+    """Build a single filter expression from a Criterion."""
+    col = getattr(Device, c.field, None)
+    if col is None:
+        return None
+    builder = FILTER_BUILDERS.get(c.operator)
+    return builder(col, c.value) if builder else None
+
+
 def build_device_query(
     criteria: list[Criteria],
 ) -> BinaryExpression | None:
@@ -33,25 +42,15 @@ def build_device_query(
     default left-to-right evaluation.
     """
 
-    # 1. Build individual column filters
-    filters: list[BinaryExpression | None] = []
-    for c in criteria:
-        col = getattr(Device, c.field, None)
-        if col is None:
-            filters.append(None)
-            continue
-        builder = FILTER_BUILDERS.get(c.operator)
-        filters.append(builder(col, c.value) if builder else None)
-
-    # 2. Group consecutive criteria by parentheses.
+    # 1. Group consecutive criteria by parentheses.
     #    A ``left_parentheses`` starts a new group; a ``right_parentheses``
     #    closes the current group.  Criteria without any parentheses land in
     #    a single implicit group.
     groups: list[list[tuple[BinaryExpression, str]]] = []
     current_group: list[tuple[BinaryExpression, str]] = []
 
-    for i, c in enumerate(criteria):
-        f = filters[i]
+    for c in criteria:
+        f = _build_filter(c)
         if f is None:
             continue
 
@@ -70,7 +69,7 @@ def build_device_query(
     if not groups:
         return None
 
-    # 3. Within each group, combine filters using the conjunction stored on
+    # 2. Within each group, combine filters using the conjunction stored on
     #    each criterion (except the last, whose ``and_or`` connects to the
     #    next group).
     group_exprs: list[BinaryExpression] = []
@@ -85,7 +84,7 @@ def build_device_query(
         group_exprs.append(expr)
         group_conjs.append(group[-1][1])
 
-    # 4. Combine groups.  The conjunction between group *i-1* and group *i*
+    # 3. Combine groups.  The conjunction between group *i-1* and group *i*
     #    is the ``and_or`` of the last criterion in group *i-1*.
     result = group_exprs[0]
     for idx in range(1, len(group_exprs)):
