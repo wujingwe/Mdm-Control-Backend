@@ -1,21 +1,6 @@
 from pydantic import BaseModel, ConfigDict
 
-
-class Target(BaseModel):
-    smart_groups: list[int] | None = None
-    static_groups: list[int] | None = None
-    device_serial_numbers: list[str] | None = None
-
-
-class Exclusion(BaseModel):
-    smart_groups: list[int] | None = None
-    static_groups: list[int] | None = None
-    device_serial_numbers: list[str] | None = None
-
-
-class Scope(BaseModel):
-    targets: list[Target] = []
-    exclusions: list[Exclusion] = []
+from app.common.schemas import Scope
 
 
 class MobileAppResponse(BaseModel):

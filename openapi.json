@@ -221,8 +221,8 @@
         "tags": [
           "Devices"
         ],
-        "summary": "Trigger Device Command",
-        "operationId": "trigger_device_command_api_v1_devices__device_id__commands_post",
+        "summary": "Execute Command",
+        "operationId": "execute_command_api_v1_devices__device_id__commands_post",
         "parameters": [
           {
             "name": "device_id",
@@ -305,48 +305,6 @@
                 }
               }
             }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      },
-      "delete": {
-        "tags": [
-          "Devices"
-        ],
-        "summary": "Cancel Device Command",
-        "operationId": "cancel_device_command_api_v1_devices__device_id__commands__command_id__delete",
-        "parameters": [
-          {
-            "name": "device_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "title": "Device Id"
-            }
-          },
-          {
-            "name": "command_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "title": "Command Id"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "Successful Response"
           },
           "422": {
             "description": "Validation Error",
@@ -605,7 +563,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ProfileScopeResponse"
+                  "$ref": "#/components/schemas/Scope-Output"
                 }
               }
             }
@@ -644,11 +602,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "array",
-                "items": {
-                  "$ref": "#/components/schemas/ScopeTarget"
-                },
-                "title": "Scope"
+                "$ref": "#/components/schemas/Scope-Input"
               }
             }
           }
@@ -659,7 +613,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ProfileScopeResponse"
+                  "$ref": "#/components/schemas/Scope-Output"
                 }
               }
             }
@@ -3066,50 +3020,25 @@
       },
       "Exclusion": {
         "properties": {
-          "smart_groups": {
-            "anyOf": [
-              {
-                "items": {
-                  "type": "integer"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Smart Groups"
+          "scope_type": {
+            "$ref": "#/components/schemas/ScopeType"
           },
-          "static_groups": {
+          "exclude_id": {
             "anyOf": [
               {
-                "items": {
-                  "type": "integer"
-                },
-                "type": "array"
+                "type": "integer"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Static Groups"
-          },
-          "device_serial_numbers": {
-            "anyOf": [
-              {
-                "items": {
-                  "type": "string"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Device Serial Numbers"
+            "title": "Exclude Id"
           }
         },
         "type": "object",
+        "required": [
+          "scope_type"
+        ],
         "title": "Exclusion"
       },
       "ExtensionAttributeCreate": {
@@ -3522,7 +3451,7 @@
             "title": "Package Name"
           },
           "scope": {
-            "$ref": "#/components/schemas/Scope"
+            "$ref": "#/components/schemas/Scope-Input"
           }
         },
         "type": "object",
@@ -3558,7 +3487,7 @@
             "title": "Package Name"
           },
           "scope": {
-            "$ref": "#/components/schemas/Scope"
+            "$ref": "#/components/schemas/Scope-Output"
           }
         },
         "type": "object",
@@ -3610,7 +3539,7 @@
           "scope": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/Scope"
+                "$ref": "#/components/schemas/Scope-Input"
               },
               {
                 "type": "null"
@@ -3947,6 +3876,13 @@
             "$ref": "#/components/schemas/ProfileSettings",
             "default": {}
           },
+          "scope": {
+            "$ref": "#/components/schemas/Scope-Input",
+            "default": {
+              "targets": [],
+              "exclusions": []
+            }
+          },
           "created_by": {
             "type": "integer",
             "title": "Created By",
@@ -3989,6 +3925,13 @@
             "$ref": "#/components/schemas/ProfileSettings",
             "default": {}
           },
+          "scope": {
+            "$ref": "#/components/schemas/Scope-Output",
+            "default": {
+              "targets": [],
+              "exclusions": []
+            }
+          },
           "created_at": {
             "type": "string",
             "format": "date-time",
@@ -4025,27 +3968,6 @@
           "created_at"
         ],
         "title": "ProfileResponse"
-      },
-      "ProfileScopeResponse": {
-        "properties": {
-          "profile_id": {
-            "type": "integer",
-            "title": "Profile Id"
-          },
-          "scope": {
-            "items": {
-              "$ref": "#/components/schemas/ScopeTarget"
-            },
-            "type": "array",
-            "title": "Scope"
-          }
-        },
-        "type": "object",
-        "required": [
-          "profile_id",
-          "scope"
-        ],
-        "title": "ProfileScopeResponse"
       },
       "ProfileSettings": {
         "properties": {},
@@ -4086,12 +4008,22 @@
                 "type": "null"
               }
             ]
+          },
+          "scope": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Scope-Input"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "type": "object",
         "title": "ProfileUpdate"
       },
-      "Scope": {
+      "Scope-Input": {
         "properties": {
           "targets": {
             "items": {
@@ -4113,22 +4045,37 @@
         "type": "object",
         "title": "Scope"
       },
-      "ScopeTarget": {
+      "Scope-Output": {
         "properties": {
-          "target_type": {
-            "$ref": "#/components/schemas/TargetType"
+          "targets": {
+            "items": {
+              "$ref": "#/components/schemas/Target"
+            },
+            "type": "array",
+            "title": "Targets",
+            "default": []
           },
-          "target_id": {
-            "type": "integer",
-            "title": "Target Id",
-            "default": 0
+          "exclusions": {
+            "items": {
+              "$ref": "#/components/schemas/Exclusion"
+            },
+            "type": "array",
+            "title": "Exclusions",
+            "default": []
           }
         },
         "type": "object",
-        "required": [
-          "target_type"
+        "title": "Scope"
+      },
+      "ScopeType": {
+        "type": "string",
+        "enum": [
+          "ALL_DEVICES",
+          "SMART_GROUP",
+          "STATIC_GROUP",
+          "DEVICE"
         ],
-        "title": "ScopeTarget"
+        "title": "ScopeType"
       },
       "SmartGroupCreate": {
         "properties": {
@@ -4429,61 +4376,26 @@
       },
       "Target": {
         "properties": {
-          "smart_groups": {
-            "anyOf": [
-              {
-                "items": {
-                  "type": "integer"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Smart Groups"
+          "scope_type": {
+            "$ref": "#/components/schemas/ScopeType"
           },
-          "static_groups": {
+          "target_id": {
             "anyOf": [
               {
-                "items": {
-                  "type": "integer"
-                },
-                "type": "array"
+                "type": "integer"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Static Groups"
-          },
-          "device_serial_numbers": {
-            "anyOf": [
-              {
-                "items": {
-                  "type": "string"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Device Serial Numbers"
+            "title": "Target Id"
           }
         },
         "type": "object",
-        "title": "Target"
-      },
-      "TargetType": {
-        "type": "string",
-        "enum": [
-          "ALL_DEVICES",
-          "SMART_GROUP",
-          "STATIC_GROUP",
-          "DEVICE"
+        "required": [
+          "scope_type"
         ],
-        "title": "TargetType"
+        "title": "Target"
       },
       "UserCreate": {
         "properties": {

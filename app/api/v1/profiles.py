@@ -1,15 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
-from app.common.enums import TargetType
-from app.common.schemas import PaginatedResponse
+from app.common.schemas import PaginatedResponse, Scope
 from app.dependencies import get_profile_service
 from app.profiles.schemas import (
     AssignmentResponse,
     ProfileCreate,
     ProfileResponse,
-    ProfileScopeResponse,
     ProfileUpdate,
-    ScopeTarget,
     StatusUpdate,
 )
 from app.profiles.services import ProfileService
@@ -84,37 +81,35 @@ async def delete_profile(
     await revalidate(["profiles"])
 
 
-@router.get("/{profile_id}/scope", response_model=ProfileScopeResponse)
+@router.get("/{profile_id}/scope", response_model=Scope)
 async def get_profile_scope(
     profile_id: int,
     service: ProfileService = Depends(get_profile_service),
-) -> ProfileScopeResponse:
-    scope = await service.get_scope(profile_id)
-    return ProfileScopeResponse(
-        profile_id=profile_id,
-        scope=[
-            ScopeTarget(target_type=TargetType(s.target_type), target_id=s.target_id)
-            for s in scope
-        ],
-    )
+) -> Scope:
+    profile = await service.get_profile(profile_id)
+    if not profile:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Profile not found"
+        )
+    return profile.scope
 
 
-@router.put("/{profile_id}/scope", response_model=ProfileScopeResponse)
+@router.put("/{profile_id}/scope", response_model=Scope)
 async def set_profile_scope(
     profile_id: int,
-    scope: list[ScopeTarget],
+    scope: Scope,
     service: ProfileService = Depends(get_profile_service),
-) -> ProfileScopeResponse:
-    await service.set_scope(profile_id, scope)
-    await revalidate(["profiles"])
-    updated_scope = await service.get_scope(profile_id)
-    return ProfileScopeResponse(
-        profile_id=profile_id,
-        scope=[
-            ScopeTarget(target_type=TargetType(s.target_type), target_id=s.target_id)
-            for s in updated_scope
-        ],
+) -> Scope:
+    updated = await service.update_profile(
+        profile_id, ProfileUpdate(scope=scope)
     )
+    if not updated:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Profile not found"
+        )
+    await service.recalculate_assignments(profile_id)
+    await revalidate(["profiles"])
+    return updated.scope
 
 
 @router.get("/{profile_id}/assignments", response_model=list[AssignmentResponse])

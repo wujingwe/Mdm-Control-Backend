@@ -1,13 +1,6 @@
 from enum import Enum
 
 
-class TargetType(str, Enum):
-    ALL_DEVICES = "ALL_DEVICES"
-    SMART_GROUP = "SMART_GROUP"
-    STATIC_GROUP = "STATIC_GROUP"
-    DEVICE = "DEVICE"
-
-
 class AssignmentSource(str, Enum):
     DIRECT = "DIRECT"
     SMART_GROUP = "SMART_GROUP"

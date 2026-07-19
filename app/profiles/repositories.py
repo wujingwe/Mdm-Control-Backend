@@ -4,13 +4,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.common.enums import AssignmentSource
 from app.core.exceptions import ConflictError
-from app.profiles.models import Profile
-from app.profiles.models import ProfileAssignment
-from app.profiles.models import ProfileScope
+from app.profiles.models import Profile, ProfileAssignment
 from app.profiles.schemas import (
     ProfileCreate,
     ProfileUpdate,
-    ScopeTarget,
     AssignmentUpsert,
 )
 
@@ -69,26 +66,6 @@ class ProfileRepository:
         result = await self.db.execute(stmt)
         return result.scalar_one()
 
-    async def get_scope(self, profile_id: int) -> list[ProfileScope]:
-        stmt = select(ProfileScope).where(ProfileScope.profile_id == profile_id)
-        result = await self.db.execute(stmt)
-        return list(result.scalars().all())
-
-    async def set_scope(self, profile_id: int, targets: list[ScopeTarget]) -> None:
-        stmt = select(ProfileScope).where(ProfileScope.profile_id == profile_id)
-        result = await self.db.execute(stmt)
-        for existing in result.scalars().all():
-            await self.db.delete(existing)
-        for t in targets:
-            self.db.add(
-                ProfileScope(
-                    profile_id=profile_id,
-                    target_type=t.target_type,
-                    target_id=t.target_id,
-                )
-            )
-        await self.db.commit()
-
     async def get_assignments(self, profile_id: int) -> list[ProfileAssignment]:
         stmt = (
             select(ProfileAssignment)
@@ -122,12 +99,25 @@ class ProfileRepository:
         await self.db.refresh(instance)
         return instance
 
+    async def bulk_upsert_assignments(
+        self, profile_id: int, assignments: list[AssignmentUpsert]
+    ) -> int:
+        count = 0
+        for data in assignments:
+            existing = await self.get_assignment(data.profile_id, data.device_id)
+            if existing:
+                for key, value in data.model_dump(exclude_unset=True).items():
+                    setattr(existing, key, value)
+            else:
+                self.db.add(ProfileAssignment(**data.model_dump()))
+            count += 1
+        await self.db.commit()
+        return count
+
     async def delete_non_direct_assignments(self, profile_id: int) -> None:
-        stmt = select(ProfileAssignment).where(
+        stmt = delete(ProfileAssignment).where(
             ProfileAssignment.profile_id == profile_id,
             ProfileAssignment.source != AssignmentSource.DIRECT,
         )
-        result = await self.db.execute(stmt)
-        for assignment in result.scalars().all():
-            await self.db.delete(assignment)
+        await self.db.execute(stmt)
         await self.db.commit()

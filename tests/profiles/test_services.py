@@ -14,12 +14,11 @@ class TestProfileService:
         m.update = AsyncMock()
         m.delete = AsyncMock()
         m.count = AsyncMock(return_value=0)
-        m.get_scope = AsyncMock(return_value=[])
-        m.set_scope = AsyncMock()
         m.get_assignments = AsyncMock(return_value=[])
         m.get_assignment = AsyncMock(return_value=None)
         m.upsert_assignment = AsyncMock()
         m.delete_non_direct_assignments = AsyncMock()
+        m.bulk_upsert_assignments = AsyncMock(return_value=0)
         return m
 
     async def test_list_profiles(self, repo: MagicMock) -> None:
@@ -68,19 +67,6 @@ class TestProfileService:
         repo.delete = AsyncMock(return_value=False)
         svc = ProfileService(repo)
         assert await svc.delete_profile(999) is False
-
-    async def test_get_scope(self, repo: MagicMock) -> None:
-        svc = ProfileService(repo)
-        result = await svc.get_scope(1)
-        assert result == []
-        repo.get_scope.assert_called_once_with(1)
-
-    async def test_set_scope(self, repo: MagicMock) -> None:
-        fake = MagicMock()
-        repo.get_by_id = AsyncMock(return_value=fake)
-        svc = ProfileService(repo)
-        await svc.set_scope(1, [])
-        repo.set_scope.assert_called_once_with(1, [])
 
     async def test_get_assignments(self, repo: MagicMock) -> None:
         svc = ProfileService(repo)

@@ -2,10 +2,9 @@ from app.profiles.repositories import ProfileRepository
 from app.profiles.schemas import (
     ProfileCreate,
     ProfileUpdate,
-    ScopeTarget,
     AssignmentUpsert,
 )
-from app.common.enums import TargetType, AssignmentSource, AssignmentStatus
+from app.common.enums import AssignmentSource, AssignmentStatus
 from sqlalchemy.ext.asyncio import AsyncSession
 
 
@@ -76,30 +75,6 @@ class TestProfileRepository:
         assert await repo.count() == 0
         await repo.create(ProfileCreate(name="P", created_by=1))
         assert await repo.count() == 1
-
-    async def test_set_scope(self, db_session: AsyncSession) -> None:
-        repo = ProfileRepository(db_session)
-        profile = await repo.create(ProfileCreate(name="P", created_by=1))
-        scopes = [ScopeTarget(target_type=TargetType.DEVICE, target_id=1)]
-        await repo.set_scope(profile.id, scopes)
-
-        found = await repo.get_scope(profile.id)
-        assert len(found) == 1
-        assert found[0].target_type == TargetType.DEVICE
-
-    async def test_set_scope_replaces(self, db_session: AsyncSession) -> None:
-        repo = ProfileRepository(db_session)
-        profile = await repo.create(ProfileCreate(name="P", created_by=1))
-        await repo.set_scope(
-            profile.id, [ScopeTarget(target_type=TargetType.DEVICE, target_id=1)]
-        )
-        await repo.set_scope(
-            profile.id, [ScopeTarget(target_type=TargetType.SMART_GROUP, target_id=2)]
-        )
-
-        found = await repo.get_scope(profile.id)
-        assert len(found) == 1
-        assert found[0].target_type == TargetType.SMART_GROUP
 
     async def test_upsert_assignment_create(self, db_session: AsyncSession) -> None:
         repo = ProfileRepository(db_session)

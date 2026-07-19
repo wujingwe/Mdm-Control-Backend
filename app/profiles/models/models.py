@@ -1,10 +1,33 @@
 from datetime import datetime
+from typing import Any
 
-from sqlalchemy import ForeignKey, Index, Integer, String, Text, DateTime, JSON
+from sqlalchemy import ForeignKey, Index, Integer, String, Text, DateTime, JSON, TypeDecorator, Dialect
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.base import Base, utcnow
+from app.common.schemas import Scope
 from app.users.models import User
+
+
+class ScopeColumnType(TypeDecorator[Scope]):
+    impl = JSON
+    cache_ok = True
+
+    def process_bind_param(
+        self, value: Scope | dict[str, Any] | None, dialect: Dialect
+    ) -> dict[str, Any] | None:
+        if value is None:
+            return None
+        if isinstance(value, dict):
+            return value
+        return value.model_dump()
+
+    def process_result_value(
+        self, value: dict[str, Any] | None, dialect: Dialect
+    ) -> Scope | None:
+        if value is None:
+            return None
+        return Scope.model_validate(value)
 
 
 class Profile(Base):
@@ -16,6 +39,7 @@ class Profile(Base):
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     version: Mapped[int] = mapped_column(Integer, default=1)
     settings: Mapped[dict] = mapped_column(JSON, default=dict)
+    scope: Mapped[Scope] = mapped_column(ScopeColumnType, default=Scope)
     created_by: Mapped[int | None] = mapped_column(
         Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True
     )

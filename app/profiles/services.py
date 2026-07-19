@@ -2,19 +2,14 @@ import logging
 
 from sqlalchemy import select
 
-from app.common.enums import AssignmentSource, AssignmentStatus, TargetType
+from app.common.enums import AssignmentSource, AssignmentStatus
+from app.common.schemas import Scope, ScopeType
 from app.criteria import build_device_query
 from app.devices.models import Device
-from app.profiles.models import Profile
-from app.profiles.models import ProfileAssignment
-from app.profiles.models import ProfileScope
+from app.profiles.calculator import AssignmentCalculator
+from app.profiles.models import Profile, ProfileAssignment
 from app.profiles.repositories import ProfileRepository
-from app.profiles.schemas import (
-    ProfileCreate,
-    ProfileUpdate,
-    ScopeTarget,
-    AssignmentUpsert,
-)
+from app.profiles.schemas import ProfileCreate, ProfileUpdate, AssignmentUpsert
 from app.static_groups.models import StaticGroupDevice
 
 logger = logging.getLogger(__name__)
@@ -45,13 +40,6 @@ class ProfileService:
     async def delete_profile(self, profile_id: int) -> bool:
         return await self.repo.delete(profile_id)
 
-    async def get_scope(self, profile_id: int) -> list[ProfileScope]:
-        return await self.repo.get_scope(profile_id)
-
-    async def set_scope(self, profile_id: int, targets: list[ScopeTarget]) -> None:
-        await self.repo.set_scope(profile_id, targets)
-        await self._recalculate_assignments(profile_id)
-
     async def get_assignments(self, profile_id: int) -> list[ProfileAssignment]:
         return await self.repo.get_assignments(profile_id)
 
@@ -78,35 +66,46 @@ class ProfileService:
             )
         )
 
-    async def _recalculate_assignments(self, profile_id: int) -> None:
-        db = self.repo.db
+    async def recalculate_assignments(self, profile_id: int) -> None:
         profile = await self.repo.get_by_id(profile_id)
         if not profile:
             return
 
-        scope = await self.repo.get_scope(profile_id)
-        if not scope:
+        if not profile.scope.targets:
             await self.repo.delete_non_direct_assignments(profile_id)
             return
 
-        device_ids_by_source: dict[str, dict[int, set[int]]] = {}
+        resolved = await self._resolve_scope(profile_id, profile.scope)
+        assignments = AssignmentCalculator.compute(
+            profile_id=profile_id,
+            profile_version=profile.version,
+            scope=profile.scope,
+            resolved_device_ids=resolved,
+        )
 
-        for entry in scope:
-            target_type = entry.target_type
-            target_id = entry.target_id
+        await self.repo.delete_non_direct_assignments(profile_id)
+        await self.repo.bulk_upsert_assignments(profile_id, assignments)
 
-            if target_type == TargetType.ALL_DEVICES:
+    async def _resolve_scope(
+        self, profile_id: int, scope: Scope
+    ) -> dict[tuple[str, int], set[int | str]]:
+        db = self.repo.db
+        result: dict[tuple[str, int], set[int | str]] = {}
+
+        for target in scope.targets:
+            if target.scope_type == ScopeType.ALL_DEVICES:
                 stmt = select(Device.id)
-                result = await db.execute(stmt)
-                ids = {row[0] for row in result.all()}
-                device_ids_by_source.setdefault(
-                    AssignmentSource.ALL_DEVICES, {}
-                ).setdefault(0, set()).update(ids)
+                rows = await db.execute(stmt)
+                result[(ScopeType.ALL_DEVICES.value, 0)] = {
+                    row[0] for row in rows.all()
+                }
 
-            elif target_type == TargetType.SMART_GROUP and target_id is not None:
+            elif target.scope_type == ScopeType.SMART_GROUP and target.target_id:
                 from app.smart_groups.models import SmartGroup
 
-                sg_stmt = select(SmartGroup).where(SmartGroup.id == target_id)
+                sg_stmt = select(SmartGroup).where(
+                    SmartGroup.id == target.target_id
+                )
                 sg_result = await db.execute(sg_stmt)
                 smart_group = sg_result.scalar_one_or_none()
                 if not smart_group or not smart_group.criteria:
@@ -117,43 +116,60 @@ class ProfileService:
                     else []
                 )
                 where, _ = build_device_query(criteria_list)
-                if where is not None:
-                    dev_stmt = select(Device.id).where(where)
-                else:
-                    dev_stmt = select(Device.id)
+                dev_stmt = (
+                    select(Device.id).where(where) if where else select(Device.id)
+                )
                 dev_result = await db.execute(dev_stmt)
-                ids = {row[0] for row in dev_result.all()}
-                device_ids_by_source.setdefault(
-                    AssignmentSource.SMART_GROUP, {}
-                ).setdefault(target_id, set()).update(ids)
+                result[(ScopeType.SMART_GROUP.value, target.target_id)] = {
+                    row[0] for row in dev_result.all()
+                }
 
-            elif target_type == TargetType.STATIC_GROUP and target_id is not None:
+            elif target.scope_type == ScopeType.STATIC_GROUP and target.target_id:
                 sg_dev_stmt = select(StaticGroupDevice.device_serial_number).where(
-                    StaticGroupDevice.static_group_id == target_id
+                    StaticGroupDevice.static_group_id == target.target_id
                 )
                 sg_dev_result = await db.execute(sg_dev_stmt)
-                dev_ids = {row[0] for row in sg_dev_result.all()}
-                device_ids_by_source.setdefault(
-                    AssignmentSource.STATIC_GROUP, {}
-                ).setdefault(target_id, set()).update(dev_ids)
+                result[(ScopeType.STATIC_GROUP.value, target.target_id)] = {
+                    row[0] for row in sg_dev_result.all()
+                }
 
-            elif target_type == TargetType.DEVICE and target_id is not None:
-                device_ids_by_source.setdefault(AssignmentSource.DIRECT, {}).setdefault(
-                    0, set()
-                ).add(target_id)
+            elif target.scope_type == ScopeType.DEVICE and target.target_id:
+                result[(ScopeType.DEVICE.value, target.target_id)] = {
+                    target.target_id
+                }
 
-        await self.repo.delete_non_direct_assignments(profile_id)
+        for exclusion in scope.exclusions:
+            if exclusion.scope_type == ScopeType.SMART_GROUP and exclusion.exclude_id:
+                from app.smart_groups.models import SmartGroup
 
-        for source, groups in device_ids_by_source.items():
-            for source_id, dev_ids in groups.items():
-                for dev_id in dev_ids:
-                    await self.repo.upsert_assignment(
-                        AssignmentUpsert(
-                            profile_id=profile_id,
-                            device_id=dev_id,
-                            source=AssignmentSource(source),
-                            source_id=source_id if source_id else None,
-                            status=AssignmentStatus.PENDING,
-                            profile_version=profile.version,
-                        )
-                    )
+                sg_stmt = select(SmartGroup).where(
+                    SmartGroup.id == exclusion.exclude_id
+                )
+                sg_result = await db.execute(sg_stmt)
+                smart_group = sg_result.scalar_one_or_none()
+                if not smart_group or not smart_group.criteria:
+                    continue
+                criteria_list = (
+                    smart_group.criteria
+                    if isinstance(smart_group.criteria, list)
+                    else []
+                )
+                where, _ = build_device_query(criteria_list)
+                dev_stmt = (
+                    select(Device.id).where(where) if where else select(Device.id)
+                )
+                dev_result = await db.execute(dev_stmt)
+                result[(ScopeType.SMART_GROUP.value, exclusion.exclude_id)] = {
+                    row[0] for row in dev_result.all()
+                }
+
+            elif exclusion.scope_type == ScopeType.STATIC_GROUP and exclusion.exclude_id:
+                sg_dev_stmt = select(StaticGroupDevice.device_serial_number).where(
+                    StaticGroupDevice.static_group_id == exclusion.exclude_id
+                )
+                sg_dev_result = await db.execute(sg_dev_stmt)
+                result[(ScopeType.STATIC_GROUP.value, exclusion.exclude_id)] = {
+                    row[0] for row in sg_dev_result.all()
+                }
+
+        return result

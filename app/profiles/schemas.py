@@ -2,12 +2,8 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict
 
-from app.common.enums import AssignmentSource, AssignmentStatus, TargetType
-
-
-class ScopeTarget(BaseModel):
-    target_type: TargetType
-    target_id: int = 0
+from app.common.enums import AssignmentSource, AssignmentStatus
+from app.common.schemas import Scope
 
 
 class ProfileSettings(BaseModel):
@@ -18,6 +14,7 @@ class ProfileCreate(BaseModel):
     name: str
     description: str | None = None
     settings: ProfileSettings = ProfileSettings()
+    scope: Scope = Scope()
     created_by: int = 1
 
 
@@ -25,6 +22,7 @@ class ProfileUpdate(BaseModel):
     name: str | None = None
     description: str | None = None
     settings: ProfileSettings | None = None
+    scope: Scope | None = None
 
 
 class ProfileResponse(BaseModel):
@@ -33,16 +31,12 @@ class ProfileResponse(BaseModel):
     description: str | None = None
     version: int = 1
     settings: ProfileSettings = ProfileSettings()
+    scope: Scope = Scope()
     created_at: datetime
     created_by: int | None = None
     updated_at: datetime | None = None
 
     model_config = ConfigDict(from_attributes=True)
-
-
-class ProfileScopeResponse(BaseModel):
-    profile_id: int
-    scope: list[ScopeTarget]
 
 
 class AssignmentResponse(BaseModel):

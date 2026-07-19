@@ -41,12 +41,29 @@ class TestProfilesAPI:
         pid = create.json()["id"]
         resp = await client.put(
             f"{self.BASE}/{pid}/scope",
-            json=[
-                {"target_type": "ALL_DEVICES", "target_id": 0},
-            ],
+            json={
+                "targets": [{"scope_type": "ALL_DEVICES"}],
+                "exclusions": [],
+            },
         )
         assert resp.status_code == 200
-        assert len(resp.json()["scope"]) == 1
+        assert len(resp.json()["targets"]) == 1
+
+    async def test_get_scope(self, client: AsyncClient) -> None:
+        create = await client.post(
+            self.BASE,
+            json={
+                "name": "P2",
+                "scope": {
+                    "targets": [{"scope_type": "SMART_GROUP", "target_id": 1}],
+                    "exclusions": [],
+                },
+            },
+        )
+        pid = create.json()["id"]
+        resp = await client.get(f"{self.BASE}/{pid}/scope")
+        assert resp.status_code == 200
+        assert len(resp.json()["targets"]) == 1
 
     async def test_get_assignments_empty(self, client: AsyncClient) -> None:
         create = await client.post(self.BASE, json={"name": "P"})

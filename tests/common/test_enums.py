@@ -1,12 +1,4 @@
 class TestEnums:
-    def test_target_type_values(self) -> None:
-        from app.common.enums import TargetType
-
-        assert TargetType.ALL_DEVICES == "ALL_DEVICES"
-        assert TargetType.DEVICE == "DEVICE"
-        assert TargetType.STATIC_GROUP == "STATIC_GROUP"
-        assert TargetType.SMART_GROUP == "SMART_GROUP"
-
     def test_extension_data_type_values(self) -> None:
         from app.common.enums import ExtensionDataType
 

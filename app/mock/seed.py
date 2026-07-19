@@ -11,7 +11,6 @@ from app.devices.schemas import Network, Wifi
 from app.extension_attributes.models import ExtensionAttribute
 from app.inventory_search.models import InventorySearch
 from app.profiles.models import Profile
-from app.profiles.models import ProfileScope
 from app.smart_groups.models import SmartGroup
 from app.static_groups.models import StaticGroup
 from app.static_groups.models import StaticGroupDevice
@@ -459,17 +458,21 @@ async def seed_database() -> None:
         await session.flush()
         profile_ids = [p.id for p in PROFILES]
 
-        if profile_ids and smart_group_ids:
-            session.add(
-                ProfileScope(profile_id=profile_ids[0], target_type="ALL_DEVICES")
+        if profile_ids:
+            from app.common.schemas import Scope, Target, ScopeType
+            from sqlalchemy import update as sa_update
+            from app.profiles.models import Profile
+            scope0 = Scope(targets=[Target(scope_type=ScopeType.ALL_DEVICES)])
+            scope1 = Scope(
+                targets=[Target(scope_type=ScopeType.SMART_GROUP, target_id=smart_group_ids[0] if smart_group_ids else None)]
+            ) if smart_group_ids else Scope()
+            await session.execute(
+                sa_update(Profile).where(Profile.id == profile_ids[0]).values(scope=scope0.model_dump())
             )
-            session.add(
-                ProfileScope(
-                    profile_id=profile_ids[1],
-                    target_type="SMART_GROUP",
-                    target_id=smart_group_ids[0],
+            if len(profile_ids) > 1:
+                await session.execute(
+                    sa_update(Profile).where(Profile.id == profile_ids[1]).values(scope=scope1.model_dump())
                 )
-            )
 
         await session.commit()
 
