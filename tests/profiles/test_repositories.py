@@ -4,7 +4,8 @@ from app.profiles.schemas import (
     ProfileUpdate,
     AssignmentUpsert,
 )
-from app.common.enums import AssignmentSource, AssignmentStatus
+from app.common.enums import AssignmentStatus
+from app.common.schemas import ScopeType
 from sqlalchemy.ext.asyncio import AsyncSession
 
 
@@ -82,7 +83,7 @@ class TestProfileRepository:
         data = AssignmentUpsert(
             profile_id=profile.id,
             device_id=100,
-            source=AssignmentSource.DIRECT,
+            source=ScopeType.DEVICE,
             status=AssignmentStatus.PENDING,
             profile_version=1,
         )
@@ -95,7 +96,7 @@ class TestProfileRepository:
         data = AssignmentUpsert(
             profile_id=profile.id,
             device_id=100,
-            source=AssignmentSource.DIRECT,
+            source=ScopeType.DEVICE,
             status=AssignmentStatus.PENDING,
             profile_version=1,
         )
@@ -104,7 +105,7 @@ class TestProfileRepository:
         data2 = AssignmentUpsert(
             profile_id=profile.id,
             device_id=100,
-            source=AssignmentSource.DIRECT,
+            source=ScopeType.DEVICE,
             status=AssignmentStatus.APPLIED,
             profile_version=1,
         )
@@ -118,7 +119,7 @@ class TestProfileRepository:
             AssignmentUpsert(
                 profile_id=profile.id,
                 device_id=100,
-                source=AssignmentSource.DIRECT,
+                source=ScopeType.DEVICE,
                 status=AssignmentStatus.PENDING,
                 profile_version=1,
             )

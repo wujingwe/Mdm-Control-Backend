@@ -1,13 +1,6 @@
-from app.common.enums import AssignmentSource, AssignmentStatus
+from app.common.enums import AssignmentStatus
 from app.common.schemas import Scope, ScopeType
 from app.profiles.schemas import AssignmentUpsert
-
-SCOPE_TO_SOURCE: dict[ScopeType, AssignmentSource] = {
-    ScopeType.ALL_DEVICES: AssignmentSource.ALL_DEVICES,
-    ScopeType.SMART_GROUP: AssignmentSource.SMART_GROUP,
-    ScopeType.STATIC_GROUP: AssignmentSource.STATIC_GROUP,
-    ScopeType.DEVICE: AssignmentSource.DIRECT,
-}
 
 
 class AssignmentCalculator:
@@ -30,8 +23,6 @@ class AssignmentCalculator:
         seen: set[int | str] = set()
 
         for (source_type, source_id), device_ids in wanted.items():
-            scope_type = ScopeType(source_type)
-            source = SCOPE_TO_SOURCE[scope_type]
             for device_id in device_ids:
                 if device_id in seen:
                     continue
@@ -40,7 +31,7 @@ class AssignmentCalculator:
                     AssignmentUpsert(
                         profile_id=profile_id,
                         device_id=int(device_id) if isinstance(device_id, int) else 0,
-                        source=source,
+                        source=ScopeType(source_type),
                         source_id=source_id if source_id else None,
                         status=AssignmentStatus.PENDING,
                         profile_version=profile_version,

@@ -33,12 +33,11 @@ class TestEnums:
         assert CommandStatus.FAILED == "FAILED"
         assert CommandStatus.CANCELLED == "CANCELLED"
 
-    def test_assignment_source_values(self) -> None:
-        from app.common.enums import AssignmentSource
+    def test_assignment_status_values(self) -> None:
+        from app.common.enums import AssignmentStatus
 
-        assert AssignmentSource.DIRECT == "DIRECT"
-        assert AssignmentSource.SMART_GROUP == "SMART_GROUP"
-        assert AssignmentSource.STATIC_GROUP == "STATIC_GROUP"
+        assert AssignmentStatus.PENDING == "PENDING"
+        assert AssignmentStatus.APPLIED == "APPLIED"
 
     def test_connection_status_values(self) -> None:
         from app.common.enums import ConnectionStatus

@@ -47,7 +47,7 @@ class TestAssignmentCalculator:
         )
         assert len(result) == 1
         assert result[0].device_id == 42
-        assert result[0].source.value == "DIRECT"
+        assert result[0].source.value == "DEVICE"
         assert result[0].source_id == 42
 
     def test_multiple_targets(self) -> None:

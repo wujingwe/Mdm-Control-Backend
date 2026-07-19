@@ -2232,7 +2232,7 @@
             "title": "Device Id"
           },
           "source": {
-            "$ref": "#/components/schemas/AssignmentSource"
+            "$ref": "#/components/schemas/ScopeType"
           },
           "source_id": {
             "anyOf": [
@@ -2293,16 +2293,6 @@
           "assigned_at"
         ],
         "title": "AssignmentResponse"
-      },
-      "AssignmentSource": {
-        "type": "string",
-        "enum": [
-          "DIRECT",
-          "SMART_GROUP",
-          "STATIC_GROUP",
-          "ALL_DEVICES"
-        ],
-        "title": "AssignmentSource"
       },
       "AssignmentStatus": {
         "type": "string",

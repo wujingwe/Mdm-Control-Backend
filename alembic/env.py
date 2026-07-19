@@ -7,15 +7,6 @@ from sqlalchemy.ext.asyncio import create_async_engine
 
 from app.config.settings import settings
 from app.base import Base
-from app.devices.models import Device  # noqa: F401
-from app.extension_attributes.models import ExtensionAttribute  # noqa: F401
-from app.inventory_search.models import InventorySearch  # noqa: F401
-from app.profiles.models import Profile  # noqa: F401
-from app.profiles.models import ProfileAssignment  # noqa: F401
-from app.smart_groups.models import SmartGroup  # noqa: F401
-from app.static_groups.models import StaticGroup  # noqa: F401
-from app.static_groups.models import StaticGroupDevice  # noqa: F401
-from app.users.models import User  # noqa: F401
 
 config = context.config
 

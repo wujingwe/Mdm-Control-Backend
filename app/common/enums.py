@@ -1,13 +1,6 @@
 from enum import Enum
 
 
-class AssignmentSource(str, Enum):
-    DIRECT = "DIRECT"
-    SMART_GROUP = "SMART_GROUP"
-    STATIC_GROUP = "STATIC_GROUP"
-    ALL_DEVICES = "ALL_DEVICES"
-
-
 class AssignmentStatus(str, Enum):
     PENDING = "PENDING"
     APPLIED = "APPLIED"

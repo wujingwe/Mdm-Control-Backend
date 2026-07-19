@@ -1,11 +1,13 @@
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import ForeignKey, Index, Integer, String, Text, DateTime, JSON, TypeDecorator, Dialect
+from sqlalchemy import ForeignKey, Index, Integer, String, Text, DateTime, JSON, TypeDecorator, Dialect, \
+    UniqueConstraint, Enum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.base import Base, utcnow
-from app.common.schemas import Scope
+from app.common.enums import AssignmentStatus
+from app.common.schemas import Scope, ScopeType
 from app.users.models import User
 
 
@@ -49,3 +51,32 @@ class Profile(Base):
     )
 
     creator: Mapped[User | None] = relationship(User, foreign_keys=[created_by])
+
+
+class ProfileAssignment(Base):
+    __tablename__ = "profile_assignments"
+    __table_args__ = (
+        UniqueConstraint("profile_id", "device_id"),
+        Index("ix_profile_assignments_profile_id", "profile_id"),
+        Index("ix_profile_assignments_device_id", "device_id"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    profile_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("profiles.id", ondelete="CASCADE")
+    )
+    device_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("devices.id", ondelete="CASCADE")
+    )
+    source: Mapped[str] = mapped_column(
+        Enum(ScopeType, native_enum=False, length=20)
+    )
+    source_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    status: Mapped[str] = mapped_column(
+        Enum(AssignmentStatus, native_enum=False, length=20),
+        default=AssignmentStatus.PENDING,
+    )
+    profile_version: Mapped[int] = mapped_column(Integer, default=1)
+    assigned_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+    applied_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)

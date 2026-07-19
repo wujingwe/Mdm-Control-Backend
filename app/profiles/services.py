@@ -2,7 +2,7 @@ import logging
 
 from sqlalchemy import select
 
-from app.common.enums import AssignmentSource, AssignmentStatus
+from app.common.enums import AssignmentStatus
 from app.common.schemas import Scope, ScopeType
 from app.criteria import build_device_query
 from app.devices.models import Device
@@ -57,7 +57,7 @@ class ProfileService:
             AssignmentUpsert(
                 profile_id=assignment.profile_id,
                 device_id=assignment.device_id,
-                source=AssignmentSource(assignment.source),
+                source=ScopeType(assignment.source),
                 source_id=assignment.source_id,
                 profile_version=assignment.profile_version,
                 status=status_enum,

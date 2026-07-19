@@ -2,7 +2,7 @@ from sqlalchemy import select, func, update, delete
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.common.enums import AssignmentSource
+from app.common.schemas import ScopeType
 from app.core.exceptions import ConflictError
 from app.profiles.models import Profile, ProfileAssignment
 from app.profiles.schemas import (
@@ -117,7 +117,7 @@ class ProfileRepository:
     async def delete_non_direct_assignments(self, profile_id: int) -> None:
         stmt = delete(ProfileAssignment).where(
             ProfileAssignment.profile_id == profile_id,
-            ProfileAssignment.source != AssignmentSource.DIRECT,
+            ProfileAssignment.source != ScopeType.DEVICE,
         )
         await self.db.execute(stmt)
         await self.db.commit()

@@ -5,7 +5,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from app.base import Base, utcnow
 from app.common.schemas import Scope
-from app.profiles.models.models import ScopeColumnType
+from app.profiles.models import ScopeColumnType
 
 
 class MobileApp(Base):

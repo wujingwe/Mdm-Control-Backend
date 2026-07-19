@@ -15,7 +15,6 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.base import Base, utcnow
 from app.common.enums import ConnectionStatus, EnrollmentStatus
 from app.profiles.models import Profile
-from app.profiles.models import ProfileAssignment  # noqa: F401 — used in relationship string
 from app.types import CertificateListType, NetworkInfoType
 from app.devices.schemas import Certificate, Network
 
