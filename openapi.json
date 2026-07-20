@@ -2602,9 +2602,9 @@
       "ConnectionStatus": {
         "type": "string",
         "enum": [
-          "Online",
-          "Offline",
-          "Pending"
+          "Connected",
+          "Disconnected",
+          "Unknown"
         ],
         "title": "ConnectionStatus"
       },
@@ -2865,10 +2865,8 @@
       "DeviceStatus": {
         "type": "string",
         "enum": [
-          "Compliant",
-          "Non-compliant",
-          "Needs attention",
           "Enrolled",
+          "Unenrolled",
           "Pending",
           "Unknown"
         ],

@@ -147,6 +147,11 @@ class ProfileRepository:
         await self.db.commit()
         return count
 
+    async def list_all_profiles(self) -> list[Profile]:
+        stmt = select(Profile).order_by(Profile.id)
+        result = await self.db.execute(stmt)
+        return list(result.scalars().all())
+
     async def delete_old_version_assignments(
         self, profile_id: int, current_version: int
     ) -> None:
@@ -156,3 +161,41 @@ class ProfileRepository:
         )
         await self.db.execute(stmt)
         await self.db.commit()
+
+    async def get_max_assignment_version(self, profile_id: int) -> int:
+        stmt = select(func.coalesce(func.max(ProfileAssignment.profile_version), 0)).where(
+            ProfileAssignment.profile_id == profile_id
+        )
+        result = await self.db.execute(stmt)
+        return result.scalar_one()
+
+    async def get_assignment_device_ids_at_version(
+        self, profile_id: int, version: int
+    ) -> set[int]:
+        stmt = select(ProfileAssignment.device_id).where(
+            ProfileAssignment.profile_id == profile_id,
+            ProfileAssignment.profile_version == version,
+        )
+        result = await self.db.execute(stmt)
+        return {row[0] for row in result.all()}
+
+    async def delete_assignments_at_version(
+        self, profile_id: int, version: int
+    ) -> None:
+        stmt = delete(ProfileAssignment).where(
+            ProfileAssignment.profile_id == profile_id,
+            ProfileAssignment.profile_version == version,
+        )
+        await self.db.execute(stmt)
+
+    async def bulk_create_assignments(
+        self, profile_id: int, version: int, device_ids: set[int]
+    ) -> None:
+        for device_id in device_ids:
+            self.db.add(
+                ProfileAssignment(
+                    profile_id=profile_id,
+                    device_id=device_id,
+                    profile_version=version,
+                )
+            )

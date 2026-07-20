@@ -15,6 +15,7 @@ from app.inventory_search.services import InventorySearchService
 from app.mobile_apps.repositories import MobileAppRepository
 from app.mobile_apps.services import MobileAppService
 from app.profiles.repositories import ProfileRepository
+from app.profiles.recalculator import Recalculator
 from app.profiles.services import ProfileService
 from app.smart_groups.repositories import SmartGroupRepository
 from app.smart_groups.services import SmartGroupService
@@ -59,6 +60,12 @@ def get_extension_attribute_service(
 
 def get_profile_service(db: AsyncSession = Depends(get_db)) -> ProfileService:
     return ProfileService(ProfileRepository(db))
+
+
+def get_recalculator(db: AsyncSession = Depends(get_db)) -> Recalculator:
+    from app.messaging.producer import rabbitmq_producer
+
+    return Recalculator(ProfileRepository(db), rabbitmq_producer)
 
 
 def get_user_service(db: AsyncSession = Depends(get_db)) -> UserService:

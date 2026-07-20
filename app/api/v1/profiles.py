@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app.common.schemas import PaginatedResponse, Scope
-from app.dependencies import get_profile_service
+from app.dependencies import get_profile_service, get_recalculator
+from app.profiles.recalculator import Recalculator
 from app.profiles.schemas import (
     AssignmentResponse,
     ProfileCreate,
@@ -47,8 +48,11 @@ async def get_profile(
 async def create_profile(
     data: ProfileCreate,
     service: ProfileService = Depends(get_profile_service),
+    recalculator: Recalculator = Depends(get_recalculator),
 ) -> ProfileResponse:
     profile = await service.create_profile(data)
+    if data.scope.targets:
+        await recalculator.recalculate_profile(profile.id)
     await revalidate(["profiles"])
     return ProfileResponse.model_validate(profile)
 
@@ -58,12 +62,15 @@ async def update_profile(
     profile_id: int,
     data: ProfileUpdate,
     service: ProfileService = Depends(get_profile_service),
+    recalculator: Recalculator = Depends(get_recalculator),
 ) -> ProfileResponse:
     updated = await service.update_profile(profile_id, data)
     if not updated:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Profile not found"
         )
+    if data.scope is not None:
+        await recalculator.recalculate_profile(profile_id)
     await revalidate(["profiles"])
     return ProfileResponse.model_validate(updated)
 
@@ -99,6 +106,7 @@ async def set_profile_scope(
     profile_id: int,
     scope: Scope,
     service: ProfileService = Depends(get_profile_service),
+    recalculator: Recalculator = Depends(get_recalculator),
 ) -> Scope:
     updated = await service.update_profile(
         profile_id, ProfileUpdate(scope=scope)
@@ -107,7 +115,7 @@ async def set_profile_scope(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Profile not found"
         )
-    await service.recalculate_assignments(profile_id)
+    await recalculator.recalculate_profile(profile_id)
     await revalidate(["profiles"])
     return updated.scope
 
