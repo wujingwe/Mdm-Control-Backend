@@ -157,3 +157,32 @@ class TestProfileRepository:
         )
         assignments = await repo.get_assignments(profile.id)
         assert len(assignments) == 2
+
+    async def test_list_affected_profiles_for_device(
+        self, db_session: AsyncSession
+    ) -> None:
+        from app.common.schemas import Scope, ScopeType, Target
+        from app.devices.models import Device
+
+        repo = ProfileRepository(db_session)
+        device = Device(
+            name="Mac",
+            serial_number="SN-1",
+            os_version="macOS 15",
+            connection_status="CONNECTED",
+            status="ENROLLED",
+        )
+        db_session.add(device)
+        await db_session.commit()
+        await db_session.refresh(device)
+
+        p_all = await repo.create(
+            ProfileCreate(
+                name="All",
+                scope=Scope(targets=[Target(scope_type=ScopeType.ALL_DEVICES)]),
+            )
+        )
+        await repo.create(ProfileCreate(name="Unrelated"))
+
+        affected = await repo.list_affected_profiles_for_device(device.id)
+        assert [profile.id for profile in affected] == [p_all.id]

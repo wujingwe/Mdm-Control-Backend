@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app.common.schemas import PaginatedResponse
-from app.dependencies import get_static_group_service
+from app.dependencies import get_reconciler, get_static_group_service
+from app.profiles.reconciler import ProfileAssignmentReconciler
 from app.static_groups.schemas import (
     StaticGroupCreate,
     StaticGroupResponse,
@@ -48,8 +49,11 @@ async def get_static_group(
 async def create_static_group(
     data: StaticGroupCreate,
     service: StaticGroupService = Depends(get_static_group_service),
+    reconciler: ProfileAssignmentReconciler = Depends(get_reconciler),
 ) -> StaticGroupResponse:
     group = await service.create_group(data)
+    if group:
+        await reconciler.recalculate_for_static_group(group.id)
     await revalidate(["static-groups"])
     return StaticGroupResponse.model_validate(group)
 
@@ -59,12 +63,14 @@ async def update_static_group(
     group_id: int,
     data: StaticGroupUpdate,
     service: StaticGroupService = Depends(get_static_group_service),
+    reconciler: ProfileAssignmentReconciler = Depends(get_reconciler),
 ) -> StaticGroupResponse:
     updated = await service.update_group(group_id, data)
     if not updated:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Static group not found"
         )
+    await reconciler.recalculate_for_static_group(group_id)
     await revalidate(["static-groups"])
     return StaticGroupResponse.model_validate(updated)
 
@@ -73,10 +79,12 @@ async def update_static_group(
 async def delete_static_group(
     group_id: int,
     service: StaticGroupService = Depends(get_static_group_service),
+    reconciler: ProfileAssignmentReconciler = Depends(get_reconciler),
 ) -> None:
     deleted = await service.delete_group(group_id)
     if not deleted:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Static group not found"
         )
+    await reconciler.recalculate_for_static_group(group_id)
     await revalidate(["static-groups"])

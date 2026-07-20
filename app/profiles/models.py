@@ -6,7 +6,7 @@ from sqlalchemy import ForeignKey, Index, Integer, String, Text, DateTime, JSON,
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.base import Base, utcnow
-from app.common.enums import AssignmentStatus
+from app.common.enums import AssignmentDesiredState, AssignmentStatus
 from app.common.schemas import Scope
 from app.users.models import User
 
@@ -68,11 +68,22 @@ class ProfileAssignment(Base):
     device_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("devices.id", ondelete="CASCADE")
     )
-    status: Mapped[str] = mapped_column(
+    status: Mapped[AssignmentStatus] = mapped_column(
         Enum(AssignmentStatus, native_enum=False, length=20),
         default=AssignmentStatus.PENDING,
+    )
+    desired_state: Mapped[AssignmentDesiredState] = mapped_column(
+        Enum(AssignmentDesiredState, native_enum=False, length=10),
+        default=AssignmentDesiredState.PRESENT,
     )
     profile_version: Mapped[int] = mapped_column(Integer, default=1)
     assigned_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
     applied_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     revoked_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    attempt_count: Mapped[int] = mapped_column(Integer, default=0)
+    last_attempt_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    last_error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    message_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, default=utcnow, onupdate=utcnow
+    )

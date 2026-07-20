@@ -131,6 +131,8 @@ class RabbitMQProducer:
         device_id: int | str,
         profile_id: int,
         profile_config: dict[str, Any],
+        profile_version: int | None = None,
+        assignment_id: int | None = None,
     ) -> str:
         payload: dict[str, Any] = {
             "event_type": "profile.push.requested",
@@ -138,6 +140,10 @@ class RabbitMQProducer:
             "profile_id": profile_id,
             "profile_config": profile_config,
         }
+        if profile_version is not None:
+            payload["profile_version"] = profile_version
+        if assignment_id is not None:
+            payload["assignment_id"] = assignment_id
 
         return await self.publish_json(
             payload,
@@ -150,12 +156,18 @@ class RabbitMQProducer:
         *,
         device_id: int | str,
         profile_id: int,
+        profile_version: int | None = None,
+        assignment_id: int | None = None,
     ) -> str:
         payload: dict[str, Any] = {
             "event_type": "profile.revoke.requested",
             "device_id": device_id,
             "profile_id": profile_id,
         }
+        if profile_version is not None:
+            payload["profile_version"] = profile_version
+        if assignment_id is not None:
+            payload["assignment_id"] = assignment_id
 
         return await self.publish_json(
             payload,

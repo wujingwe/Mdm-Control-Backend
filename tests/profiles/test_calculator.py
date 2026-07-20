@@ -31,7 +31,7 @@ class TestAssignmentCalculator:
 
     def test_static_group_target(self) -> None:
         scope = Scope(targets=[Target(scope_type=ScopeType.STATIC_GROUP, target_id=3)])
-        resolved = {(ScopeType.STATIC_GROUP.value, 3): {"SN001", "SN002"}}
+        resolved = {(ScopeType.STATIC_GROUP.value, 3): {101, 102}}
         result = AssignmentCalculator.compute(
             profile_id=1, profile_version=1, scope=scope, resolved_device_ids=resolved
         )

@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app.common.schemas import PaginatedResponse
-from app.dependencies import get_smart_group_service
+from app.dependencies import get_reconciler, get_smart_group_service
+from app.profiles.reconciler import ProfileAssignmentReconciler
 from app.smart_groups.schemas import (
     SmartGroupCreate,
     SmartGroupResponse,
@@ -45,8 +46,10 @@ async def get_smart_group(
 async def create_smart_group(
     data: SmartGroupCreate,
     service: SmartGroupService = Depends(get_smart_group_service),
+    reconciler: ProfileAssignmentReconciler = Depends(get_reconciler),
 ) -> SmartGroupResponse:
     group = await service.create_group(data)
+    await reconciler.recalculate_for_smart_group(group.id)
     await revalidate(["smart-groups"])
     return SmartGroupResponse.model_validate(group)
 
@@ -56,12 +59,14 @@ async def update_smart_group(
     group_id: int,
     data: SmartGroupUpdate,
     service: SmartGroupService = Depends(get_smart_group_service),
+    reconciler: ProfileAssignmentReconciler = Depends(get_reconciler),
 ) -> SmartGroupResponse:
     updated = await service.update_group(group_id, data)
     if not updated:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Smart group not found"
         )
+    await reconciler.recalculate_for_smart_group(group_id)
     await revalidate(["smart-groups"])
     return SmartGroupResponse.model_validate(updated)
 
@@ -70,10 +75,12 @@ async def update_smart_group(
 async def delete_smart_group(
     group_id: int,
     service: SmartGroupService = Depends(get_smart_group_service),
+    reconciler: ProfileAssignmentReconciler = Depends(get_reconciler),
 ) -> None:
     deleted = await service.delete_group(group_id)
     if not deleted:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Smart group not found"
         )
+    await reconciler.recalculate_for_smart_group(group_id)
     await revalidate(["smart-groups"])

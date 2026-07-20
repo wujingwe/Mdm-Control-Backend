@@ -167,26 +167,41 @@ async def process_profile_status_message(data: dict[str, Any]) -> None:
 
         if status not in (
             AssignmentStatus.PENDING,
+            AssignmentStatus.SENT,
             AssignmentStatus.APPLIED,
             AssignmentStatus.FAILED,
+            AssignmentStatus.REVOKED,
         ):
             logger.warning("Invalid status '%s' in profile status message", status)
             return
 
         async with async_session() as db:
-            from sqlalchemy import desc
+            assignment_id = data.get("assignment_id")
+            if assignment_id:
+                assignment = await db.get(ProfileAssignment, int(assignment_id))
+            else:
+                from sqlalchemy import desc
 
-            stmt = (
-                select(ProfileAssignment)
-                .where(
-                    ProfileAssignment.profile_id == int(profile_id),
-                    ProfileAssignment.device_id == int(device_id),
+                stmt = (
+                    select(ProfileAssignment)
+                    .where(
+                        ProfileAssignment.profile_id == int(profile_id),
+                        ProfileAssignment.device_id == int(device_id),
+                    )
+                    .order_by(desc(ProfileAssignment.profile_version))
+                    .limit(1)
                 )
-                .order_by(desc(ProfileAssignment.profile_version))
-                .limit(1)
-            )
-            result = await db.execute(stmt)
-            assignment = result.scalar_one_or_none()
+                result = await db.execute(stmt)
+                assignment = result.scalar_one_or_none()
+
+            reported_version = data.get("profile_version")
+            if assignment and reported_version is not None and assignment.profile_version != int(reported_version):
+                logger.info(
+                    "Ignoring stale profile status for profile %s/device %s",
+                    profile_id,
+                    device_id,
+                )
+                return
 
             if assignment:
                 assignment.status = status
@@ -194,6 +209,10 @@ async def process_profile_status_message(data: dict[str, Any]) -> None:
                     from datetime import datetime, timezone
 
                     assignment.applied_at = datetime.now(timezone.utc)
+                elif status == AssignmentStatus.REVOKED:
+                    from datetime import datetime, timezone
+
+                    assignment.revoked_at = datetime.now(timezone.utc)
                 await db.commit()
                 logger.info(
                     "Profile %s assignment for device %s updated to %s",

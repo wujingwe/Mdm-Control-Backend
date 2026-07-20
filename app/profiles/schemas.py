@@ -2,7 +2,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict
 
-from app.common.enums import AssignmentStatus
+from app.common.enums import AssignmentDesiredState, AssignmentStatus
 from app.common.schemas import Scope
 
 
@@ -44,10 +44,16 @@ class AssignmentResponse(BaseModel):
     profile_id: int
     device_id: int
     status: AssignmentStatus
+    desired_state: AssignmentDesiredState
     profile_version: int
     assigned_at: datetime
     applied_at: datetime | None = None
     revoked_at: datetime | None = None
+    attempt_count: int = 0
+    last_attempt_at: datetime | None = None
+    last_error: str | None = None
+    message_id: str | None = None
+    updated_at: datetime | None = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -60,6 +66,7 @@ class AssignmentUpsert(BaseModel):
     profile_id: int
     device_id: int
     status: AssignmentStatus
+    desired_state: AssignmentDesiredState = AssignmentDesiredState.PRESENT
     profile_version: int
     applied_at: datetime | None = None
     revoked_at: datetime | None = None

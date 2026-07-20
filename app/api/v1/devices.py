@@ -3,10 +3,10 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from app.commands.schemas import CommandCreate, CommandResponse
 from app.commands.services import CommandService
 from app.common.schemas import PaginatedResponse
-from app.dependencies import get_command_service, get_device_service, get_recalculator
+from app.dependencies import get_command_service, get_device_service, get_reconciler
 from app.devices.schemas import DeviceResponse, DeviceUpdate
 from app.devices.services import DeviceService
-from app.profiles.recalculator import Recalculator
+from app.profiles.reconciler import ProfileAssignmentReconciler
 
 router = APIRouter(prefix="/devices", tags=["Devices"])
 
@@ -44,15 +44,32 @@ async def update_device(
     device_id: int,
     data: DeviceUpdate,
     service: DeviceService = Depends(get_device_service),
-    recalculator: Recalculator = Depends(get_recalculator),
+    reconciler: ProfileAssignmentReconciler = Depends(get_reconciler),
 ) -> DeviceResponse:
     device = await service.update_device(device_id, data)
     if not device:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Device not found"
         )
-    await recalculator.recalculate_for_device(device_id)
+    await reconciler.recalculate_for_device(device_id)
     return DeviceResponse.model_validate(device)
+
+
+@router.post("/{device_id}/check-in")
+async def device_check_in(
+    device_id: int,
+    service: DeviceService = Depends(get_device_service),
+    reconciler: ProfileAssignmentReconciler = Depends(get_reconciler),
+) -> dict[str, str]:
+    device = await service.get_device(device_id)
+    if not device:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Device not found"
+        )
+    # Recalculate desired state first, then send one consolidated latest revision.
+    await reconciler.recalculate_for_device(device_id, publish=False)
+    await reconciler.reconcile_device(device_id)
+    return {"status": "ok"}
 
 
 @router.get("/{device_id}/commands", response_model=PaginatedResponse[CommandResponse])

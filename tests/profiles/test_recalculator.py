@@ -6,7 +6,7 @@ from app.common.schemas import Exclusion, Scope, ScopeType, Target
 from app.devices.models import Device
 from app.messaging.producer import RabbitMQProducer
 from app.profiles.models import Profile, ProfileAssignment
-from app.profiles.recalculator import Recalculator
+from app.profiles.reconciler import ProfileAssignmentReconciler
 from app.profiles.repositories import ProfileRepository
 from app.smart_groups.models import SmartGroup
 from app.static_groups.models import StaticGroup, StaticGroupDevice
@@ -67,7 +67,7 @@ class TestRecalculateProfile:
     async def test_new_assignments(self, db_session: AsyncSession) -> None:
         producer = _make_producer()
         repo = ProfileRepository(db_session)
-        recalculator = Recalculator(repo, producer)
+        reconciler = ProfileAssignmentReconciler(repo, producer)
 
         device = await _create_device(db_session, "Mac", "SN-1")
         profile = await _create_profile(
@@ -76,7 +76,7 @@ class TestRecalculateProfile:
             Scope(targets=[Target(scope_type=ScopeType.ALL_DEVICES)]),
         )
 
-        await recalculator.recalculate_profile(profile.id)
+        await reconciler.recalculate_profile(profile.id)
 
         assignments = await repo.get_assignments(profile.id)
         assert len(assignments) == 1
@@ -87,7 +87,7 @@ class TestRecalculateProfile:
     async def test_no_changes(self, db_session: AsyncSession) -> None:
         producer = _make_producer()
         repo = ProfileRepository(db_session)
-        recalculator = Recalculator(repo, producer)
+        reconciler = ProfileAssignmentReconciler(repo, producer)
 
         device = await _create_device(db_session, "Mac", "SN-1")
         profile = await _create_profile(
@@ -97,34 +97,82 @@ class TestRecalculateProfile:
         )
         await _create_assignment(db_session, profile.id, device.id)
 
-        await recalculator.recalculate_profile(profile.id)
+        await reconciler.recalculate_profile(profile.id)
 
         assignments = await repo.get_assignments(profile.id)
         assert len(assignments) == 1
         producer.publish_profile_push.assert_not_awaited()
         producer.publish_profile_revoke.assert_not_awaited()
 
+    async def test_force_push_reapplies_existing_assignments(
+        self, db_session: AsyncSession
+    ) -> None:
+        producer = _make_producer()
+        repo = ProfileRepository(db_session)
+        reconciler = ProfileAssignmentReconciler(repo, producer)
+
+        device = await _create_device(db_session, "Mac", "SN-1")
+        profile = await _create_profile(
+            db_session,
+            "P1",
+            Scope(targets=[Target(scope_type=ScopeType.DEVICE, target_id=device.id)]),
+        )
+        await _create_assignment(db_session, profile.id, device.id)
+
+        await reconciler.recalculate_profile(profile.id, force_push=True)
+
+        producer.publish_profile_push.assert_awaited_once_with(
+            device_id=device.id,
+            profile_id=profile.id,
+            profile_config=profile.settings,
+            profile_version=2,
+            assignment_id=2,
+        )
+
     async def test_empty_scope_clears(self, db_session: AsyncSession) -> None:
         producer = _make_producer()
         repo = ProfileRepository(db_session)
-        recalculator = Recalculator(repo, producer)
+        reconciler = ProfileAssignmentReconciler(repo, producer)
 
         device = await _create_device(db_session, "Mac", "SN-1")
         profile = await _create_profile(db_session, "P1")
         await _create_assignment(db_session, profile.id, device.id)
 
-        await recalculator.recalculate_profile(profile.id)
+        await reconciler.recalculate_profile(profile.id)
 
-        max_version = await repo.get_max_assignment_version(profile.id)
-        device_ids = await repo.get_assignment_device_ids_at_version(profile.id, max_version)
-        assert len(device_ids) == 0
+        assert await repo.get_current_desired_device_ids(profile.id) == set()
+        producer.publish_profile_revoke.assert_awaited_once_with(
+            device_id=device.id,
+            profile_id=profile.id,
+            profile_version=2,
+            assignment_id=2,
+        )
+
+    async def test_empty_scope_delete_is_committed(
+        self, db_session: AsyncSession
+    ) -> None:
+        producer = _make_producer()
+        repo = ProfileRepository(db_session)
+        reconciler = ProfileAssignmentReconciler(repo, producer)
+
+        device = await _create_device(db_session, "Mac", "SN-1")
+        profile = await _create_profile(db_session, "P1")
+        await _create_assignment(db_session, profile.id, device.id)
+
+        await reconciler.recalculate_profile(profile.id)
+        await db_session.rollback()
+
+        fresh_repo = ProfileRepository(db_session)
+        assignments = await fresh_repo.get_current_assignments(profile.id)
+        assert len(assignments) == 1
+        assert assignments[0].desired_state.value == "ABSENT"
 
     async def test_profile_not_found(self, db_session: AsyncSession) -> None:
         producer = _make_producer()
         repo = ProfileRepository(db_session)
-        recalculator = Recalculator(repo, producer)
+        reconciler = ProfileAssignmentReconciler(repo, producer)
 
-        await recalculator.recalculate_profile(99999)
+        await reconciler.recalculate_profile(99999)
         producer.publish_profile_push.assert_not_awaited()
 
 
@@ -137,7 +185,7 @@ class TestRecalculateDeviceChanges:
     async def test_adds_device(self, db_session: AsyncSession) -> None:
         producer = _make_producer()
         repo = ProfileRepository(db_session)
-        recalculator = Recalculator(repo, producer)
+        reconciler = ProfileAssignmentReconciler(repo, producer)
 
         d1 = await _create_device(db_session, "Mac1", "SN-1")
         profile = await _create_profile(
@@ -149,7 +197,7 @@ class TestRecalculateDeviceChanges:
 
         d2 = await _create_device(db_session, "Mac2", "SN-2")
 
-        await recalculator.recalculate_profile(profile.id)
+        await reconciler.recalculate_profile(profile.id)
 
         assignments = await repo.get_assignments(profile.id)
         device_ids = {a.device_id for a in assignments}
@@ -160,7 +208,7 @@ class TestRecalculateDeviceChanges:
     async def test_removes_device(self, db_session: AsyncSession) -> None:
         producer = _make_producer()
         repo = ProfileRepository(db_session)
-        recalculator = Recalculator(repo, producer)
+        reconciler = ProfileAssignmentReconciler(repo, producer)
 
         d1 = await _create_device(db_session, "Mac1", "SN-1")
         d2 = await _create_device(db_session, "Mac2", "SN-2")
@@ -184,11 +232,15 @@ class TestRecalculateDeviceChanges:
         )
         await db_session.commit()
 
-        await recalculator.recalculate_profile(profile.id)
+        await reconciler.recalculate_profile(profile.id)
 
         assignments = await repo.get_assignments(profile.id)
-        device_ids = {a.device_id for a in assignments}
-        assert device_ids == {d1.id}
+        current = {
+            a.device_id
+            for a in assignments
+            if a.desired_state.value == "PRESENT"
+        }
+        assert current == {d1.id}
         producer.publish_profile_revoke.assert_awaited_once()
 
 
@@ -201,7 +253,7 @@ class TestRecalculateScopeTypes:
     async def test_all_devices(self, db_session: AsyncSession) -> None:
         producer = _make_producer()
         repo = ProfileRepository(db_session)
-        recalculator = Recalculator(repo, producer)
+        reconciler = ProfileAssignmentReconciler(repo, producer)
 
         d1 = await _create_device(db_session, "Mac1", "SN-1")
         d2 = await _create_device(db_session, "Mac2", "SN-2")
@@ -211,16 +263,38 @@ class TestRecalculateScopeTypes:
             Scope(targets=[Target(scope_type=ScopeType.ALL_DEVICES)]),
         )
 
-        await recalculator.recalculate_profile(profile.id)
+        await reconciler.recalculate_profile(profile.id)
 
         assignments = await repo.get_assignments(profile.id)
         device_ids = {a.device_id for a in assignments}
         assert device_ids == {d1.id, d2.id}
 
+    async def test_all_devices_only_includes_enrolled_devices(
+        self, db_session: AsyncSession
+    ) -> None:
+        producer = _make_producer()
+        repo = ProfileRepository(db_session)
+        reconciler = ProfileAssignmentReconciler(repo, producer)
+
+        enrolled = await _create_device(db_session, "Enrolled", "SN-1", "ENROLLED")
+        unenrolled = await _create_device(
+            db_session, "Unenrolled", "SN-2", "UNENROLLED"
+        )
+        profile = await _create_profile(
+            db_session,
+            "P1",
+            Scope(targets=[Target(scope_type=ScopeType.ALL_DEVICES)]),
+        )
+
+        await reconciler.recalculate_profile(profile.id)
+
+        assert await repo.get_current_desired_device_ids(profile.id) == {enrolled.id}
+        assert unenrolled.id not in await repo.get_current_desired_device_ids(profile.id)
+
     async def test_device_target(self, db_session: AsyncSession) -> None:
         producer = _make_producer()
         repo = ProfileRepository(db_session)
-        recalculator = Recalculator(repo, producer)
+        reconciler = ProfileAssignmentReconciler(repo, producer)
 
         d1 = await _create_device(db_session, "Mac1", "SN-1")
         d2 = await _create_device(db_session, "Mac2", "SN-2")
@@ -230,17 +304,35 @@ class TestRecalculateScopeTypes:
             Scope(targets=[Target(scope_type=ScopeType.DEVICE, target_id=d1.id)]),
         )
 
-        await recalculator.recalculate_profile(profile.id)
+        await reconciler.recalculate_profile(profile.id)
 
         assignments = await repo.get_assignments(profile.id)
         device_ids = {a.device_id for a in assignments}
         assert device_ids == {d1.id}
         assert d2.id not in device_ids
 
+    async def test_missing_device_target_is_ignored(
+        self, db_session: AsyncSession
+    ) -> None:
+        producer = _make_producer()
+        repo = ProfileRepository(db_session)
+        reconciler = ProfileAssignmentReconciler(repo, producer)
+
+        profile = await _create_profile(
+            db_session,
+            "P1",
+            Scope(targets=[Target(scope_type=ScopeType.DEVICE, target_id=99999)]),
+        )
+
+        await reconciler.recalculate_profile(profile.id)
+
+        assert await repo.get_assignments(profile.id) == []
+        producer.publish_profile_push.assert_not_awaited()
+
     async def test_static_group(self, db_session: AsyncSession) -> None:
         producer = _make_producer()
         repo = ProfileRepository(db_session)
-        recalculator = Recalculator(repo, producer)
+        reconciler = ProfileAssignmentReconciler(repo, producer)
 
         d1 = await _create_device(db_session, "Mac1", "SN-1")
         await _create_device(db_session, "Mac2", "SN-2")
@@ -258,7 +350,7 @@ class TestRecalculateScopeTypes:
             Scope(targets=[Target(scope_type=ScopeType.STATIC_GROUP, target_id=sg.id)]),
         )
 
-        await recalculator.recalculate_profile(profile.id)
+        await reconciler.recalculate_profile(profile.id)
 
         assignments = await repo.get_assignments(profile.id)
         device_ids = {a.device_id for a in assignments}
@@ -267,7 +359,7 @@ class TestRecalculateScopeTypes:
     async def test_smart_group(self, db_session: AsyncSession) -> None:
         producer = _make_producer()
         repo = ProfileRepository(db_session)
-        recalculator = Recalculator(repo, producer)
+        reconciler = ProfileAssignmentReconciler(repo, producer)
 
         await _create_device(db_session, "MacBook Pro", "SN-1")
         await _create_device(db_session, "iPhone", "SN-2")
@@ -286,7 +378,7 @@ class TestRecalculateScopeTypes:
             Scope(targets=[Target(scope_type=ScopeType.SMART_GROUP, target_id=sg.id)]),
         )
 
-        await recalculator.recalculate_profile(profile.id)
+        await reconciler.recalculate_profile(profile.id)
 
         assignments = await repo.get_assignments(profile.id)
         assert len(assignments) == 1
@@ -301,7 +393,7 @@ class TestRecalculateExclusions:
     async def test_exclusion_removes_device(self, db_session: AsyncSession) -> None:
         producer = _make_producer()
         repo = ProfileRepository(db_session)
-        recalculator = Recalculator(repo, producer)
+        reconciler = ProfileAssignmentReconciler(repo, producer)
 
         d1 = await _create_device(db_session, "Mac1", "SN-1")
         d2 = await _create_device(db_session, "Mac2", "SN-2")
@@ -314,7 +406,7 @@ class TestRecalculateExclusions:
             ),
         )
 
-        await recalculator.recalculate_profile(profile.id)
+        await reconciler.recalculate_profile(profile.id)
 
         assignments = await repo.get_assignments(profile.id)
         device_ids = {a.device_id for a in assignments}
@@ -323,7 +415,7 @@ class TestRecalculateExclusions:
     async def test_all_excluded(self, db_session: AsyncSession) -> None:
         producer = _make_producer()
         repo = ProfileRepository(db_session)
-        recalculator = Recalculator(repo, producer)
+        reconciler = ProfileAssignmentReconciler(repo, producer)
 
         d1 = await _create_device(db_session, "Mac1", "SN-1")
         profile = await _create_profile(
@@ -335,7 +427,7 @@ class TestRecalculateExclusions:
             ),
         )
 
-        await recalculator.recalculate_profile(profile.id)
+        await reconciler.recalculate_profile(profile.id)
 
         max_version = await repo.get_max_assignment_version(profile.id)
         device_ids = await repo.get_assignment_device_ids_at_version(profile.id, max_version)
@@ -344,7 +436,7 @@ class TestRecalculateExclusions:
     async def test_smart_group_exclusion(self, db_session: AsyncSession) -> None:
         producer = _make_producer()
         repo = ProfileRepository(db_session)
-        recalculator = Recalculator(repo, producer)
+        reconciler = ProfileAssignmentReconciler(repo, producer)
 
         await _create_device(db_session, "MacBook Pro", "SN-1")
         await _create_device(db_session, "MacBook Air", "SN-2")
@@ -374,7 +466,7 @@ class TestRecalculateExclusions:
             ),
         )
 
-        await recalculator.recalculate_profile(profile.id)
+        await reconciler.recalculate_profile(profile.id)
 
         assignments = await repo.get_assignments(profile.id)
         assert len(assignments) == 1
@@ -389,7 +481,7 @@ class TestRecalculateVersion:
     async def test_first_assignment_version_1(self, db_session: AsyncSession) -> None:
         producer = _make_producer()
         repo = ProfileRepository(db_session)
-        recalculator = Recalculator(repo, producer)
+        reconciler = ProfileAssignmentReconciler(repo, producer)
 
         await _create_device(db_session, "Mac", "SN-1")
         profile = await _create_profile(
@@ -398,7 +490,7 @@ class TestRecalculateVersion:
             Scope(targets=[Target(scope_type=ScopeType.ALL_DEVICES)]),
         )
 
-        await recalculator.recalculate_profile(profile.id)
+        await reconciler.recalculate_profile(profile.id)
 
         max_version = await repo.get_max_assignment_version(profile.id)
         assert max_version == 1
@@ -406,7 +498,7 @@ class TestRecalculateVersion:
     async def test_existing_version_preserved(self, db_session: AsyncSession) -> None:
         producer = _make_producer()
         repo = ProfileRepository(db_session)
-        recalculator = Recalculator(repo, producer)
+        reconciler = ProfileAssignmentReconciler(repo, producer)
 
         d1 = await _create_device(db_session, "Mac1", "SN-1")
         profile = await _create_profile(
@@ -427,10 +519,11 @@ class TestRecalculateVersion:
         )
         await db_session.commit()
 
-        await recalculator.recalculate_profile(profile.id)
+        await reconciler.recalculate_profile(profile.id)
 
         max_version = await repo.get_max_assignment_version(profile.id)
-        assert max_version == 5
+        assert max_version == 6
+        assert len(await repo.get_current_assignments(profile.id)) == 2
 
     async def test_no_version_when_no_assignments(self, db_session: AsyncSession) -> None:
         repo = ProfileRepository(db_session)
@@ -449,7 +542,7 @@ class TestRecalculateForDevice:
     async def test_triggers_all_profiles(self, db_session: AsyncSession) -> None:
         producer = _make_producer()
         repo = ProfileRepository(db_session)
-        recalculator = Recalculator(repo, producer)
+        reconciler = ProfileAssignmentReconciler(repo, producer)
 
         device = await _create_device(db_session, "Mac", "SN-1")
         p1 = await _create_profile(
@@ -464,7 +557,7 @@ class TestRecalculateForDevice:
         )
         await _create_profile(db_session, "P3")
 
-        await recalculator.recalculate_for_device(device.id)
+        await reconciler.recalculate_for_device(device.id)
 
         a1 = await repo.get_assignments(p1.id)
         a2 = await repo.get_assignments(p2.id)
@@ -474,12 +567,12 @@ class TestRecalculateForDevice:
     async def test_no_profiles_with_scope(self, db_session: AsyncSession) -> None:
         producer = _make_producer()
         repo = ProfileRepository(db_session)
-        recalculator = Recalculator(repo, producer)
+        reconciler = ProfileAssignmentReconciler(repo, producer)
 
         device = await _create_device(db_session, "Mac", "SN-1")
         await _create_profile(db_session, "P1")
 
-        await recalculator.recalculate_for_device(device.id)
+        await reconciler.recalculate_for_device(device.id)
         producer.publish_profile_push.assert_not_awaited()
 
 
@@ -492,7 +585,7 @@ class TestMessageSending:
     async def test_push_for_new_assignments(self, db_session: AsyncSession) -> None:
         producer = _make_producer()
         repo = ProfileRepository(db_session)
-        recalculator = Recalculator(repo, producer)
+        reconciler = ProfileAssignmentReconciler(repo, producer)
 
         device = await _create_device(db_session, "Mac", "SN-1")
         profile = await _create_profile(
@@ -501,18 +594,20 @@ class TestMessageSending:
             Scope(targets=[Target(scope_type=ScopeType.ALL_DEVICES)]),
         )
 
-        await recalculator.recalculate_profile(profile.id)
+        await reconciler.recalculate_profile(profile.id)
 
         producer.publish_profile_push.assert_awaited_once_with(
             device_id=device.id,
             profile_id=profile.id,
             profile_config=profile.settings,
+            profile_version=1,
+            assignment_id=1,
         )
 
     async def test_revoke_for_removed_assignments(self, db_session: AsyncSession) -> None:
         producer = _make_producer()
         repo = ProfileRepository(db_session)
-        recalculator = Recalculator(repo, producer)
+        reconciler = ProfileAssignmentReconciler(repo, producer)
 
         d1 = await _create_device(db_session, "Mac1", "SN-1")
         d2 = await _create_device(db_session, "Mac2", "SN-2")
@@ -527,18 +622,20 @@ class TestMessageSending:
         # Pre-create an assignment for d2 (stale — d2 is not in scope)
         await _create_assignment(db_session, profile.id, d2.id)
 
-        await recalculator.recalculate_profile(profile.id)
+        await reconciler.recalculate_profile(profile.id)
 
         producer.publish_profile_revoke.assert_awaited_once_with(
             device_id=d2.id,
             profile_id=profile.id,
+            profile_version=2,
+            assignment_id=3,
         )
 
     async def test_message_failure_does_not_crash(self, db_session: AsyncSession) -> None:
         producer = _make_producer()
         producer.publish_profile_push = AsyncMock(side_effect=RuntimeError("RabbitMQ down"))
         repo = ProfileRepository(db_session)
-        recalculator = Recalculator(repo, producer)
+        reconciler = ProfileAssignmentReconciler(repo, producer)
 
         await _create_device(db_session, "Mac", "SN-1")
         profile = await _create_profile(
@@ -547,7 +644,34 @@ class TestMessageSending:
             Scope(targets=[Target(scope_type=ScopeType.ALL_DEVICES)]),
         )
 
-        await recalculator.recalculate_profile(profile.id)
+        await reconciler.recalculate_profile(profile.id)
 
         assignments = await repo.get_assignments(profile.id)
         assert len(assignments) == 1
+
+        assert assignments[0].status == "FAILED"
+        assert assignments[0].attempt_count == 1
+        assert assignments[0].last_error == "RabbitMQ down"
+
+    async def test_check_in_reconciles_latest_desired_revision(
+        self, db_session: AsyncSession
+    ) -> None:
+        producer = _make_producer()
+        repo = ProfileRepository(db_session)
+        reconciler = ProfileAssignmentReconciler(repo, producer)
+
+        device = await _create_device(db_session, "Mac", "SN-1")
+        profile = await _create_profile(
+            db_session,
+            "P1",
+            Scope(targets=[Target(scope_type=ScopeType.DEVICE, target_id=device.id)]),
+        )
+        await reconciler.recalculate_profile(profile.id)
+        producer.publish_profile_push.reset_mock()
+
+        await reconciler.reconcile_device(device.id)
+
+        producer.publish_profile_push.assert_awaited_once()
+        assignment = (await repo.get_current_assignments(profile.id))[0]
+        assert assignment.status == "SENT"
+        assert assignment.attempt_count == 2

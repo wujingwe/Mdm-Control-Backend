@@ -1,4 +1,9 @@
+from unittest.mock import AsyncMock, MagicMock
+
 from httpx import AsyncClient
+
+from app.dependencies import get_reconciler
+from app.main import app
 
 
 class TestProfilesAPI:
@@ -48,6 +53,53 @@ class TestProfilesAPI:
         )
         assert resp.status_code == 200
         assert len(resp.json()["targets"]) == 1
+
+    async def test_settings_update_forces_recalculation_push(
+        self, client: AsyncClient
+    ) -> None:
+        create = await client.post(self.BASE, json={"name": "SettingsProfile"})
+        pid = create.json()["id"]
+
+        reconciler = MagicMock()
+        reconciler.recalculate_profile = AsyncMock()
+        app.dependency_overrides[get_reconciler] = lambda: reconciler
+        try:
+            resp = await client.put(
+                f"{self.BASE}/{pid}",
+                json={"settings": {"managed": True}},
+            )
+        finally:
+            app.dependency_overrides.pop(get_reconciler, None)
+
+        assert resp.status_code == 200
+        reconciler.recalculate_profile.assert_awaited_once_with(
+            pid, force_push=True
+        )
+
+    async def test_scope_update_recalculates_without_force_push(
+        self, client: AsyncClient
+    ) -> None:
+        create = await client.post(self.BASE, json={"name": "ScopeProfile"})
+        pid = create.json()["id"]
+
+        reconciler = MagicMock()
+        reconciler.recalculate_profile = AsyncMock()
+        app.dependency_overrides[get_reconciler] = lambda: reconciler
+        try:
+            resp = await client.put(
+                f"{self.BASE}/{pid}",
+                json={
+                    "scope": {
+                        "targets": [{"scope_type": "ALL_DEVICES"}],
+                        "exclusions": [],
+                    }
+                },
+            )
+        finally:
+            app.dependency_overrides.pop(get_reconciler, None)
+
+        assert resp.status_code == 200
+        reconciler.recalculate_profile.assert_awaited_once_with(pid)
 
     async def test_get_scope(self, client: AsyncClient) -> None:
         create = await client.post(
