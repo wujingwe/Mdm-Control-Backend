@@ -153,6 +153,52 @@
         }
       }
     },
+    "/api/v1/devices/{device_id}/check-in": {
+      "post": {
+        "tags": [
+          "Devices"
+        ],
+        "summary": "Device Check In",
+        "operationId": "device_check_in_api_v1_devices__device_id__check_in_post",
+        "parameters": [
+          {
+            "name": "device_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Device Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "title": "Response Device Check In Api V1 Devices  Device Id  Check In Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/devices/{device_id}/commands": {
       "get": {
         "tags": [
@@ -2217,6 +2263,177 @@
   },
   "components": {
     "schemas": {
+      "AdvancedSecurityOverrides": {
+        "properties": {
+          "untrustedAppsPolicy": {
+            "$ref": "#/components/schemas/UntrustedAppsPolicy"
+          },
+          "developerSettings": {
+            "$ref": "#/components/schemas/DeveloperSettings"
+          }
+        },
+        "type": "object",
+        "required": [
+          "untrustedAppsPolicy",
+          "developerSettings"
+        ],
+        "title": "AdvancedSecurityOverrides"
+      },
+      "AirplaneModeState": {
+        "type": "integer",
+        "enum": [
+          0,
+          1,
+          2
+        ],
+        "title": "AirplaneModeState"
+      },
+      "ApplicationPolicy-Input": {
+        "properties": {
+          "packageName": {
+            "type": "string",
+            "title": "Packagename"
+          },
+          "installType": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/InstallType"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "defaultPermissionPolicy": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PermissionPolicy"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "permissionGrants": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/PermissionGrant"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Permissiongrants"
+          },
+          "disabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Disabled"
+          },
+          "minimumVersionCode": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Minimumversioncode"
+          }
+        },
+        "type": "object",
+        "required": [
+          "packageName"
+        ],
+        "title": "ApplicationPolicy"
+      },
+      "ApplicationPolicy-Output": {
+        "properties": {
+          "packageName": {
+            "type": "string",
+            "title": "Packagename"
+          },
+          "installType": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/InstallType"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "defaultPermissionPolicy": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PermissionPolicy"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "permissionGrants": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/PermissionGrant"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Permissiongrants"
+          },
+          "disabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Disabled"
+          },
+          "minimumVersionCode": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Minimumversioncode"
+          }
+        },
+        "type": "object",
+        "required": [
+          "packageName"
+        ],
+        "title": "ApplicationPolicy"
+      },
+      "AssignmentDesiredState": {
+        "type": "string",
+        "enum": [
+          "PRESENT",
+          "ABSENT"
+        ],
+        "title": "AssignmentDesiredState"
+      },
       "AssignmentResponse": {
         "properties": {
           "id": {
@@ -2233,6 +2450,9 @@
           },
           "status": {
             "$ref": "#/components/schemas/AssignmentStatus"
+          },
+          "desired_state": {
+            "$ref": "#/components/schemas/AssignmentDesiredState"
           },
           "profile_version": {
             "type": "integer",
@@ -2266,6 +2486,57 @@
               }
             ],
             "title": "Revoked At"
+          },
+          "attempt_count": {
+            "type": "integer",
+            "title": "Attempt Count",
+            "default": 0
+          },
+          "last_attempt_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Attempt At"
+          },
+          "last_error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Error"
+          },
+          "message_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message Id"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At"
           }
         },
         "type": "object",
@@ -2274,6 +2545,7 @@
           "profile_id",
           "device_id",
           "status",
+          "desired_state",
           "profile_version",
           "assigned_at"
         ],
@@ -2283,12 +2555,42 @@
         "type": "string",
         "enum": [
           "PENDING",
+          "SENT",
           "APPLIED",
           "FAILED",
+          "REVOKE_PENDING",
           "REVOKED",
           "REMOVED"
         ],
         "title": "AssignmentStatus"
+      },
+      "AutoDateAndTimeZone": {
+        "type": "integer",
+        "enum": [
+          0,
+          1,
+          2
+        ],
+        "title": "AutoDateAndTimeZone"
+      },
+      "BluetoothSharing": {
+        "type": "integer",
+        "enum": [
+          0,
+          1,
+          2
+        ],
+        "title": "BluetoothSharing"
+      },
+      "CameraAccess": {
+        "type": "integer",
+        "enum": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "title": "CameraAccess"
       },
       "Cellular": {
         "properties": {
@@ -2397,6 +2699,15 @@
         },
         "type": "object",
         "title": "Cellular"
+      },
+      "CellularTwoGState": {
+        "type": "integer",
+        "enum": [
+          0,
+          1,
+          2
+        ],
+        "title": "CellularTwoGState"
       },
       "Certificate": {
         "properties": {
@@ -2599,6 +2910,16 @@
         "title": "CommandType",
         "description": "Types of commands that can be sent to a device."
       },
+      "ConfigureWifi": {
+        "type": "integer",
+        "enum": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "title": "ConfigureWifi"
+      },
       "ConnectionStatus": {
         "type": "string",
         "enum": [
@@ -2660,6 +2981,167 @@
         ],
         "title": "CriteriaType"
       },
+      "DeveloperSettings": {
+        "type": "integer",
+        "enum": [
+          0,
+          1,
+          2
+        ],
+        "title": "DeveloperSettings"
+      },
+      "DeviceConnectivityManagement-Input": {
+        "properties": {
+          "usbDataAccess": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UsbDataAccess"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "configureWifi": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ConfigureWifi"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "wifiDirectSettings": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WifiDirectSettings"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "tetheringSettings": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TetheringSettings"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "wifiSsidPolicy": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WifiSsidPolicy"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "wifiRoamingPolicy": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WifiRoamingPolicy-Input"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "bluetoothSharing": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BluetoothSharing"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "title": "DeviceConnectivityManagement"
+      },
+      "DeviceConnectivityManagement-Output": {
+        "properties": {
+          "usbDataAccess": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UsbDataAccess"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "configureWifi": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ConfigureWifi"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "wifiDirectSettings": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WifiDirectSettings"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "tetheringSettings": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TetheringSettings"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "wifiSsidPolicy": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WifiSsidPolicy"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "wifiRoamingPolicy": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WifiRoamingPolicy-Output"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "bluetoothSharing": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BluetoothSharing"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "title": "DeviceConnectivityManagement"
+      },
       "DeviceExtensionAttributeCreate": {
         "properties": {
           "extension_attribute_id": {
@@ -2705,6 +3187,72 @@
           "value"
         ],
         "title": "DeviceExtensionAttributeResponse"
+      },
+      "DeviceRadioState": {
+        "properties": {
+          "wifiState": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WifiState"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "airplaneModeState": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AirplaneModeState"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "ultraWidebandState": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UltraWidebandState"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "cellularTwoGState": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CellularTwoGState"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "minimumWifiSecurityLevel": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MinimumWifiSecurityLevel"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "userInitiatedAddEsimSettings": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UserInitiatedAddEsimSettings"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "title": "DeviceRadioState"
       },
       "DeviceResponse": {
         "properties": {
@@ -2991,6 +3539,128 @@
         "type": "object",
         "title": "DeviceUpdate"
       },
+      "Eap": {
+        "properties": {
+          "outer": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Outer"
+          },
+          "inner": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Inner"
+          },
+          "identity": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Identity"
+          },
+          "anonymousIdentity": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Anonymousidentity"
+          },
+          "domainSuffixMatch": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Domainsuffixmatch"
+          },
+          "serverCARefs": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Servercarefs"
+          },
+          "serverCaRef": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Servercaref"
+          },
+          "clientCertType": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clientcerttype"
+          },
+          "clientCertRef": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clientcertref"
+          },
+          "clientCertKeyPairAlias": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clientcertkeypairalias"
+          }
+        },
+        "type": "object",
+        "title": "Eap"
+      },
       "Exclusion": {
         "properties": {
           "scope_type": {
@@ -3254,6 +3924,19 @@
         "type": "object",
         "title": "HTTPValidationError"
       },
+      "InstallType": {
+        "type": "integer",
+        "enum": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          7
+        ],
+        "title": "InstallType"
+      },
       "InventorySearchCreate": {
         "properties": {
           "name": {
@@ -3405,6 +4088,73 @@
         "type": "object",
         "title": "InventorySearchUpdate"
       },
+      "KeyguardDisabledFeature": {
+        "type": "integer",
+        "enum": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11
+        ],
+        "title": "KeyguardDisabledFeature"
+      },
+      "LocationMode": {
+        "type": "integer",
+        "enum": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "title": "LocationMode"
+      },
+      "Manual": {
+        "properties": {
+          "host": {
+            "type": "string",
+            "title": "Host"
+          },
+          "port": {
+            "type": "integer",
+            "title": "Port"
+          }
+        },
+        "type": "object",
+        "required": [
+          "host",
+          "port"
+        ],
+        "title": "Manual"
+      },
+      "MicrophoneAccess": {
+        "type": "integer",
+        "enum": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "title": "MicrophoneAccess"
+      },
+      "MinimumWifiSecurityLevel": {
+        "type": "integer",
+        "enum": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "title": "MinimumWifiSecurityLevel"
+      },
       "MobileAppCreate": {
         "properties": {
           "name": {
@@ -3548,6 +4298,184 @@
         },
         "type": "object",
         "title": "Network"
+      },
+      "NetworkCertificate": {
+        "properties": {
+          "guid": {
+            "type": "string",
+            "title": "Guid"
+          },
+          "type": {
+            "type": "string",
+            "title": "Type"
+          },
+          "x509": {
+            "type": "string",
+            "title": "X509"
+          },
+          "remove": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Remove"
+          }
+        },
+        "type": "object",
+        "required": [
+          "guid",
+          "type",
+          "x509"
+        ],
+        "title": "NetworkCertificate"
+      },
+      "NetworkConfiguration-Input": {
+        "properties": {
+          "guid": {
+            "type": "string",
+            "title": "Guid"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "proxySettings": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProxySettings"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "wifi": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WiFi"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "guid",
+          "name"
+        ],
+        "title": "NetworkConfiguration"
+      },
+      "NetworkConfiguration-Output": {
+        "properties": {
+          "guid": {
+            "type": "string",
+            "title": "Guid"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "proxySettings": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProxySettings"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "wifi": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WiFi"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "guid",
+          "name"
+        ],
+        "title": "NetworkConfiguration"
+      },
+      "OpenNetworkConfiguration-Input": {
+        "properties": {
+          "networkConfigurations": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/NetworkConfiguration-Input"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Networkconfigurations"
+          },
+          "certificates": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/NetworkCertificate"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Certificates"
+          }
+        },
+        "type": "object",
+        "title": "OpenNetworkConfiguration"
+      },
+      "OpenNetworkConfiguration-Output": {
+        "properties": {
+          "networkConfigurations": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/NetworkConfiguration-Output"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Networkconfigurations"
+          },
+          "certificates": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/NetworkCertificate"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Certificates"
+          }
+        },
+        "type": "object",
+        "title": "OpenNetworkConfiguration"
       },
       "PaginatedResponse_CommandResponse_": {
         "properties": {
@@ -3828,6 +4756,892 @@
         ],
         "title": "PaginatedResponse[UserResponse]"
       },
+      "PermissionGrant": {
+        "properties": {
+          "permission": {
+            "type": "string",
+            "title": "Permission"
+          },
+          "policy": {
+            "$ref": "#/components/schemas/PermissionPolicy"
+          }
+        },
+        "type": "object",
+        "required": [
+          "permission",
+          "policy"
+        ],
+        "title": "PermissionGrant"
+      },
+      "PermissionPolicy": {
+        "type": "integer",
+        "enum": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "title": "PermissionPolicy"
+      },
+      "Policy-Input": {
+        "properties": {
+          "applications": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ApplicationPolicy-Input"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Applications"
+          },
+          "screenCaptureDisabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Screencapturedisabled"
+          },
+          "keyguardDisabledFeatures": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/KeyguardDisabledFeature"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Keyguarddisabledfeatures"
+          },
+          "openNetworkConfiguration": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OpenNetworkConfiguration-Input"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "addUserDisabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Adduserdisabled"
+          },
+          "adjustVolumeDisabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Adjustvolumedisabled"
+          },
+          "factoryResetDisabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Factoryresetdisabled"
+          },
+          "installAppsDisabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Installappsdisabled"
+          },
+          "mountPhysicalMediaDisabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mountphysicalmediadisabled"
+          },
+          "modifyAccountsDisabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Modifyaccountsdisabled"
+          },
+          "uninstallAppsDisabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Uninstallappsdisabled"
+          },
+          "statusBarDisabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Statusbardisabled"
+          },
+          "bluetoothContactSharingDisabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bluetoothcontactsharingdisabled"
+          },
+          "shortSupportMessage": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UserFacingMessage"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "longSupportMessage": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UserFacingMessage"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "bluetoothConfigDisabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bluetoothconfigdisabled"
+          },
+          "cellBroadcastsConfigDisabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cellbroadcastsconfigdisabled"
+          },
+          "credentialsConfigDisabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Credentialsconfigdisabled"
+          },
+          "mobileNetworksConfigDisabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mobilenetworksconfigdisabled"
+          },
+          "vpnConfigDisabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vpnconfigdisabled"
+          },
+          "networkResetDisabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Networkresetdisabled"
+          },
+          "outgoingBeamDisabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Outgoingbeamdisabled"
+          },
+          "outgoingCallsDisabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Outgoingcallsdisabled"
+          },
+          "removeUserDisabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Removeuserdisabled"
+          },
+          "shareLocationDisabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sharelocationdisabled"
+          },
+          "smsDisabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Smsdisabled"
+          },
+          "dataRoamingDisabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dataroamingdisabled"
+          },
+          "locationMode": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LocationMode"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "bluetoothDisabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bluetoothdisabled"
+          },
+          "permissionGrants": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/PermissionGrant"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Permissiongrants"
+          },
+          "advancedSecurityOverrides": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AdvancedSecurityOverrides"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "autoDateAndTimeZone": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AutoDateAndTimeZone"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "cameraAccess": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CameraAccess"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "microphoneAccess": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MicrophoneAccess"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "deviceConnectivityManagement": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DeviceConnectivityManagement-Input"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "deviceRadioState": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DeviceRadioState"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "printingPolicy": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PrintingPolicy"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "wipeDataFlags": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/WipeDataFlag"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Wipedataflags"
+          }
+        },
+        "type": "object",
+        "title": "Policy"
+      },
+      "Policy-Output": {
+        "properties": {
+          "applications": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ApplicationPolicy-Output"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Applications"
+          },
+          "screenCaptureDisabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Screencapturedisabled"
+          },
+          "keyguardDisabledFeatures": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/KeyguardDisabledFeature"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Keyguarddisabledfeatures"
+          },
+          "openNetworkConfiguration": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OpenNetworkConfiguration-Output"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "addUserDisabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Adduserdisabled"
+          },
+          "adjustVolumeDisabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Adjustvolumedisabled"
+          },
+          "factoryResetDisabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Factoryresetdisabled"
+          },
+          "installAppsDisabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Installappsdisabled"
+          },
+          "mountPhysicalMediaDisabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mountphysicalmediadisabled"
+          },
+          "modifyAccountsDisabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Modifyaccountsdisabled"
+          },
+          "uninstallAppsDisabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Uninstallappsdisabled"
+          },
+          "statusBarDisabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Statusbardisabled"
+          },
+          "bluetoothContactSharingDisabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bluetoothcontactsharingdisabled"
+          },
+          "shortSupportMessage": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UserFacingMessage"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "longSupportMessage": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UserFacingMessage"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "bluetoothConfigDisabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bluetoothconfigdisabled"
+          },
+          "cellBroadcastsConfigDisabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cellbroadcastsconfigdisabled"
+          },
+          "credentialsConfigDisabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Credentialsconfigdisabled"
+          },
+          "mobileNetworksConfigDisabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mobilenetworksconfigdisabled"
+          },
+          "vpnConfigDisabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vpnconfigdisabled"
+          },
+          "networkResetDisabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Networkresetdisabled"
+          },
+          "outgoingBeamDisabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Outgoingbeamdisabled"
+          },
+          "outgoingCallsDisabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Outgoingcallsdisabled"
+          },
+          "removeUserDisabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Removeuserdisabled"
+          },
+          "shareLocationDisabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sharelocationdisabled"
+          },
+          "smsDisabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Smsdisabled"
+          },
+          "dataRoamingDisabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dataroamingdisabled"
+          },
+          "locationMode": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LocationMode"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "bluetoothDisabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bluetoothdisabled"
+          },
+          "permissionGrants": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/PermissionGrant"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Permissiongrants"
+          },
+          "advancedSecurityOverrides": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AdvancedSecurityOverrides"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "autoDateAndTimeZone": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AutoDateAndTimeZone"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "cameraAccess": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CameraAccess"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "microphoneAccess": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MicrophoneAccess"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "deviceConnectivityManagement": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DeviceConnectivityManagement-Output"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "deviceRadioState": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DeviceRadioState"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "printingPolicy": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PrintingPolicy"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "wipeDataFlags": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/WipeDataFlag"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Wipedataflags"
+          }
+        },
+        "type": "object",
+        "title": "Policy"
+      },
+      "PrintingPolicy": {
+        "type": "integer",
+        "enum": [
+          0,
+          1,
+          2
+        ],
+        "title": "PrintingPolicy"
+      },
       "ProfileCreate": {
         "properties": {
           "name": {
@@ -3845,16 +5659,11 @@
             ],
             "title": "Description"
           },
-          "settings": {
-            "$ref": "#/components/schemas/ProfileSettings",
-            "default": {}
+          "policy": {
+            "$ref": "#/components/schemas/Policy-Input"
           },
           "scope": {
-            "$ref": "#/components/schemas/Scope-Input",
-            "default": {
-              "targets": [],
-              "exclusions": []
-            }
+            "$ref": "#/components/schemas/Scope-Input"
           },
           "created_by": {
             "type": "integer",
@@ -3864,7 +5673,9 @@
         },
         "type": "object",
         "required": [
-          "name"
+          "name",
+          "policy",
+          "scope"
         ],
         "title": "ProfileCreate"
       },
@@ -3891,19 +5702,13 @@
           },
           "version": {
             "type": "integer",
-            "title": "Version",
-            "default": 1
+            "title": "Version"
           },
-          "settings": {
-            "$ref": "#/components/schemas/ProfileSettings",
-            "default": {}
+          "policy": {
+            "$ref": "#/components/schemas/Policy-Output"
           },
           "scope": {
-            "$ref": "#/components/schemas/Scope-Output",
-            "default": {
-              "targets": [],
-              "exclusions": []
-            }
+            "$ref": "#/components/schemas/Scope-Output"
           },
           "created_at": {
             "type": "string",
@@ -3938,15 +5743,12 @@
         "required": [
           "id",
           "name",
+          "version",
+          "policy",
+          "scope",
           "created_at"
         ],
         "title": "ProfileResponse"
-      },
-      "ProfileSettings": {
-        "properties": {},
-        "additionalProperties": true,
-        "type": "object",
-        "title": "ProfileSettings"
       },
       "ProfileUpdate": {
         "properties": {
@@ -3972,10 +5774,10 @@
             ],
             "title": "Description"
           },
-          "settings": {
+          "policy": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/ProfileSettings"
+                "$ref": "#/components/schemas/Policy-Input"
               },
               {
                 "type": "null"
@@ -3995,6 +5797,28 @@
         },
         "type": "object",
         "title": "ProfileUpdate"
+      },
+      "ProxySettings": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "title": "Type"
+          },
+          "manual": {
+            "$ref": "#/components/schemas/Manual"
+          },
+          "pac": {
+            "type": "string",
+            "title": "Pac"
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "manual",
+          "pac"
+        ],
+        "title": "ProxySettings"
       },
       "Scope-Input": {
         "properties": {
@@ -4370,6 +6194,45 @@
         ],
         "title": "Target"
       },
+      "TetheringSettings": {
+        "type": "integer",
+        "enum": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "title": "TetheringSettings"
+      },
+      "UltraWidebandState": {
+        "type": "integer",
+        "enum": [
+          0,
+          1,
+          2
+        ],
+        "title": "UltraWidebandState"
+      },
+      "UntrustedAppsPolicy": {
+        "type": "integer",
+        "enum": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "title": "UntrustedAppsPolicy"
+      },
+      "UsbDataAccess": {
+        "type": "integer",
+        "enum": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "title": "UsbDataAccess"
+      },
       "UserCreate": {
         "properties": {
           "email": {
@@ -4403,6 +6266,42 @@
           "password"
         ],
         "title": "UserCreate"
+      },
+      "UserFacingMessage": {
+        "properties": {
+          "defaultMessage": {
+            "type": "string",
+            "title": "Defaultmessage"
+          },
+          "localizedMessages": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Localizedmessages"
+          }
+        },
+        "type": "object",
+        "required": [
+          "defaultMessage"
+        ],
+        "title": "UserFacingMessage"
+      },
+      "UserInitiatedAddEsimSettings": {
+        "type": "integer",
+        "enum": [
+          0,
+          1,
+          2
+        ],
+        "title": "UserInitiatedAddEsimSettings"
       },
       "UserResponse": {
         "properties": {
@@ -4548,6 +6447,89 @@
         ],
         "title": "ValidationError"
       },
+      "WiFi": {
+        "properties": {
+          "ssid": {
+            "type": "string",
+            "title": "Ssid"
+          },
+          "security": {
+            "type": "string",
+            "title": "Security"
+          },
+          "hexSsid": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hexssid"
+          },
+          "hiddenSsid": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hiddenssid"
+          },
+          "autoConnect": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Autoconnect"
+          },
+          "passphrase": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Passphrase"
+          },
+          "macAddressRandomizationMode": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Macaddressrandomizationmode"
+          },
+          "eap": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Eap"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "ssid",
+          "security"
+        ],
+        "title": "WiFi"
+      },
       "Wifi": {
         "properties": {
           "ssid": {
@@ -4644,6 +6626,134 @@
         },
         "type": "object",
         "title": "Wifi"
+      },
+      "WifiDirectSettings": {
+        "type": "integer",
+        "enum": [
+          0,
+          1,
+          2
+        ],
+        "title": "WifiDirectSettings"
+      },
+      "WifiRoamingMode": {
+        "type": "integer",
+        "enum": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "title": "WifiRoamingMode"
+      },
+      "WifiRoamingPolicy-Input": {
+        "properties": {
+          "wifiRoamingSettings": {
+            "items": {
+              "$ref": "#/components/schemas/WifiRoamingSetting"
+            },
+            "type": "array",
+            "title": "Wifiroamingsettings"
+          }
+        },
+        "type": "object",
+        "required": [
+          "wifiRoamingSettings"
+        ],
+        "title": "WifiRoamingPolicy"
+      },
+      "WifiRoamingPolicy-Output": {
+        "properties": {
+          "wifiRoamingSettings": {
+            "items": {
+              "$ref": "#/components/schemas/WifiRoamingSetting"
+            },
+            "type": "array",
+            "title": "Wifiroamingsettings"
+          }
+        },
+        "type": "object",
+        "required": [
+          "wifiRoamingSettings"
+        ],
+        "title": "WifiRoamingPolicy"
+      },
+      "WifiRoamingSetting": {
+        "properties": {
+          "wifiSsid": {
+            "type": "string",
+            "title": "Wifissid"
+          },
+          "wifiRoamingMode": {
+            "$ref": "#/components/schemas/WifiRoamingMode"
+          }
+        },
+        "type": "object",
+        "required": [
+          "wifiSsid",
+          "wifiRoamingMode"
+        ],
+        "title": "WifiRoamingSetting"
+      },
+      "WifiSsid": {
+        "properties": {
+          "wifiSsid": {
+            "type": "string",
+            "title": "Wifissid"
+          }
+        },
+        "type": "object",
+        "required": [
+          "wifiSsid"
+        ],
+        "title": "WifiSsid"
+      },
+      "WifiSsidPolicy": {
+        "properties": {
+          "wifiSsidPolicyType": {
+            "$ref": "#/components/schemas/WifiSsidPolicyType"
+          },
+          "wifiSsids": {
+            "items": {
+              "$ref": "#/components/schemas/WifiSsid"
+            },
+            "type": "array",
+            "title": "Wifissids"
+          }
+        },
+        "type": "object",
+        "required": [
+          "wifiSsidPolicyType",
+          "wifiSsids"
+        ],
+        "title": "WifiSsidPolicy"
+      },
+      "WifiSsidPolicyType": {
+        "type": "integer",
+        "enum": [
+          0,
+          1,
+          2
+        ],
+        "title": "WifiSsidPolicyType"
+      },
+      "WifiState": {
+        "type": "integer",
+        "enum": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "title": "WifiState"
+      },
+      "WipeDataFlag": {
+        "type": "integer",
+        "enum": [
+          0,
+          1
+        ],
+        "title": "WipeDataFlag"
       }
     }
   }

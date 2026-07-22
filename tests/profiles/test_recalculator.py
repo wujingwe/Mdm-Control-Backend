@@ -38,7 +38,7 @@ async def _create_device(
 async def _create_profile(
     db: AsyncSession, name: str, scope: Scope | None = None
 ) -> Profile:
-    profile = Profile(name=name, scope=scope or Scope())
+    profile = Profile(name=name, scope=scope or Scope(), policy={})
     db.add(profile)
     await db.commit()
     await db.refresh(profile)
@@ -124,7 +124,7 @@ class TestRecalculateProfile:
         producer.publish_profile_push.assert_awaited_once_with(
             device_id=device.id,
             profile_id=profile.id,
-            profile_config=profile.settings,
+            profile_config=profile.policy,
             profile_version=2,
             assignment_id=2,
         )
@@ -599,7 +599,7 @@ class TestMessageSending:
         producer.publish_profile_push.assert_awaited_once_with(
             device_id=device.id,
             profile_id=profile.id,
-            profile_config=profile.settings,
+            profile_config=profile.policy,
             profile_version=1,
             assignment_id=1,
         )

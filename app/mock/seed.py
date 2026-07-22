@@ -343,7 +343,7 @@ PROFILES = [
         name="Standard Compliance",
         description="Standard compliance settings for all managed devices",
         version=1,
-        settings={
+        policy={
             "passwordPolicy": {"minLength": 6, "requireAlphanumeric": True},
             "encryptionRequired": True,
             "allowAppInstallation": True,
@@ -354,7 +354,7 @@ PROFILES = [
         name="Executive Security",
         description="Enhanced security profile for executive devices",
         version=1,
-        settings={
+        policy={
             "passwordPolicy": {"minLength": 10, "requireComplexity": True},
             "encryptionRequired": True,
             "allowAppInstallation": False,

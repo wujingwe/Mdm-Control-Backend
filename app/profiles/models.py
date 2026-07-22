@@ -40,7 +40,7 @@ class Profile(Base):
     name: Mapped[str] = mapped_column(String(100), unique=True)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     version: Mapped[int] = mapped_column(Integer, default=1)
-    settings: Mapped[dict] = mapped_column(JSON, default=dict)
+    policy: Mapped[dict] = mapped_column(JSON, default=dict)
     scope: Mapped[Scope] = mapped_column(ScopeColumnType, default=Scope)
     created_by: Mapped[int | None] = mapped_column(
         Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True

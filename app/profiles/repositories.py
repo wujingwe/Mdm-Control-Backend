@@ -10,7 +10,7 @@ from app.common.schemas import ScopeType
 from app.devices.models import Device
 from app.profiles.models import Profile, ProfileAssignment
 from app.static_groups.models import StaticGroupDevice
-from app.profiles.schemas import (
+from app.profiles.schemas.profile import (
     ProfileCreate,
     ProfileUpdate,
     AssignmentUpsert,

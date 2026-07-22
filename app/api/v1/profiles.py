@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from app.common.schemas import PaginatedResponse, Scope
 from app.dependencies import get_profile_service, get_reconciler
 from app.profiles.reconciler import ProfileAssignmentReconciler
-from app.profiles.schemas import (
+from app.profiles.schemas.profile import (
     AssignmentResponse,
     ProfileCreate,
     ProfileResponse,
@@ -69,8 +69,8 @@ async def update_profile(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Profile not found"
         )
-    if data.scope is not None or data.settings is not None:
-        if data.settings is not None:
+    if data.scope is not None or data.policy is not None:
+        if data.policy is not None:
             await reconciler.recalculate_profile(profile_id, force_push=True)
         else:
             await reconciler.recalculate_profile(profile_id)

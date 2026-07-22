@@ -1,11 +1,11 @@
 from app.common.schemas import Scope, Target, Exclusion, ScopeType
-from app.profiles.calculator import AssignmentCalculator
+from app.profiles.reconciler import ProfileAssignmentReconciler
 
 
 class TestAssignmentCalculator:
     def test_empty_scope(self) -> None:
         scope = Scope()
-        result = AssignmentCalculator.compute(
+        result = ProfileAssignmentReconciler.compute(
             profile_id=1, profile_version=1, scope=scope, resolved_device_ids={}
         )
         assert result == []
@@ -13,7 +13,7 @@ class TestAssignmentCalculator:
     def test_all_devices_target(self) -> None:
         scope = Scope(targets=[Target(scope_type=ScopeType.ALL_DEVICES)])
         resolved = {(ScopeType.ALL_DEVICES.value, 0): {1, 2, 3}}
-        result = AssignmentCalculator.compute(
+        result = ProfileAssignmentReconciler.compute(
             profile_id=1, profile_version=1, scope=scope, resolved_device_ids=resolved
         )
         assert len(result) == 3
@@ -23,7 +23,7 @@ class TestAssignmentCalculator:
     def test_smart_group_target(self) -> None:
         scope = Scope(targets=[Target(scope_type=ScopeType.SMART_GROUP, target_id=5)])
         resolved = {(ScopeType.SMART_GROUP.value, 5): {10, 20}}
-        result = AssignmentCalculator.compute(
+        result = ProfileAssignmentReconciler.compute(
             profile_id=1, profile_version=1, scope=scope, resolved_device_ids=resolved
         )
         assert len(result) == 2
@@ -32,7 +32,7 @@ class TestAssignmentCalculator:
     def test_static_group_target(self) -> None:
         scope = Scope(targets=[Target(scope_type=ScopeType.STATIC_GROUP, target_id=3)])
         resolved = {(ScopeType.STATIC_GROUP.value, 3): {101, 102}}
-        result = AssignmentCalculator.compute(
+        result = ProfileAssignmentReconciler.compute(
             profile_id=1, profile_version=1, scope=scope, resolved_device_ids=resolved
         )
         assert len(result) == 2
@@ -40,7 +40,7 @@ class TestAssignmentCalculator:
     def test_device_target(self) -> None:
         scope = Scope(targets=[Target(scope_type=ScopeType.DEVICE, target_id=42)])
         resolved = {(ScopeType.DEVICE.value, 42): {42}}
-        result = AssignmentCalculator.compute(
+        result = ProfileAssignmentReconciler.compute(
             profile_id=1, profile_version=1, scope=scope, resolved_device_ids=resolved
         )
         assert len(result) == 1
@@ -57,7 +57,7 @@ class TestAssignmentCalculator:
             (ScopeType.SMART_GROUP.value, 1): {10, 20},
             (ScopeType.STATIC_GROUP.value, 2): {20, 30},
         }
-        result = AssignmentCalculator.compute(
+        result = ProfileAssignmentReconciler.compute(
             profile_id=1, profile_version=1, scope=scope, resolved_device_ids=resolved
         )
         device_ids = {a.device_id for a in result}
@@ -72,7 +72,7 @@ class TestAssignmentCalculator:
             (ScopeType.ALL_DEVICES.value, 0): {1, 2, 3},
             (ScopeType.DEVICE.value, 2): {2},
         }
-        result = AssignmentCalculator.compute(
+        result = ProfileAssignmentReconciler.compute(
             profile_id=1, profile_version=1, scope=scope, resolved_device_ids=resolved
         )
         device_ids = {a.device_id for a in result}
@@ -87,7 +87,7 @@ class TestAssignmentCalculator:
             (ScopeType.SMART_GROUP.value, 1): {10, 20, 30},
             (ScopeType.SMART_GROUP.value, 2): {20, 30},
         }
-        result = AssignmentCalculator.compute(
+        result = ProfileAssignmentReconciler.compute(
             profile_id=1, profile_version=1, scope=scope, resolved_device_ids=resolved
         )
         device_ids = {a.device_id for a in result}
@@ -95,7 +95,7 @@ class TestAssignmentCalculator:
 
     def test_no_resolved_ids_for_target(self) -> None:
         scope = Scope(targets=[Target(scope_type=ScopeType.SMART_GROUP, target_id=99)])
-        result = AssignmentCalculator.compute(
+        result = ProfileAssignmentReconciler.compute(
             profile_id=1, profile_version=1, scope=scope, resolved_device_ids={}
         )
         assert result == []
@@ -103,7 +103,7 @@ class TestAssignmentCalculator:
     def test_assignment_fields(self) -> None:
         scope = Scope(targets=[Target(scope_type=ScopeType.ALL_DEVICES)])
         resolved = {(ScopeType.ALL_DEVICES.value, 0): {1}}
-        result = AssignmentCalculator.compute(
+        result = ProfileAssignmentReconciler.compute(
             profile_id=7, profile_version=3, scope=scope, resolved_device_ids=resolved
         )
         assert len(result) == 1
@@ -123,7 +123,7 @@ class TestAssignmentCalculator:
             (ScopeType.SMART_GROUP.value, 1): {10, 20},
             (ScopeType.SMART_GROUP.value, 2): {20, 30},
         }
-        result = AssignmentCalculator.compute(
+        result = ProfileAssignmentReconciler.compute(
             profile_id=1, profile_version=1, scope=scope, resolved_device_ids=resolved
         )
         device_ids = {a.device_id for a in result}

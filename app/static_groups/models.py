@@ -40,7 +40,7 @@ class StaticGroupDevice(Base):
         primary_key=True,
     )
     device_serial_number: Mapped[str] = mapped_column(
-        String,
+        String(255),
         ForeignKey("devices.serial_number", ondelete="CASCADE"),
         primary_key=True,
     )

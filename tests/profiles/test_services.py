@@ -1,7 +1,9 @@
 from unittest.mock import AsyncMock, MagicMock
 import pytest
+from app.common.schemas import Scope
+from app.profiles.schemas.policy import Policy
 from app.profiles.services import ProfileService
-from app.profiles.schemas import ProfileCreate, ProfileUpdate
+from app.profiles.schemas.profile import ProfileCreate, ProfileUpdate
 
 
 class TestProfileService:
@@ -48,7 +50,7 @@ class TestProfileService:
         fake = MagicMock()
         repo.create = AsyncMock(return_value=fake)
         svc = ProfileService(repo)
-        result = await svc.create_profile(ProfileCreate(name="P", created_by=1))
+        result = await svc.create_profile(ProfileCreate(name="P", policy=Policy(), scope=Scope(), created_by=1))
         assert result is fake
 
     async def test_update_profile(self, repo: MagicMock) -> None:

@@ -15,6 +15,8 @@ class TestProfilesAPI:
             json={
                 "name": "Profile1",
                 "description": "desc",
+                "policy": {},
+                "scope": {"targets": [], "exclusions": []},
             },
         )
         assert create.status_code == 201
@@ -36,13 +38,13 @@ class TestProfilesAPI:
         assert get2.status_code == 404
 
     async def test_list(self, client: AsyncClient) -> None:
-        await client.post(self.BASE, json={"name": "P1"})
+        await client.post(self.BASE, json={"name": "P1", "policy": {}, "scope": {"targets": [], "exclusions": []}})
         resp = await client.get(self.BASE)
         data = resp.json()
         assert data["total"] >= 1 and len(data["items"]) >= 1
 
     async def test_set_scope(self, client: AsyncClient) -> None:
-        create = await client.post(self.BASE, json={"name": "P"})
+        create = await client.post(self.BASE, json={"name": "P", "policy": {}, "scope": {"targets": [], "exclusions": []}})
         pid = create.json()["id"]
         resp = await client.put(
             f"{self.BASE}/{pid}/scope",
@@ -57,7 +59,7 @@ class TestProfilesAPI:
     async def test_settings_update_forces_recalculation_push(
         self, client: AsyncClient
     ) -> None:
-        create = await client.post(self.BASE, json={"name": "SettingsProfile"})
+        create = await client.post(self.BASE, json={"name": "SettingsProfile", "policy": {}, "scope": {"targets": [], "exclusions": []}})
         pid = create.json()["id"]
 
         reconciler = MagicMock()
@@ -66,7 +68,7 @@ class TestProfilesAPI:
         try:
             resp = await client.put(
                 f"{self.BASE}/{pid}",
-                json={"settings": {"managed": True}},
+                json={"policy": {"screenCaptureDisabled": True}},
             )
         finally:
             app.dependency_overrides.pop(get_reconciler, None)
@@ -79,7 +81,7 @@ class TestProfilesAPI:
     async def test_scope_update_recalculates_without_force_push(
         self, client: AsyncClient
     ) -> None:
-        create = await client.post(self.BASE, json={"name": "ScopeProfile"})
+        create = await client.post(self.BASE, json={"name": "ScopeProfile", "policy": {}, "scope": {"targets": [], "exclusions": []}})
         pid = create.json()["id"]
 
         reconciler = MagicMock()
@@ -106,6 +108,7 @@ class TestProfilesAPI:
             self.BASE,
             json={
                 "name": "P2",
+                "policy": {},
                 "scope": {
                     "targets": [{"scope_type": "SMART_GROUP", "target_id": 1}],
                     "exclusions": [],
@@ -118,7 +121,7 @@ class TestProfilesAPI:
         assert len(resp.json()["targets"]) == 1
 
     async def test_get_assignments_empty(self, client: AsyncClient) -> None:
-        create = await client.post(self.BASE, json={"name": "P"})
+        create = await client.post(self.BASE, json={"name": "P", "policy": {}, "scope": {"targets": [], "exclusions": []}})
         pid = create.json()["id"]
         resp = await client.get(f"{self.BASE}/{pid}/assignments")
         assert resp.status_code == 200

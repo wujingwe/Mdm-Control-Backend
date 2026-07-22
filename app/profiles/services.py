@@ -1,7 +1,7 @@
 from app.common.enums import AssignmentStatus
 from app.profiles.models import Profile, ProfileAssignment
 from app.profiles.repositories import ProfileRepository
-from app.profiles.schemas import ProfileCreate, ProfileUpdate, AssignmentUpsert
+from app.profiles.schemas.profile import ProfileCreate, ProfileUpdate, AssignmentUpsert
 
 
 class ProfileService:
