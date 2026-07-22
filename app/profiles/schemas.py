@@ -4,24 +4,21 @@ from pydantic import BaseModel, ConfigDict
 
 from app.common.enums import AssignmentDesiredState, AssignmentStatus
 from app.common.schemas import Scope
-
-
-class ProfileSettings(BaseModel):
-    model_config = ConfigDict(extra="allow")
+from app.profiles.schemas.policy import Policy
 
 
 class ProfileCreate(BaseModel):
     name: str
     description: str | None = None
-    settings: ProfileSettings = ProfileSettings()
-    scope: Scope = Scope()
+    policy: Policy
+    scope: Scope
     created_by: int = 1
 
 
 class ProfileUpdate(BaseModel):
     name: str | None = None
     description: str | None = None
-    settings: ProfileSettings | None = None
+    policy: Policy | None = None
     scope: Scope | None = None
 
 
@@ -29,9 +26,9 @@ class ProfileResponse(BaseModel):
     id: int
     name: str
     description: str | None = None
-    version: int = 1
-    settings: ProfileSettings = ProfileSettings()
-    scope: Scope = Scope()
+    version: int
+    policy: Policy
+    scope: Scope
     created_at: datetime
     created_by: int | None = None
     updated_at: datetime | None = None
