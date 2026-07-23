@@ -19,12 +19,8 @@ class Command(Base):
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    device_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("devices.id", ondelete="CASCADE")
-    )
-    command_type: Mapped[CommandType] = mapped_column(
-        Enum(CommandType, native_enum=False, length=30)
-    )
+    device_id: Mapped[int] = mapped_column(Integer, ForeignKey("devices.id", ondelete="CASCADE"))
+    command_type: Mapped[CommandType] = mapped_column(Enum(CommandType, native_enum=False, length=30))
     status: Mapped[CommandStatus] = mapped_column(
         Enum(CommandStatus, native_enum=False, length=20),
         default=CommandStatus.PENDING,

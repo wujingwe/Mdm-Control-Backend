@@ -5,9 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 class TestStaticGroupsAPI:
     BASE = "/api/v1/static-groups"
 
-    async def test_crud_flow(
-        self, client: AsyncClient, db_session: AsyncSession
-    ) -> None:
+    async def test_crud_flow(self, client: AsyncClient, db_session: AsyncSession) -> None:
         from app.devices.models import Device
 
         dev1 = Device(

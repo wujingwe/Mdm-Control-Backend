@@ -5,11 +5,14 @@ from passlib.context import CryptContext
 from sqlalchemy import text
 
 from app.base import Base
+from app.common.schemas import Scope, Target, ScopeType
 from app.database import engine, async_session
+from app.commands.models import Command
 from app.devices.models import Device
 from app.devices.schemas import Network, Wifi
 from app.extension_attributes.models import ExtensionAttribute
 from app.inventory_search.models import InventorySearch
+from app.mobile_apps.models import MobileApp
 from app.profiles.models import Profile
 from app.smart_groups.models import SmartGroup
 from app.static_groups.models import StaticGroup
@@ -109,7 +112,7 @@ DEVICES = [
         name="SM-X906B-008",
         serial_number="RZCT80G1JH",
         os_version="Android 14",
-        connection_status="Pending",
+        connection_status="UNKNOWN",
         status="Pending",
         battery_status=30,
         total_storage=512,
@@ -193,7 +196,7 @@ DEVICES = [
         name="SM-F721B-015",
         serial_number="RZCT85G0JH",
         os_version="Android 13",
-        connection_status="Pending",
+        connection_status="UNKNOWN",
         status="Pending",
         battery_status=40,
         total_storage=128,
@@ -365,6 +368,23 @@ PROFILES = [
     ),
 ]
 
+MOBILE_APPS = [
+    MobileApp(
+        name="Microsoft Outlook",
+        enabled=True,
+        version="4.75.0",
+        package_name="com.microsoft.office.outlook",
+        scope=Scope(targets=[Target(scope_type=ScopeType.ALL_DEVICES)]).model_dump(),
+    ),
+    MobileApp(
+        name="Microsoft Teams",
+        enabled=True,
+        version="24.12.0",
+        package_name="com.microsoft.teams",
+        scope=Scope(targets=[Target(scope_type=ScopeType.ALL_DEVICES)]).model_dump(),
+    ),
+]
+
 PROFILE_SCOPES = [
     {"profile_index": 0, "target_type": "ALL_DEVICES", "target_id": None},
     {"profile_index": 1, "target_type": "SMART_GROUP", "target_id": None},
@@ -422,37 +442,19 @@ async def seed_database() -> None:
         await session.flush()
         static_group_ids = [sg.id for sg in STATIC_GROUPS]
 
-        device_ids = [d.id for d in DEVICES]
+        serials = [d.serial_number for d in DEVICES]
         if len(static_group_ids) >= 2:
-            session.add(
-                StaticGroupDevice(
-                    static_group_id=static_group_ids[0], device_id=device_ids[0]
-                )
-            )
-            session.add(
-                StaticGroupDevice(
-                    static_group_id=static_group_ids[0], device_id=device_ids[2]
-                )
-            )
-            session.add(
-                StaticGroupDevice(
-                    static_group_id=static_group_ids[0], device_id=device_ids[13]
-                )
-            )
-            session.add(
-                StaticGroupDevice(
-                    static_group_id=static_group_ids[1], device_id=device_ids[3]
-                )
-            )
-            session.add(
-                StaticGroupDevice(
-                    static_group_id=static_group_ids[1], device_id=device_ids[4]
-                )
-            )
+            session.add(StaticGroupDevice(static_group_id=static_group_ids[0], device_serial_number=serials[0]))
+            session.add(StaticGroupDevice(static_group_id=static_group_ids[0], device_serial_number=serials[2]))
+            session.add(StaticGroupDevice(static_group_id=static_group_ids[0], device_serial_number=serials[13]))
+            session.add(StaticGroupDevice(static_group_id=static_group_ids[1], device_serial_number=serials[3]))
+            session.add(StaticGroupDevice(static_group_id=static_group_ids[1], device_serial_number=serials[4]))
 
         session.add_all(INVENTORY_SEARCHES)
 
         session.add_all(EXTENSION_ATTRIBUTES)
+
+        session.add_all(MOBILE_APPS)
 
         session.add_all(PROFILES)
         await session.flush()
@@ -462,10 +464,19 @@ async def seed_database() -> None:
             from app.common.schemas import Scope, Target, ScopeType
             from sqlalchemy import update as sa_update
             from app.profiles.models import Profile
+
             scope0 = Scope(targets=[Target(scope_type=ScopeType.ALL_DEVICES)])
-            scope1 = Scope(
-                targets=[Target(scope_type=ScopeType.SMART_GROUP, target_id=smart_group_ids[0] if smart_group_ids else None)]
-            ) if smart_group_ids else Scope()
+            scope1 = (
+                Scope(
+                    targets=[
+                        Target(
+                            scope_type=ScopeType.SMART_GROUP, target_id=smart_group_ids[0] if smart_group_ids else None
+                        )
+                    ]
+                )
+                if smart_group_ids
+                else Scope()
+            )
             await session.execute(
                 sa_update(Profile).where(Profile.id == profile_ids[0]).values(scope=scope0.model_dump())
             )
@@ -477,5 +488,5 @@ async def seed_database() -> None:
         await session.commit()
 
     logger.info(
-        "Mock database seeded with 3 users, 15 devices, 3 smart groups, 2 static groups, 2 inventory searches, 3 extension attributes, 2 profiles"
+        "Mock database seeded with 3 users, 15 devices, 3 smart groups, 2 static groups, 2 inventory searches, 3 extension attributes, 2 mobile apps, 2 profiles"
     )

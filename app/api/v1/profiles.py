@@ -38,9 +38,7 @@ async def get_profile(
 ) -> ProfileResponse:
     profile = await service.get_profile(profile_id)
     if not profile:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Profile not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Profile not found")
     return ProfileResponse.model_validate(profile)
 
 
@@ -66,9 +64,7 @@ async def update_profile(
 ) -> ProfileResponse:
     updated = await service.update_profile(profile_id, data)
     if not updated:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Profile not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Profile not found")
     if data.scope is not None or data.policy is not None:
         if data.policy is not None:
             await reconciler.recalculate_profile(profile_id, force_push=True)
@@ -85,9 +81,7 @@ async def delete_profile(
 ) -> None:
     deleted = await service.delete_profile(profile_id)
     if not deleted:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Profile not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Profile not found")
     await revalidate(["profiles"])
 
 
@@ -98,9 +92,7 @@ async def get_profile_scope(
 ) -> Scope:
     profile = await service.get_profile(profile_id)
     if not profile:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Profile not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Profile not found")
     return profile.scope
 
 
@@ -111,13 +103,9 @@ async def set_profile_scope(
     service: ProfileService = Depends(get_profile_service),
     reconciler: ProfileAssignmentReconciler = Depends(get_reconciler),
 ) -> Scope:
-    updated = await service.update_profile(
-        profile_id, ProfileUpdate(scope=scope)
-    )
+    updated = await service.update_profile(profile_id, ProfileUpdate(scope=scope))
     if not updated:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Profile not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Profile not found")
     await reconciler.recalculate_profile(profile_id)
     await revalidate(["profiles"])
     return updated.scope
@@ -132,21 +120,15 @@ async def list_assignments(
     return [AssignmentResponse.model_validate(a) for a in assignments]
 
 
-@router.put(
-    "/{profile_id}/assignments/{device_id}/status", response_model=AssignmentResponse
-)
+@router.put("/{profile_id}/assignments/{device_id}/status", response_model=AssignmentResponse)
 async def update_assignment_status(
     profile_id: int,
     device_id: int,
     data: StatusUpdate,
     service: ProfileService = Depends(get_profile_service),
 ) -> AssignmentResponse:
-    assignment = await service.update_assignment_status(
-        profile_id, device_id, data.status.value
-    )
+    assignment = await service.update_assignment_status(profile_id, device_id, data.status.value)
     if not assignment:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Assignment not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Assignment not found")
     await revalidate(["profiles"])
     return AssignmentResponse.model_validate(assignment)

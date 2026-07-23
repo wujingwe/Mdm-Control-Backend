@@ -16,11 +16,7 @@ class User(Base):
     email: Mapped[str] = mapped_column(String(255), unique=True)
     name: Mapped[str] = mapped_column(String(100))
     password_hash: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    permissions: Mapped[frozenset[str]] = mapped_column(
-        PermissionListType, default=lambda: frozenset({"viewer"})
-    )
+    permissions: Mapped[frozenset[str]] = mapped_column(PermissionListType, default=lambda: frozenset({"viewer"}))
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime, default=utcnow, onupdate=utcnow
-    )
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, onupdate=utcnow)
     last_login: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)

@@ -36,9 +36,7 @@ async def get_smart_group(
 ) -> SmartGroupResponse:
     group = await service.get_group(group_id)
     if not group:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Smart group not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Smart group not found")
     return SmartGroupResponse.model_validate(group)
 
 
@@ -63,9 +61,7 @@ async def update_smart_group(
 ) -> SmartGroupResponse:
     updated = await service.update_group(group_id, data)
     if not updated:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Smart group not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Smart group not found")
     await reconciler.recalculate_for_smart_group(group_id)
     await revalidate(["smart-groups"])
     return SmartGroupResponse.model_validate(updated)
@@ -79,8 +75,6 @@ async def delete_smart_group(
 ) -> None:
     deleted = await service.delete_group(group_id)
     if not deleted:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Smart group not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Smart group not found")
     await reconciler.recalculate_for_smart_group(group_id)
     await revalidate(["smart-groups"])

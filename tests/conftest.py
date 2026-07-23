@@ -26,9 +26,7 @@ def _register_sqlite_regexp(dbapi_conn: Any, _connection_record: Any) -> None:
     )
 
 
-test_async_session = async_sessionmaker(
-    test_engine, class_=AsyncSession, expire_on_commit=False
-)
+test_async_session = async_sessionmaker(test_engine, class_=AsyncSession, expire_on_commit=False)
 
 
 async def override_get_db() -> AsyncGenerator[AsyncSession, None]:

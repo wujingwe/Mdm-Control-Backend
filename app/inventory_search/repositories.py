@@ -12,12 +12,7 @@ class InventorySearchRepository:
         self.db = db
 
     async def list_all(self, skip: int = 0, limit: int = 100) -> list[InventorySearch]:
-        stmt = (
-            select(InventorySearch)
-            .order_by(InventorySearch.id)
-            .offset(skip)
-            .limit(limit)
-        )
+        stmt = select(InventorySearch).order_by(InventorySearch.id).offset(skip).limit(limit)
         result = await self.db.execute(stmt)
         return list(result.scalars().all())
 
@@ -37,35 +32,24 @@ class InventorySearchRepository:
             raise ConflictError("Resource already exists") from err
         return instance
 
-    async def update(
-        self, record_id: int, data: InventorySearchUpdate
-    ) -> InventorySearch | None:
+    async def update(self, record_id: int, data: InventorySearchUpdate) -> InventorySearch | None:
         values = data.model_dump(exclude_unset=True)
         if not values:
             return await self.get_by_id(record_id)
-        stmt = (
-            update(InventorySearch)
-            .where(InventorySearch.id == record_id)
-            .values(**values)
-            .returning(InventorySearch)
-        )
-        result = await self.db.execute(stmt)
+        stmt = update(InventorySearch).where(InventorySearch.id == record_id).values(**values)
+        await self.db.execute(stmt)
         try:
             await self.db.commit()
         except IntegrityError as err:
             await self.db.rollback()
             raise ConflictError("Resource already exists") from err
-        return result.scalars().one_or_none()
+        return await self.get_by_id(record_id)
 
     async def delete(self, record_id: int) -> bool:
-        stmt = (
-            delete(InventorySearch)
-            .where(InventorySearch.id == record_id)
-            .returning(InventorySearch.id)
-        )
-        result = await self.db.execute(stmt)
+        stmt = delete(InventorySearch).where(InventorySearch.id == record_id)
+        await self.db.execute(stmt)
         await self.db.commit()
-        return result.scalar_one_or_none() is not None
+        return True
 
     async def count(self) -> int:
         stmt = select(func.count()).select_from(InventorySearch)

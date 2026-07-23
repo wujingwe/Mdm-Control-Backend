@@ -53,10 +53,6 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    op.drop_index(
-        "ix_device_ext_attr_attr_id", table_name="device_extension_attribute_values"
-    )
-    op.drop_index(
-        "ix_device_ext_attr_device_id", table_name="device_extension_attribute_values"
-    )
+    op.drop_index("ix_device_ext_attr_attr_id", table_name="device_extension_attribute_values")
+    op.drop_index("ix_device_ext_attr_device_id", table_name="device_extension_attribute_values")
     op.drop_table("device_extension_attribute_values")

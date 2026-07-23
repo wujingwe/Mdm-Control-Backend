@@ -8,9 +8,7 @@ class ProfileService:
     def __init__(self, repo: ProfileRepository) -> None:
         self.repo = repo
 
-    async def list_profiles(
-        self, skip: int = 0, limit: int = 100
-    ) -> tuple[list[Profile], int]:
+    async def list_profiles(self, skip: int = 0, limit: int = 100) -> tuple[list[Profile], int]:
         items = await self.repo.list_all(skip=skip, limit=limit)
         total = await self.repo.count()
         return items, total
@@ -21,9 +19,7 @@ class ProfileService:
     async def create_profile(self, data: ProfileCreate) -> Profile:
         return await self.repo.create(data)
 
-    async def update_profile(
-        self, profile_id: int, data: ProfileUpdate
-    ) -> Profile | None:
+    async def update_profile(self, profile_id: int, data: ProfileUpdate) -> Profile | None:
         return await self.repo.update(profile_id, data)
 
     async def delete_profile(self, profile_id: int) -> bool:
@@ -32,9 +28,7 @@ class ProfileService:
     async def get_assignments(self, profile_id: int) -> list[ProfileAssignment]:
         return await self.repo.get_assignments(profile_id)
 
-    async def update_assignment_status(
-        self, profile_id: int, device_id: int, status: str
-    ) -> ProfileAssignment | None:
+    async def update_assignment_status(self, profile_id: int, device_id: int, status: str) -> ProfileAssignment | None:
         from datetime import datetime, timezone
 
         assignment = await self.repo.get_assignment(profile_id, device_id)

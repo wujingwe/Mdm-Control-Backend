@@ -89,9 +89,7 @@ def _make_mock_queue() -> SimpleNamespace:
 
 
 class TestRabbitMQProducer:
-    async def test_publish_json_sends_persistent_json_message(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    async def test_publish_json_sends_persistent_json_message(self, monkeypatch: pytest.MonkeyPatch) -> None:
         import app.messaging.producer as producer_module
 
         monkeypatch.setattr(producer_module, "aio_pika", _FakeAioPika)
@@ -119,9 +117,7 @@ class TestRabbitMQProducer:
         assert exchange.publish.call_args.kwargs["routing_key"] == "device.42"
         assert exchange.publish.call_args.kwargs["mandatory"] is True
 
-    async def test_publish_json_generates_message_id_when_not_provided(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    async def test_publish_json_generates_message_id_when_not_provided(self, monkeypatch: pytest.MonkeyPatch) -> None:
         import app.messaging.producer as producer_module
 
         monkeypatch.setattr(producer_module, "aio_pika", _FakeAioPika)
@@ -137,9 +133,7 @@ class TestRabbitMQProducer:
         assert isinstance(message_id, str)
         assert len(message_id) == 36
 
-    async def test_publish_json_with_headers(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    async def test_publish_json_with_headers(self, monkeypatch: pytest.MonkeyPatch) -> None:
         import app.messaging.producer as producer_module
 
         monkeypatch.setattr(producer_module, "aio_pika", _FakeAioPika)
@@ -156,9 +150,7 @@ class TestRabbitMQProducer:
         message = producer._exchange.publish.call_args.args[0]
         assert message.kwargs["headers"] == {"x-retry-count": 3}
 
-    async def test_publish_json_without_correlation_id(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    async def test_publish_json_without_correlation_id(self, monkeypatch: pytest.MonkeyPatch) -> None:
         import app.messaging.producer as producer_module
 
         monkeypatch.setattr(producer_module, "aio_pika", _FakeAioPika)
@@ -180,9 +172,7 @@ class TestRabbitMQProducer:
         with pytest.raises(RuntimeError, match="not started"):
             await producer.publish_json({"profile_id": 1}, routing_key="device.1")
 
-    async def test_publish_profile_push_routes_by_device_id(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    async def test_publish_profile_push_routes_by_device_id(self, monkeypatch: pytest.MonkeyPatch) -> None:
         import app.messaging.producer as producer_module
 
         monkeypatch.setattr(producer_module, "aio_pika", _FakeAioPika)
@@ -207,9 +197,7 @@ class TestRabbitMQProducer:
         assert exchange.publish.call_args.kwargs["routing_key"] == "device.42"
         assert message.kwargs["correlation_id"] == "10"
 
-    async def test_publish_profile_revoke_routes_by_device_id(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    async def test_publish_profile_revoke_routes_by_device_id(self, monkeypatch: pytest.MonkeyPatch) -> None:
         import app.messaging.producer as producer_module
 
         monkeypatch.setattr(producer_module, "aio_pika", _FakeAioPika)
@@ -232,9 +220,7 @@ class TestRabbitMQProducer:
         }
         assert message.kwargs["correlation_id"] == "10"
 
-    async def test_start_connects_and_declares_exchange(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    async def test_start_connects_and_declares_exchange(self, monkeypatch: pytest.MonkeyPatch) -> None:
         import app.messaging.producer as producer_module
 
         mock_exchange = _make_mock_exchange()
@@ -262,9 +248,7 @@ class TestRabbitMQProducer:
         assert producer._exchange is mock_exchange
         assert producer.healthy
 
-    async def test_start_skips_if_already_connected(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    async def test_start_skips_if_already_connected(self, monkeypatch: pytest.MonkeyPatch) -> None:
         import app.messaging.producer as producer_module
 
         monkeypatch.setattr(producer_module, "aio_pika", _FakeAioPika)
@@ -285,9 +269,7 @@ class TestRabbitMQProducer:
         await producer.start()
         assert not connect_called
 
-    async def test_stop_closes_connection(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    async def test_stop_closes_connection(self, monkeypatch: pytest.MonkeyPatch) -> None:
         import app.messaging.producer as producer_module
 
         monkeypatch.setattr(producer_module, "aio_pika", _FakeAioPika)
@@ -306,9 +288,7 @@ class TestRabbitMQProducer:
         assert producer._channel is None
         assert producer._exchange is None
 
-    async def test_stop_skips_if_no_connection(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    async def test_stop_skips_if_no_connection(self, monkeypatch: pytest.MonkeyPatch) -> None:
         import app.messaging.producer as producer_module
 
         monkeypatch.setattr(producer_module, "aio_pika", _FakeAioPika)
@@ -318,9 +298,7 @@ class TestRabbitMQProducer:
         await producer.stop()
         assert producer._connection is None
 
-    async def test_stop_skips_if_already_closed(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    async def test_stop_skips_if_already_closed(self, monkeypatch: pytest.MonkeyPatch) -> None:
         import app.messaging.producer as producer_module
 
         monkeypatch.setattr(producer_module, "aio_pika", _FakeAioPika)
@@ -375,9 +353,7 @@ class TestRabbitMQProducer:
         with pytest.raises(ValueError, match="Unsupported"):
             producer._exchange_type()
 
-    async def test_start_raises_when_aio_pika_none(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    async def test_start_raises_when_aio_pika_none(self, monkeypatch: pytest.MonkeyPatch) -> None:
         import app.messaging.producer as producer_module
 
         monkeypatch.setattr(producer_module, "aio_pika", None)
@@ -424,9 +400,7 @@ class TestRabbitMQProducer:
         await producer._ensure_connected()
         assert producer.healthy
 
-    async def test_publish_json_serializes_datetime_as_string(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    async def test_publish_json_serializes_datetime_as_string(self, monkeypatch: pytest.MonkeyPatch) -> None:
         from datetime import datetime
 
         import app.messaging.producer as producer_module
@@ -449,9 +423,7 @@ class TestRabbitMQProducer:
 
 class TestRabbitMQConsumer:
     def test_decode_message_valid(self) -> None:
-        assert RabbitMQConsumer._decode_message(b'{"profile_id": 1}') == {
-            "profile_id": 1
-        }
+        assert RabbitMQConsumer._decode_message(b'{"profile_id": 1}') == {"profile_id": 1}
 
     def test_decode_message_invalid_json(self) -> None:
         with pytest.raises(ValueError, match="valid JSON"):
@@ -465,9 +437,7 @@ class TestRabbitMQConsumer:
         with pytest.raises(ValueError, match="JSON object"):
             RabbitMQConsumer._decode_message(b'"just a string"')
 
-    async def test_start_connects_declares_exchange_queue_and_consumes(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    async def test_start_connects_declares_exchange_queue_and_consumes(self, monkeypatch: pytest.MonkeyPatch) -> None:
         import app.messaging.consumer as consumer_module
 
         mock_exchange = _make_mock_exchange()
@@ -512,9 +482,7 @@ class TestRabbitMQConsumer:
             channel = SimpleNamespace(
                 declare_exchange=AsyncMock(return_value=mock_exchange),
                 declare_queue=AsyncMock(return_value=mock_queue),
-                set_qos=AsyncMock(
-                    side_effect=lambda **kw: set_qos_called_with.update(kw)
-                ),
+                set_qos=AsyncMock(side_effect=lambda **kw: set_qos_called_with.update(kw)),
             )
             return SimpleNamespace(
                 channel=AsyncMock(return_value=channel),
@@ -531,9 +499,7 @@ class TestRabbitMQConsumer:
 
         assert set_qos_called_with == {"prefetch_count": 25}
 
-    async def test_start_skips_if_already_connected(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    async def test_start_skips_if_already_connected(self, monkeypatch: pytest.MonkeyPatch) -> None:
         import app.messaging.consumer as consumer_module
 
         monkeypatch.setattr(consumer_module, "aio_pika", _FakeAioPika)
@@ -554,9 +520,7 @@ class TestRabbitMQConsumer:
         await consumer.start()
         assert not connect_called
 
-    async def test_stop_cancels_consumer_and_closes_connection(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    async def test_stop_cancels_consumer_and_closes_connection(self, monkeypatch: pytest.MonkeyPatch) -> None:
         import app.messaging.consumer as consumer_module
 
         monkeypatch.setattr(consumer_module, "aio_pika", _FakeAioPika)
@@ -582,9 +546,7 @@ class TestRabbitMQConsumer:
         assert consumer.healthy is False
         assert consumer._stopped.is_set()
 
-    async def test_stop_skips_if_no_queue(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    async def test_stop_skips_if_no_queue(self, monkeypatch: pytest.MonkeyPatch) -> None:
         import app.messaging.consumer as consumer_module
 
         monkeypatch.setattr(consumer_module, "aio_pika", _FakeAioPika)
@@ -597,9 +559,7 @@ class TestRabbitMQConsumer:
         await consumer.stop()
         mock_conn.close.assert_awaited_once()
 
-    async def test_stop_skips_if_connection_already_closed(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    async def test_stop_skips_if_connection_already_closed(self, monkeypatch: pytest.MonkeyPatch) -> None:
         import app.messaging.consumer as consumer_module
 
         monkeypatch.setattr(consumer_module, "aio_pika", _FakeAioPika)
@@ -647,9 +607,7 @@ class TestRabbitMQConsumer:
         consumer._exchange = mock_exchange
 
         await consumer.unbind_routing_key("device.42")
-        mock_queue.unbind.assert_awaited_once_with(
-            mock_exchange, routing_key="device.42"
-        )
+        mock_queue.unbind.assert_awaited_once_with(mock_exchange, routing_key="device.42")
 
     async def test_unbind_routing_key_not_started(self) -> None:
         config = _make_consumer_config()
@@ -692,9 +650,7 @@ class TestRabbitMQConsumer:
         with pytest.raises(ValueError, match="Unsupported"):
             consumer._exchange_type()
 
-    async def test_start_raises_when_aio_pika_none(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    async def test_start_raises_when_aio_pika_none(self, monkeypatch: pytest.MonkeyPatch) -> None:
         import app.messaging.consumer as consumer_module
 
         monkeypatch.setattr(consumer_module, "aio_pika", None)
@@ -703,9 +659,7 @@ class TestRabbitMQConsumer:
         with pytest.raises(RuntimeError, match="aio-pika is required"):
             await consumer.start()
 
-    async def test_on_message_calls_handler(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    async def test_on_message_calls_handler(self, monkeypatch: pytest.MonkeyPatch) -> None:
         import app.messaging.consumer as consumer_module
 
         monkeypatch.setattr(consumer_module, "aio_pika", _FakeAioPika)
@@ -725,9 +679,7 @@ class TestRabbitMQConsumer:
 
         handler.assert_awaited_once_with({"event_type": "test", "data": 42})
 
-    async def test_on_message_requeues_on_error_when_configured(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    async def test_on_message_requeues_on_error_when_configured(self, monkeypatch: pytest.MonkeyPatch) -> None:
         import app.messaging.consumer as consumer_module
 
         monkeypatch.setattr(consumer_module, "aio_pika", _FakeAioPika)
@@ -748,9 +700,7 @@ class TestRabbitMQConsumer:
 
         message.process.assert_called_once_with(requeue=True)
 
-    async def test_on_message_does_not_requeue_by_default(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    async def test_on_message_does_not_requeue_by_default(self, monkeypatch: pytest.MonkeyPatch) -> None:
         import app.messaging.consumer as consumer_module
 
         monkeypatch.setattr(consumer_module, "aio_pika", _FakeAioPika)
@@ -771,9 +721,7 @@ class TestRabbitMQConsumer:
 
         message.process.assert_called_once_with(requeue=False)
 
-    async def test_start_binds_multiple_keys(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    async def test_start_binds_multiple_keys(self, monkeypatch: pytest.MonkeyPatch) -> None:
         import app.messaging.consumer as consumer_module
 
         mock_exchange = _make_mock_exchange()
@@ -804,9 +752,7 @@ class TestRabbitMQConsumer:
 class TestProcessProfileStatusMessage:
     @patch("app.messaging.consumer.async_session")
     @patch("app.messaging.consumer.send_validation_webhook", new_callable=AsyncMock)
-    async def test_successful_status_update_applied(
-        self, mock_webhook: Any, mock_session_factory: Any
-    ) -> None:
+    async def test_successful_status_update_applied(self, mock_webhook: Any, mock_session_factory: Any) -> None:
         assignment = MagicMock()
         assignment.profile_id = 5
         assignment.device_id = 10
@@ -836,9 +782,7 @@ class TestProcessProfileStatusMessage:
 
     @patch("app.messaging.consumer.async_session")
     @patch("app.messaging.consumer.send_validation_webhook", new_callable=AsyncMock)
-    async def test_successful_status_update_pending(
-        self, mock_webhook: Any, mock_session_factory: Any
-    ) -> None:
+    async def test_successful_status_update_pending(self, mock_webhook: Any, mock_session_factory: Any) -> None:
         assignment = MagicMock()
         assignment.profile_id = 5
         assignment.device_id = 10
@@ -886,14 +830,10 @@ class TestProcessProfileStatusMessage:
         mock_db.commit.assert_not_called()
 
     async def test_invalid_message_missing_profile_id(self) -> None:
-        await process_profile_status_message(
-            {"event_type": "profile.status.reported", "device_id": 10}
-        )
+        await process_profile_status_message({"event_type": "profile.status.reported", "device_id": 10})
 
     async def test_invalid_message_no_device_info(self) -> None:
-        await process_profile_status_message(
-            {"event_type": "profile.status.reported", "profile_id": 5}
-        )
+        await process_profile_status_message({"event_type": "profile.status.reported", "profile_id": 5})
 
     async def test_invalid_status_value(self) -> None:
         await process_profile_status_message(
@@ -910,9 +850,7 @@ class TestProcessProfileStatusMessage:
 
     @patch("app.messaging.consumer.async_session")
     @patch("app.messaging.consumer.send_validation_webhook", new_callable=AsyncMock)
-    async def test_webhook_failure_does_not_nack(
-        self, mock_webhook: Any, mock_session_factory: Any
-    ) -> None:
+    async def test_webhook_failure_does_not_nack(self, mock_webhook: Any, mock_session_factory: Any) -> None:
         mock_webhook.side_effect = RuntimeError("Webhook down")
 
         assignment = MagicMock()

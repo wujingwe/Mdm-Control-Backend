@@ -83,31 +83,23 @@ class TestEmptyInput:
 
 class TestSingleCriterion:
     def test_is_operator(self) -> None:
-        result = build_device_query(
-            [Criteria(field="name", operator="is", type=CriteriaType.STRING, value="Mac")]
-        )
+        result = build_device_query([Criteria(field="name", operator="is", type=CriteriaType.STRING, value="Mac")])
         sql = _compile(result)
         assert "devices.name = 'Mac'" in sql
 
     def test_is_not_operator(self) -> None:
-        result = build_device_query(
-            [Criteria(field="name", operator="isNot", type=CriteriaType.STRING, value="Mac")]
-        )
+        result = build_device_query([Criteria(field="name", operator="isNot", type=CriteriaType.STRING, value="Mac")])
         sql = _compile(result)
         assert "devices.name != 'Mac'" in sql
 
     def test_like_operator(self) -> None:
-        result = build_device_query(
-            [Criteria(field="name", operator="like", type=CriteriaType.STRING, value="Mac")]
-        )
+        result = build_device_query([Criteria(field="name", operator="like", type=CriteriaType.STRING, value="Mac")])
         sql = _full_query(result)
         assert "LIKE" in sql
         assert "%Mac%" in sql
 
     def test_not_like_operator(self) -> None:
-        result = build_device_query(
-            [Criteria(field="name", operator="notLike", type=CriteriaType.STRING, value="Mac")]
-        )
+        result = build_device_query([Criteria(field="name", operator="notLike", type=CriteriaType.STRING, value="Mac")])
         sql = _full_query(result)
         assert "NOT LIKE" in sql
 
@@ -163,9 +155,7 @@ class TestSingleCriterion:
         assert "IS NOT NULL" in sql
 
     def test_full_query_selects_from_devices(self) -> None:
-        result = build_device_query(
-            [Criteria(field="name", operator="is", type=CriteriaType.STRING, value="Mac")]
-        )
+        result = build_device_query([Criteria(field="name", operator="is", type=CriteriaType.STRING, value="Mac")])
         sql = _full_query(result)
         assert sql.startswith("SELECT devices.")
 
@@ -265,12 +255,20 @@ class TestParenthesesGrouping:
         result = build_device_query(
             [
                 Criteria(
-                    field="name", operator="like", type=CriteriaType.STRING,
-                    value="Mac", and_or="AND", left_parentheses=True,
+                    field="name",
+                    operator="like",
+                    type=CriteriaType.STRING,
+                    value="Mac",
+                    and_or="AND",
+                    left_parentheses=True,
                 ),
                 Criteria(
-                    field="status", operator="is", type=CriteriaType.STRING,
-                    value="ENROLLED", and_or="AND", right_parentheses=True,
+                    field="status",
+                    operator="is",
+                    type=CriteriaType.STRING,
+                    value="ENROLLED",
+                    and_or="AND",
+                    right_parentheses=True,
                 ),
             ]
         )
@@ -284,20 +282,36 @@ class TestParenthesesGrouping:
         result = build_device_query(
             [
                 Criteria(
-                    field="name", operator="like", type=CriteriaType.STRING,
-                    value="Mac", and_or="AND", left_parentheses=True,
+                    field="name",
+                    operator="like",
+                    type=CriteriaType.STRING,
+                    value="Mac",
+                    and_or="AND",
+                    left_parentheses=True,
                 ),
                 Criteria(
-                    field="status", operator="is", type=CriteriaType.STRING,
-                    value="ENROLLED", and_or="AND", right_parentheses=True,
+                    field="status",
+                    operator="is",
+                    type=CriteriaType.STRING,
+                    value="ENROLLED",
+                    and_or="AND",
+                    right_parentheses=True,
                 ),
                 Criteria(
-                    field="os_version", operator="like", type=CriteriaType.STRING,
-                    value="macOS", and_or="AND", left_parentheses=True,
+                    field="os_version",
+                    operator="like",
+                    type=CriteriaType.STRING,
+                    value="macOS",
+                    and_or="AND",
+                    left_parentheses=True,
                 ),
                 Criteria(
-                    field="connection_status", operator="is", type=CriteriaType.STRING,
-                    value="CONNECTED", and_or="AND", right_parentheses=True,
+                    field="connection_status",
+                    operator="is",
+                    type=CriteriaType.STRING,
+                    value="CONNECTED",
+                    and_or="AND",
+                    right_parentheses=True,
                 ),
             ]
         )
@@ -313,20 +327,36 @@ class TestParenthesesGrouping:
         result = build_device_query(
             [
                 Criteria(
-                    field="name", operator="like", type=CriteriaType.STRING,
-                    value="Mac", and_or="AND", left_parentheses=True,
+                    field="name",
+                    operator="like",
+                    type=CriteriaType.STRING,
+                    value="Mac",
+                    and_or="AND",
+                    left_parentheses=True,
                 ),
                 Criteria(
-                    field="status", operator="is", type=CriteriaType.STRING,
-                    value="ENROLLED", and_or="OR", right_parentheses=True,
+                    field="status",
+                    operator="is",
+                    type=CriteriaType.STRING,
+                    value="ENROLLED",
+                    and_or="OR",
+                    right_parentheses=True,
                 ),
                 Criteria(
-                    field="name", operator="like", type=CriteriaType.STRING,
-                    value="iPhone", and_or="AND", left_parentheses=True,
+                    field="name",
+                    operator="like",
+                    type=CriteriaType.STRING,
+                    value="iPhone",
+                    and_or="AND",
+                    left_parentheses=True,
                 ),
                 Criteria(
-                    field="status", operator="is", type=CriteriaType.STRING,
-                    value="PENDING", and_or="AND", right_parentheses=True,
+                    field="status",
+                    operator="is",
+                    type=CriteriaType.STRING,
+                    value="PENDING",
+                    and_or="AND",
+                    right_parentheses=True,
                 ),
             ]
         )
@@ -341,16 +371,31 @@ class TestParenthesesGrouping:
         result = build_device_query(
             [
                 Criteria(
-                    field="name", operator="like", type=CriteriaType.STRING,
-                    value="Mac", and_or="AND", left_parentheses=True, right_parentheses=True,
+                    field="name",
+                    operator="like",
+                    type=CriteriaType.STRING,
+                    value="Mac",
+                    and_or="AND",
+                    left_parentheses=True,
+                    right_parentheses=True,
                 ),
                 Criteria(
-                    field="name", operator="like", type=CriteriaType.STRING,
-                    value="iPhone", and_or="AND", left_parentheses=True, right_parentheses=True,
+                    field="name",
+                    operator="like",
+                    type=CriteriaType.STRING,
+                    value="iPhone",
+                    and_or="AND",
+                    left_parentheses=True,
+                    right_parentheses=True,
                 ),
                 Criteria(
-                    field="name", operator="like", type=CriteriaType.STRING,
-                    value="Galaxy", and_or="AND", left_parentheses=True, right_parentheses=True,
+                    field="name",
+                    operator="like",
+                    type=CriteriaType.STRING,
+                    value="Galaxy",
+                    and_or="AND",
+                    left_parentheses=True,
+                    right_parentheses=True,
                 ),
             ]
         )
@@ -365,15 +410,25 @@ class TestParenthesesGrouping:
         result = build_device_query(
             [
                 Criteria(
-                    field="name", operator="like", type=CriteriaType.STRING,
-                    value="Mac", and_or="OR", left_parentheses=True,
+                    field="name",
+                    operator="like",
+                    type=CriteriaType.STRING,
+                    value="Mac",
+                    and_or="OR",
+                    left_parentheses=True,
                 ),
                 Criteria(
-                    field="name", operator="like", type=CriteriaType.STRING,
-                    value="iPhone", and_or="AND", right_parentheses=True,
+                    field="name",
+                    operator="like",
+                    type=CriteriaType.STRING,
+                    value="iPhone",
+                    and_or="AND",
+                    right_parentheses=True,
                 ),
                 Criteria(
-                    field="status", operator="is", type=CriteriaType.STRING,
+                    field="status",
+                    operator="is",
+                    type=CriteriaType.STRING,
                     value="ENROLLED",
                 ),
             ]
@@ -388,20 +443,36 @@ class TestParenthesesGrouping:
         result = build_device_query(
             [
                 Criteria(
-                    field="name", operator="like", type=CriteriaType.STRING,
-                    value="A", and_or="AND", left_parentheses=True,
+                    field="name",
+                    operator="like",
+                    type=CriteriaType.STRING,
+                    value="A",
+                    and_or="AND",
+                    left_parentheses=True,
                 ),
                 Criteria(
-                    field="name", operator="like", type=CriteriaType.STRING,
-                    value="B", and_or="AND", right_parentheses=True,
+                    field="name",
+                    operator="like",
+                    type=CriteriaType.STRING,
+                    value="B",
+                    and_or="AND",
+                    right_parentheses=True,
                 ),
                 Criteria(
-                    field="name", operator="like", type=CriteriaType.STRING,
-                    value="C", and_or="AND", left_parentheses=True,
+                    field="name",
+                    operator="like",
+                    type=CriteriaType.STRING,
+                    value="C",
+                    and_or="AND",
+                    left_parentheses=True,
                 ),
                 Criteria(
-                    field="name", operator="like", type=CriteriaType.STRING,
-                    value="D", and_or="AND", right_parentheses=True,
+                    field="name",
+                    operator="like",
+                    type=CriteriaType.STRING,
+                    value="D",
+                    and_or="AND",
+                    right_parentheses=True,
                 ),
             ]
         )
@@ -416,11 +487,17 @@ class TestParenthesesGrouping:
         result = build_device_query(
             [
                 Criteria(
-                    field="name", operator="like", type=CriteriaType.STRING,
-                    value="A", and_or="AND", left_parentheses=True,
+                    field="name",
+                    operator="like",
+                    type=CriteriaType.STRING,
+                    value="A",
+                    and_or="AND",
+                    left_parentheses=True,
                 ),
                 Criteria(
-                    field="name", operator="like", type=CriteriaType.STRING,
+                    field="name",
+                    operator="like",
+                    type=CriteriaType.STRING,
                     value="B",
                 ),
             ]
@@ -463,9 +540,7 @@ class TestEdgeCases:
         assert "'B'" not in sql
 
     def test_empty_string_value(self) -> None:
-        result = build_device_query(
-            [Criteria(field="name", operator="is", type=CriteriaType.STRING, value="")]
-        )
+        result = build_device_query([Criteria(field="name", operator="is", type=CriteriaType.STRING, value="")])
         sql = _compile(result)
         assert "devices.name = ''" in sql
 
@@ -474,8 +549,12 @@ class TestEdgeCases:
         result = build_device_query(
             [
                 Criteria(
-                    field="name", operator="is", type=CriteriaType.STRING,
-                    value="Mac", left_parentheses=True, right_parentheses=True,
+                    field="name",
+                    operator="is",
+                    type=CriteriaType.STRING,
+                    value="Mac",
+                    left_parentheses=True,
+                    right_parentheses=True,
                 ),
             ]
         )
@@ -487,12 +566,20 @@ class TestEdgeCases:
         result = build_device_query(
             [
                 Criteria(
-                    field="name", operator="is", type=CriteriaType.STRING,
-                    value="A", and_or="AND", left_parentheses=True,
+                    field="name",
+                    operator="is",
+                    type=CriteriaType.STRING,
+                    value="A",
+                    and_or="AND",
+                    left_parentheses=True,
                 ),
                 Criteria(
-                    field="name", operator="is", type=CriteriaType.STRING,
-                    value="B", and_or="AND", left_parentheses=True,
+                    field="name",
+                    operator="is",
+                    type=CriteriaType.STRING,
+                    value="B",
+                    and_or="AND",
+                    left_parentheses=True,
                 ),
             ]
         )
@@ -507,12 +594,20 @@ class TestEdgeCases:
             [
                 Criteria(field="name", operator="is", type=CriteriaType.STRING, value="A"),
                 Criteria(
-                    field="status", operator="is", type=CriteriaType.STRING,
-                    value="ENROLLED", and_or="AND", left_parentheses=True,
+                    field="status",
+                    operator="is",
+                    type=CriteriaType.STRING,
+                    value="ENROLLED",
+                    and_or="AND",
+                    left_parentheses=True,
                 ),
                 Criteria(
-                    field="os_version", operator="is", type=CriteriaType.STRING,
-                    value="iOS", and_or="AND", right_parentheses=True,
+                    field="os_version",
+                    operator="is",
+                    type=CriteriaType.STRING,
+                    value="iOS",
+                    and_or="AND",
+                    right_parentheses=True,
                 ),
             ]
         )
@@ -523,7 +618,11 @@ class TestEdgeCases:
 
     def test_date_value_comparison(self) -> None:
         result = build_device_query(
-            [Criteria(field="last_enrolled_at", operator="greaterThanOrEqual", type=CriteriaType.DATE, value="2024-01-01")]
+            [
+                Criteria(
+                    field="last_enrolled_at", operator="greaterThanOrEqual", type=CriteriaType.DATE, value="2024-01-01"
+                )
+            ]
         )
         sql = _compile(result)
         assert "2024-01-01" in sql
@@ -537,23 +636,17 @@ class TestEdgeCases:
 
 class TestMariaDBValidity:
     def test_select_from_devices_table(self) -> None:
-        result = build_device_query(
-            [Criteria(field="name", operator="is", type=CriteriaType.STRING, value="test")]
-        )
+        result = build_device_query([Criteria(field="name", operator="is", type=CriteriaType.STRING, value="test")])
         sql = _full_query(result)
         assert "FROM devices" in sql
 
     def test_table_qualified_column_names(self) -> None:
-        result = build_device_query(
-            [Criteria(field="name", operator="is", type=CriteriaType.STRING, value="test")]
-        )
+        result = build_device_query([Criteria(field="name", operator="is", type=CriteriaType.STRING, value="test")])
         sql = _compile(result)
         assert "devices.name" in sql
 
     def test_string_values_single_quoted(self) -> None:
-        result = build_device_query(
-            [Criteria(field="name", operator="is", type=CriteriaType.STRING, value="hello")]
-        )
+        result = build_device_query([Criteria(field="name", operator="is", type=CriteriaType.STRING, value="hello")])
         sql = _compile(result)
         assert "'hello'" in sql
 
@@ -576,15 +669,25 @@ class TestMariaDBValidity:
         result = build_device_query(
             [
                 Criteria(
-                    field="name", operator="like", type=CriteriaType.STRING,
-                    value="Mac", and_or="OR", left_parentheses=True,
+                    field="name",
+                    operator="like",
+                    type=CriteriaType.STRING,
+                    value="Mac",
+                    and_or="OR",
+                    left_parentheses=True,
                 ),
                 Criteria(
-                    field="name", operator="like", type=CriteriaType.STRING,
-                    value="iPhone", and_or="AND", right_parentheses=True,
+                    field="name",
+                    operator="like",
+                    type=CriteriaType.STRING,
+                    value="iPhone",
+                    and_or="AND",
+                    right_parentheses=True,
                 ),
                 Criteria(
-                    field="status", operator="is", type=CriteriaType.STRING,
+                    field="status",
+                    operator="is",
+                    type=CriteriaType.STRING,
                     value="ENROLLED",
                 ),
             ]
@@ -596,20 +699,36 @@ class TestMariaDBValidity:
         result = build_device_query(
             [
                 Criteria(
-                    field="name", operator="like", type=CriteriaType.STRING,
-                    value="A", and_or="AND", left_parentheses=True,
+                    field="name",
+                    operator="like",
+                    type=CriteriaType.STRING,
+                    value="A",
+                    and_or="AND",
+                    left_parentheses=True,
                 ),
                 Criteria(
-                    field="name", operator="like", type=CriteriaType.STRING,
-                    value="B", and_or="OR", right_parentheses=True,
+                    field="name",
+                    operator="like",
+                    type=CriteriaType.STRING,
+                    value="B",
+                    and_or="OR",
+                    right_parentheses=True,
                 ),
                 Criteria(
-                    field="name", operator="like", type=CriteriaType.STRING,
-                    value="C", and_or="AND", left_parentheses=True,
+                    field="name",
+                    operator="like",
+                    type=CriteriaType.STRING,
+                    value="C",
+                    and_or="AND",
+                    left_parentheses=True,
                 ),
                 Criteria(
-                    field="name", operator="like", type=CriteriaType.STRING,
-                    value="D", and_or="AND", right_parentheses=True,
+                    field="name",
+                    operator="like",
+                    type=CriteriaType.STRING,
+                    value="D",
+                    and_or="AND",
+                    right_parentheses=True,
                 ),
             ]
         )

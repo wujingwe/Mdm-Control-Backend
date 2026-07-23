@@ -27,26 +27,14 @@ def upgrade() -> None:
         "profile_assignments",
         sa.Column("attempt_count", sa.Integer(), nullable=False, server_default="0"),
     )
-    op.add_column(
-        "profile_assignments", sa.Column("last_attempt_at", sa.DateTime(), nullable=True)
-    )
-    op.add_column(
-        "profile_assignments", sa.Column("last_error", sa.Text(), nullable=True)
-    )
-    op.add_column(
-        "profile_assignments", sa.Column("message_id", sa.String(length=255), nullable=True)
-    )
+    op.add_column("profile_assignments", sa.Column("last_attempt_at", sa.DateTime(), nullable=True))
+    op.add_column("profile_assignments", sa.Column("last_error", sa.Text(), nullable=True))
+    op.add_column("profile_assignments", sa.Column("message_id", sa.String(length=255), nullable=True))
     op.add_column(
         "profile_assignments",
         sa.Column("updated_at", sa.DateTime(), nullable=True),
     )
-    op.execute(
-        sa.text(
-            "UPDATE profile_assignments "
-            "SET updated_at = assigned_at "
-            "WHERE updated_at IS NULL"
-        )
-    )
+    op.execute(sa.text("UPDATE profile_assignments SET updated_at = assigned_at WHERE updated_at IS NULL"))
     op.alter_column("profile_assignments", "desired_state", server_default=None)
     op.alter_column("profile_assignments", "attempt_count", server_default=None)
 

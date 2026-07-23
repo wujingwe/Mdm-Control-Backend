@@ -18,11 +18,7 @@ class DeviceRepository:
         return list(result.scalars().all())
 
     async def get_by_id(self, record_id: int) -> Device | None:
-        stmt = (
-            select(Device)
-            .options(selectinload(Device.extension_attributes))
-            .where(Device.id == record_id)
-        )
+        stmt = select(Device).options(selectinload(Device.extension_attributes)).where(Device.id == record_id)
         result = await self.db.execute(stmt)
         return result.scalar_one_or_none()
 
@@ -46,16 +42,14 @@ class DeviceRepository:
 
         if values:
             stmt = update(Device).where(Device.id == record_id).values(**values)
-            result = await self.db.execute(stmt)
-            if result.rowcount == 0:  # type: ignore[attr-defined]
-                return None
-            self.db.expire(await self.db.get(Device, record_id))
+            await self.db.execute(stmt)
+            instance = await self.db.get(Device, record_id)
+            if instance is not None:
+                self.db.expire(instance)
 
         if ext_attrs is not None:
             await self.db.execute(
-                delete(DeviceExtensionAttribute).where(
-                    DeviceExtensionAttribute.device_id == record_id
-                )
+                delete(DeviceExtensionAttribute).where(DeviceExtensionAttribute.device_id == record_id)
             )
             for attr in ext_attrs:
                 self.db.add(
@@ -77,10 +71,10 @@ class DeviceRepository:
         return await self.get_by_id(record_id)
 
     async def delete(self, record_id: int) -> bool:
-        stmt = delete(Device).where(Device.id == record_id).returning(Device.id)
-        result = await self.db.execute(stmt)
+        stmt = delete(Device).where(Device.id == record_id)
+        await self.db.execute(stmt)
         await self.db.commit()
-        return result.scalar_one_or_none() is not None
+        return True
 
     async def count(self) -> int:
         stmt = select(func.count()).select_from(Device)

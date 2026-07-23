@@ -44,9 +44,7 @@ def downgrade() -> None:
     op.drop_column("users", "permissions")
     op.create_table(
         "roles",
-        sa.Column(
-            "id", mysql.INTEGER(display_width=11), autoincrement=True, nullable=False
-        ),
+        sa.Column("id", mysql.INTEGER(display_width=11), autoincrement=True, nullable=False),
         sa.Column("name", mysql.VARCHAR(length=50), nullable=False),
         sa.Column("description", mysql.VARCHAR(length=200), nullable=True),
         sa.PrimaryKeyConstraint("id"),

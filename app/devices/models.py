@@ -31,16 +31,10 @@ class Device(Base):
     name: Mapped[str] = mapped_column(String(100))
     serial_number: Mapped[str] = mapped_column(String(30), unique=True)
     os_version: Mapped[str] = mapped_column(String(20))
-    connection_status: Mapped[ConnectionStatus] = mapped_column(
-        Enum(ConnectionStatus, native_enum=False, length=20)
-    )
-    status: Mapped[DeviceStatus] = mapped_column(
-        Enum(DeviceStatus, native_enum=False, length=20)
-    )
+    connection_status: Mapped[ConnectionStatus] = mapped_column(Enum(ConnectionStatus, native_enum=False, length=20))
+    status: Mapped[DeviceStatus] = mapped_column(Enum(DeviceStatus, native_enum=False, length=20))
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime, default=utcnow, onupdate=utcnow
-    )
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, onupdate=utcnow)
     last_enrolled_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
     battery_status: Mapped[int | None] = mapped_column(Integer, nullable=True)
     total_storage: Mapped[int | None] = mapped_column(Integer, nullable=True)
@@ -48,9 +42,7 @@ class Device(Base):
     total_memory: Mapped[int | None] = mapped_column(Integer, nullable=True)
     available_memory: Mapped[int | None] = mapped_column(Integer, nullable=True)
     network: Mapped[Network | None] = mapped_column(NetworkInfoType, nullable=True)
-    certificates: Mapped[list[Certificate] | None] = mapped_column(
-        CertificateListType, nullable=True
-    )
+    certificates: Mapped[list[Certificate] | None] = mapped_column(CertificateListType, nullable=True)
 
     extension_attributes: Mapped[list["DeviceExtensionAttribute"]] = relationship(
         primaryjoin="Device.id == DeviceExtensionAttribute.device_id",
@@ -74,15 +66,11 @@ class DeviceExtensionAttribute(Base):
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    device_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("devices.id", ondelete="CASCADE")
-    )
+    device_id: Mapped[int] = mapped_column(Integer, ForeignKey("devices.id", ondelete="CASCADE"))
     extension_attribute_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("extension_attributes.id", ondelete="CASCADE")
     )
     extension_attribute_name: Mapped[str] = mapped_column(String(100))
     value: Mapped[str] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime, default=utcnow, onupdate=utcnow
-    )
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, onupdate=utcnow)

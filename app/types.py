@@ -60,9 +60,7 @@ class PermissionListType(JsonType[list[str], frozenset[str]]):
         items = sorted(value)
         for p in items:
             if p not in self.VALID_PERMISSIONS:
-                raise ValueError(
-                    f"Invalid permission: {p!r}; must be one of {sorted(self.VALID_PERMISSIONS)}"
-                )
+                raise ValueError(f"Invalid permission: {p!r}; must be one of {sorted(self.VALID_PERMISSIONS)}")
         return items
 
     def _result(self, value: list[str]) -> frozenset[str]:

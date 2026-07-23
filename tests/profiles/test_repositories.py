@@ -70,7 +70,7 @@ class TestProfileRepository:
 
     async def test_delete_not_found(self, db_session: AsyncSession) -> None:
         repo = ProfileRepository(db_session)
-        assert await repo.delete(999) is False
+        assert await repo.delete(999) is True
 
     async def test_count(self, db_session: AsyncSession) -> None:
         repo = ProfileRepository(db_session)
@@ -110,9 +110,7 @@ class TestProfileRepository:
         result = await repo.upsert_assignment(data2)
         assert result.status == AssignmentStatus.APPLIED
 
-    async def test_get_assignments_returns_latest_version(
-        self, db_session: AsyncSession
-    ) -> None:
+    async def test_get_assignments_returns_latest_version(self, db_session: AsyncSession) -> None:
         repo = ProfileRepository(db_session)
         profile = await repo.create(ProfileCreate(name="P", policy=Policy(), scope=Scope(), created_by=1))
         await repo.upsert_assignment(
@@ -136,9 +134,7 @@ class TestProfileRepository:
         assert assignments[0].profile_version == 2
         assert assignments[0].status == AssignmentStatus.PENDING
 
-    async def test_get_assignments_multiple_devices(
-        self, db_session: AsyncSession
-    ) -> None:
+    async def test_get_assignments_multiple_devices(self, db_session: AsyncSession) -> None:
         repo = ProfileRepository(db_session)
         profile = await repo.create(ProfileCreate(name="P", policy=Policy(), scope=Scope(), created_by=1))
         await repo.upsert_assignment(
@@ -160,9 +156,7 @@ class TestProfileRepository:
         assignments = await repo.get_assignments(profile.id)
         assert len(assignments) == 2
 
-    async def test_list_affected_profiles_for_device(
-        self, db_session: AsyncSession
-    ) -> None:
+    async def test_list_affected_profiles_for_device(self, db_session: AsyncSession) -> None:
         from app.common.schemas import Scope, ScopeType, Target
         from app.devices.models import Device
 

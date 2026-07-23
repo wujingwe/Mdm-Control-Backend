@@ -42,9 +42,7 @@ class ProfileAssignmentReconciler:
         for target in scope.targets:
             target_id = target.target_id or 0
             source_key = (target.scope_type.value, target_id)
-            wanted.setdefault(source_key, set()).update(
-                resolved_device_ids.get(source_key, set())
-            )
+            wanted.setdefault(source_key, set()).update(resolved_device_ids.get(source_key, set()))
 
         assignments: list[AssignmentUpsert] = []
         seen: set[int] = set()
@@ -69,17 +67,11 @@ class ProfileAssignmentReconciler:
                 excl_id = exclusion.exclude_id or 0
                 key = (exclusion.scope_type.value, excl_id)
                 excluded_ids.update(resolved_device_ids.get(key, set()))
-            assignments = [
-                a
-                for a in assignments
-                if a.device_id not in excluded_ids
-            ]
+            assignments = [a for a in assignments if a.device_id not in excluded_ids]
 
         return assignments
 
-    async def recalculate_profile(
-        self, profile_id: int, *, force_push: bool = False, publish: bool = True
-    ) -> None:
+    async def recalculate_profile(self, profile_id: int, *, force_push: bool = False, publish: bool = True) -> None:
         """Create and optionally publish the next assignment revision.
 
         ``publish=False`` is used during device check-in: it updates desired
@@ -128,14 +120,12 @@ class ProfileAssignmentReconciler:
         present_assignments = {
             assignment.device_id: assignment
             for assignment in current_assignments
-            if assignment.profile_version == version
-            and assignment.desired_state == AssignmentDesiredState.PRESENT
+            if assignment.profile_version == version and assignment.desired_state == AssignmentDesiredState.PRESENT
         }
         absent_assignments = {
             assignment.device_id: assignment
             for assignment in current_assignments
-            if assignment.profile_version == version
-            and assignment.desired_state == AssignmentDesiredState.ABSENT
+            if assignment.profile_version == version and assignment.desired_state == AssignmentDesiredState.ABSENT
         }
         if push_ids:
             await self._send_push_messages(
@@ -152,9 +142,7 @@ class ProfileAssignmentReconciler:
                 version,
             )
 
-    async def recalculate_for_device(
-        self, device_id: int, *, publish: bool = True
-    ) -> None:
+    async def recalculate_for_device(self, device_id: int, *, publish: bool = True) -> None:
         profiles = await self.repo.list_affected_profiles_for_device(device_id)
         for profile in profiles:
             await self.recalculate_profile(profile.id, publish=publish)
@@ -163,12 +151,9 @@ class ProfileAssignmentReconciler:
         for profile in await self.repo.list_all_profiles():
             scope = profile.scope
             if any(
-                target.scope_type == ScopeType.SMART_GROUP
-                and target.target_id == group_id
-                for target in scope.targets
+                target.scope_type == ScopeType.SMART_GROUP and target.target_id == group_id for target in scope.targets
             ) or any(
-                exclusion.scope_type == ScopeType.SMART_GROUP
-                and exclusion.exclude_id == group_id
+                exclusion.scope_type == ScopeType.SMART_GROUP and exclusion.exclude_id == group_id
                 for exclusion in scope.exclusions
             ):
                 await self.recalculate_profile(profile.id)
@@ -177,12 +162,9 @@ class ProfileAssignmentReconciler:
         for profile in await self.repo.list_all_profiles():
             scope = profile.scope
             if any(
-                target.scope_type == ScopeType.STATIC_GROUP
-                and target.target_id == group_id
-                for target in scope.targets
+                target.scope_type == ScopeType.STATIC_GROUP and target.target_id == group_id for target in scope.targets
             ) or any(
-                exclusion.scope_type == ScopeType.STATIC_GROUP
-                and exclusion.exclude_id == group_id
+                exclusion.scope_type == ScopeType.STATIC_GROUP and exclusion.exclude_id == group_id
                 for exclusion in scope.exclusions
             ):
                 await self.recalculate_profile(profile.id)
@@ -300,9 +282,7 @@ class ProfileAssignmentReconciler:
         return set()
 
     async def _resolve_smart_group(self, group_id: int) -> set[int]:
-        result = await self.repo.db.execute(
-            select(SmartGroup).where(SmartGroup.id == group_id)
-        )
+        result = await self.repo.db.execute(select(SmartGroup).where(SmartGroup.id == group_id))
         group = result.scalar_one_or_none()
         if not group or not isinstance(group.criteria, list):
             return set()

@@ -27,15 +27,9 @@ def upgrade() -> None:
     op.alter_column("users", "updated_at", existing_type=sa.DateTime(), nullable=False)
 
     # --- created_by FK constraints ---
-    op.create_foreign_key(
-        "fk_smart_groups_created_by", "smart_groups", "users", ["created_by"], ["id"]
-    )
-    op.create_foreign_key(
-        "fk_static_groups_created_by", "static_groups", "users", ["created_by"], ["id"]
-    )
-    op.create_foreign_key(
-        "fk_profiles_created_by", "profiles", "users", ["created_by"], ["id"]
-    )
+    op.create_foreign_key("fk_smart_groups_created_by", "smart_groups", "users", ["created_by"], ["id"])
+    op.create_foreign_key("fk_static_groups_created_by", "static_groups", "users", ["created_by"], ["id"])
+    op.create_foreign_key("fk_profiles_created_by", "profiles", "users", ["created_by"], ["id"])
     op.create_foreign_key(
         "fk_extension_attributes_created_by",
         "extension_attributes",
@@ -71,12 +65,8 @@ def upgrade() -> None:
         ondelete="CASCADE",
     )
 
-    op.drop_constraint(
-        "smart_group_policies_ibfk_1", "smart_group_policies", type_="foreignkey"
-    )
-    op.drop_constraint(
-        "smart_group_policies_ibfk_2", "smart_group_policies", type_="foreignkey"
-    )
+    op.drop_constraint("smart_group_policies_ibfk_1", "smart_group_policies", type_="foreignkey")
+    op.drop_constraint("smart_group_policies_ibfk_2", "smart_group_policies", type_="foreignkey")
     op.create_foreign_key(
         "fk_smart_group_policies_group_id",
         "smart_group_policies",
@@ -94,12 +84,8 @@ def upgrade() -> None:
         ondelete="CASCADE",
     )
 
-    op.drop_constraint(
-        "static_group_policies_ibfk_1", "static_group_policies", type_="foreignkey"
-    )
-    op.drop_constraint(
-        "static_group_policies_ibfk_2", "static_group_policies", type_="foreignkey"
-    )
+    op.drop_constraint("static_group_policies_ibfk_1", "static_group_policies", type_="foreignkey")
+    op.drop_constraint("static_group_policies_ibfk_2", "static_group_policies", type_="foreignkey")
     op.create_foreign_key(
         "fk_static_group_policies_group_id",
         "static_group_policies",
@@ -118,12 +104,8 @@ def upgrade() -> None:
     )
 
     # --- static_group_devices: change FK from serial_number to device.id + CASCADE ---
-    op.drop_constraint(
-        "static_group_devices_ibfk_1", "static_group_devices", type_="foreignkey"
-    )
-    op.drop_constraint(
-        "static_group_devices_ibfk_2", "static_group_devices", type_="foreignkey"
-    )
+    op.drop_constraint("static_group_devices_ibfk_1", "static_group_devices", type_="foreignkey")
+    op.drop_constraint("static_group_devices_ibfk_2", "static_group_devices", type_="foreignkey")
     op.alter_column(
         "static_group_devices",
         "device_serial_number",
@@ -137,9 +119,7 @@ def upgrade() -> None:
         "INNER JOIN devices d ON d.serial_number = sgd.device_id "
         "SET sgd.device_id = d.id"
     )
-    op.alter_column(
-        "static_group_devices", "device_id", existing_type=sa.Integer(), nullable=False
-    )
+    op.alter_column("static_group_devices", "device_id", existing_type=sa.Integer(), nullable=False)
     op.create_foreign_key(
         "fk_static_group_devices_group_id",
         "static_group_devices",
@@ -158,15 +138,11 @@ def upgrade() -> None:
     )
 
     # --- profile_scope: add unique constraint + index ---
-    op.create_unique_constraint(
-        "uq_profile_scope", "profile_scope", ["profile_id", "target_type", "target_id"]
-    )
+    op.create_unique_constraint("uq_profile_scope", "profile_scope", ["profile_id", "target_type", "target_id"])
     op.create_index("ix_profile_scope_profile_id", "profile_scope", ["profile_id"])
 
     # --- profile_assignments: add CASCADE on device_id + indexes ---
-    op.drop_constraint(
-        "profile_assignments_ibfk_2", "profile_assignments", type_="foreignkey"
-    )
+    op.drop_constraint("profile_assignments_ibfk_2", "profile_assignments", type_="foreignkey")
     op.create_foreign_key(
         "fk_profile_assignments_device_id",
         "profile_assignments",
@@ -175,17 +151,11 @@ def upgrade() -> None:
         ["id"],
         ondelete="CASCADE",
     )
-    op.create_index(
-        "ix_profile_assignments_profile_id", "profile_assignments", ["profile_id"]
-    )
-    op.create_index(
-        "ix_profile_assignments_device_id", "profile_assignments", ["device_id"]
-    )
+    op.create_index("ix_profile_assignments_profile_id", "profile_assignments", ["profile_id"])
+    op.create_index("ix_profile_assignments_device_id", "profile_assignments", ["device_id"])
 
     # --- inventory_searches: add unique constraint on name ---
-    op.create_unique_constraint(
-        "uq_inventory_searches_name", "inventory_searches", ["name"]
-    )
+    op.create_unique_constraint("uq_inventory_searches_name", "inventory_searches", ["name"])
 
     # --- indexes on frequently queried columns ---
     op.create_index("ix_devices_connection_status", "devices", ["connection_status"])
@@ -194,12 +164,8 @@ def upgrade() -> None:
     op.create_index("ix_smart_groups_created_by", "smart_groups", ["created_by"])
     op.create_index("ix_static_groups_created_by", "static_groups", ["created_by"])
     op.create_index("ix_profiles_created_by", "profiles", ["created_by"])
-    op.create_index(
-        "ix_extension_attributes_created_by", "extension_attributes", ["created_by"]
-    )
-    op.create_index(
-        "ix_inventory_searches_created_by", "inventory_searches", ["created_by"]
-    )
+    op.create_index("ix_extension_attributes_created_by", "extension_attributes", ["created_by"])
+    op.create_index("ix_inventory_searches_created_by", "inventory_searches", ["created_by"])
 
 
 def downgrade() -> None:
@@ -214,16 +180,12 @@ def downgrade() -> None:
     op.drop_index("ix_devices_connection_status", "devices")
 
     # --- remove inventory_searches unique constraint ---
-    op.drop_constraint(
-        "uq_inventory_searches_name", "inventory_searches", type_="unique"
-    )
+    op.drop_constraint("uq_inventory_searches_name", "inventory_searches", type_="unique")
 
     # --- profile_assignments: revert CASCADE + indexes ---
     op.drop_index("ix_profile_assignments_device_id", "profile_assignments")
     op.drop_index("ix_profile_assignments_profile_id", "profile_assignments")
-    op.drop_constraint(
-        "fk_profile_assignments_device_id", "profile_assignments", type_="foreignkey"
-    )
+    op.drop_constraint("fk_profile_assignments_device_id", "profile_assignments", type_="foreignkey")
     op.create_foreign_key(
         "profile_assignments_ibfk_2",
         "profile_assignments",
@@ -237,12 +199,8 @@ def downgrade() -> None:
     op.drop_constraint("uq_profile_scope", "profile_scope", type_="unique")
 
     # --- static_group_devices: revert to serial_number FK ---
-    op.drop_constraint(
-        "fk_static_group_devices_device_id", "static_group_devices", type_="foreignkey"
-    )
-    op.drop_constraint(
-        "fk_static_group_devices_group_id", "static_group_devices", type_="foreignkey"
-    )
+    op.drop_constraint("fk_static_group_devices_device_id", "static_group_devices", type_="foreignkey")
+    op.drop_constraint("fk_static_group_devices_group_id", "static_group_devices", type_="foreignkey")
     op.execute(
         "UPDATE static_group_devices sgd "
         "INNER JOIN devices d ON d.id = sgd.device_id "
@@ -277,9 +235,7 @@ def downgrade() -> None:
         "static_group_policies",
         type_="foreignkey",
     )
-    op.drop_constraint(
-        "fk_static_group_policies_group_id", "static_group_policies", type_="foreignkey"
-    )
+    op.drop_constraint("fk_static_group_policies_group_id", "static_group_policies", type_="foreignkey")
     op.create_foreign_key(
         "static_group_policies_ibfk_2",
         "static_group_policies",
@@ -295,12 +251,8 @@ def downgrade() -> None:
         ["id"],
     )
 
-    op.drop_constraint(
-        "fk_smart_group_policies_policy_id", "smart_group_policies", type_="foreignkey"
-    )
-    op.drop_constraint(
-        "fk_smart_group_policies_group_id", "smart_group_policies", type_="foreignkey"
-    )
+    op.drop_constraint("fk_smart_group_policies_policy_id", "smart_group_policies", type_="foreignkey")
+    op.drop_constraint("fk_smart_group_policies_group_id", "smart_group_policies", type_="foreignkey")
     op.create_foreign_key(
         "smart_group_policies_ibfk_2",
         "smart_group_policies",
@@ -316,30 +268,16 @@ def downgrade() -> None:
         ["id"],
     )
 
-    op.drop_constraint(
-        "fk_device_policies_policy_id", "device_policies", type_="foreignkey"
-    )
-    op.drop_constraint(
-        "fk_device_policies_device_id", "device_policies", type_="foreignkey"
-    )
-    op.create_foreign_key(
-        "device_policies_ibfk_2", "device_policies", "policies", ["policy_id"], ["id"]
-    )
-    op.create_foreign_key(
-        "device_policies_ibfk_1", "device_policies", "devices", ["device_id"], ["id"]
-    )
+    op.drop_constraint("fk_device_policies_policy_id", "device_policies", type_="foreignkey")
+    op.drop_constraint("fk_device_policies_device_id", "device_policies", type_="foreignkey")
+    op.create_foreign_key("device_policies_ibfk_2", "device_policies", "policies", ["policy_id"], ["id"])
+    op.create_foreign_key("device_policies_ibfk_1", "device_policies", "devices", ["device_id"], ["id"])
 
     # --- created_by FK constraints ---
-    op.drop_constraint(
-        "fk_inventory_searches_created_by", "inventory_searches", type_="foreignkey"
-    )
-    op.drop_constraint(
-        "fk_extension_attributes_created_by", "extension_attributes", type_="foreignkey"
-    )
+    op.drop_constraint("fk_inventory_searches_created_by", "inventory_searches", type_="foreignkey")
+    op.drop_constraint("fk_extension_attributes_created_by", "extension_attributes", type_="foreignkey")
     op.drop_constraint("fk_profiles_created_by", "profiles", type_="foreignkey")
-    op.drop_constraint(
-        "fk_static_groups_created_by", "static_groups", type_="foreignkey"
-    )
+    op.drop_constraint("fk_static_groups_created_by", "static_groups", type_="foreignkey")
     op.drop_constraint("fk_smart_groups_created_by", "smart_groups", type_="foreignkey")
 
     # --- users: drop updated_at ---

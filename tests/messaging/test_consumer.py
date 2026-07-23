@@ -99,16 +99,12 @@ class TestProcessDeviceCommandStatus:
     async def test_unknown_event_type(self) -> None:
         from app.messaging.consumer import process_device_command_status
 
-        await process_device_command_status(
-            {"event_type": "unknown.event", "command_id": 1}
-        )
+        await process_device_command_status({"event_type": "unknown.event", "command_id": 1})
 
 
 class TestCompositeHandler:
     @pytest.mark.asyncio
-    @patch(
-        "app.messaging.consumer.process_profile_status_message", new_callable=AsyncMock
-    )
+    @patch("app.messaging.consumer.process_profile_status_message", new_callable=AsyncMock)
     async def test_routes_profile_event(self, mock_profile: Any) -> None:
         from app.messaging.consumer import composite_handler
 
@@ -117,9 +113,7 @@ class TestCompositeHandler:
         mock_profile.assert_called_once_with(data)
 
     @pytest.mark.asyncio
-    @patch(
-        "app.messaging.consumer.process_device_command_status", new_callable=AsyncMock
-    )
+    @patch("app.messaging.consumer.process_device_command_status", new_callable=AsyncMock)
     async def test_routes_command_event(self, mock_cmd: Any) -> None:
         from app.messaging.consumer import composite_handler
 

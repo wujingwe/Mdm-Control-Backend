@@ -15,9 +15,7 @@ class InventorySearchService:
     def __init__(self, repo: InventorySearchRepository) -> None:
         self.repo = repo
 
-    async def list_searches(
-        self, skip: int = 0, limit: int = 100
-    ) -> tuple[list[InventorySearch], int]:
+    async def list_searches(self, skip: int = 0, limit: int = 100) -> tuple[list[InventorySearch], int]:
         items = await self.repo.list_all(skip=skip, limit=limit)
         total = await self.repo.count()
         return items, total
@@ -28,9 +26,7 @@ class InventorySearchService:
     async def create_search(self, data: InventorySearchCreate) -> InventorySearch:
         return await self.repo.create(data)
 
-    async def update_search(
-        self, search_id: int, data: InventorySearchUpdate
-    ) -> InventorySearch | None:
+    async def update_search(self, search_id: int, data: InventorySearchUpdate) -> InventorySearch | None:
         return await self.repo.update(search_id, data)
 
     async def delete_search(self, search_id: int) -> bool:

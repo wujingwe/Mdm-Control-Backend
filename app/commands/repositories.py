@@ -42,21 +42,13 @@ class CommandRepository:
         limit: int = 50,
     ) -> list[Command]:
         stmt = (
-            select(Command)
-            .where(Command.device_id == device_id)
-            .order_by(Command.id.desc())
-            .offset(skip)
-            .limit(limit)
+            select(Command).where(Command.device_id == device_id).order_by(Command.id.desc()).offset(skip).limit(limit)
         )
         result = await self.db.execute(stmt)
         return list(result.scalars().all())
 
     async def count_for_device(self, device_id: int) -> int:
-        stmt = (
-            select(func.count())
-            .select_from(Command)
-            .where(Command.device_id == device_id)
-        )
+        stmt = select(func.count()).select_from(Command).where(Command.device_id == device_id)
         result = await self.db.execute(stmt)
         return result.scalar_one()
 
@@ -87,11 +79,10 @@ class CommandRepository:
                 sent_at=now,
                 rabbitmq_message_id=rabbitmq_message_id,
             )
-            .returning(Command)
         )
-        result = await self.db.execute(stmt)
+        await self.db.execute(stmt)
         await self.db.commit()
-        return result.scalars().one_or_none()
+        return await self.get_by_id(command_id)
 
     async def update_status(
         self,
@@ -108,12 +99,7 @@ class CommandRepository:
         elif status == CommandStatus.ACKNOWLEDGED:
             values["acknowledged_at"] = now
 
-        stmt = (
-            update(Command)
-            .where(Command.id == command_id)
-            .values(**values)
-            .returning(Command)
-        )
-        result = await self.db.execute(stmt)
+        stmt = update(Command).where(Command.id == command_id).values(**values)
+        await self.db.execute(stmt)
         await self.db.commit()
-        return result.scalars().one_or_none()
+        return await self.get_by_id(command_id)

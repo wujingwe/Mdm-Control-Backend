@@ -15,19 +15,11 @@ class ExtensionAttribute(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String(100), unique=True)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
-    data_type: Mapped[str] = mapped_column(
-        Enum(ExtensionDataType, native_enum=False, length=20)
-    )
-    input_type: Mapped[str] = mapped_column(
-        Enum(ExtensionInputType, native_enum=False, length=20)
-    )
+    data_type: Mapped[str] = mapped_column(Enum(ExtensionDataType, native_enum=False, length=20))
+    input_type: Mapped[str] = mapped_column(Enum(ExtensionInputType, native_enum=False, length=20))
     popup_choices: Mapped[list[str] | None] = mapped_column(JSON, nullable=True)
-    created_by: Mapped[int | None] = mapped_column(
-        Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True
-    )
+    created_by: Mapped[int | None] = mapped_column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime, default=utcnow, onupdate=utcnow
-    )
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, onupdate=utcnow)
 
     creator: Mapped[User | None] = relationship(User, foreign_keys=[created_by])

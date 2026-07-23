@@ -36,16 +36,12 @@ async def get_static_group(
 ) -> StaticGroupResponse:
     group = await service.get_group(group_id)
     if not group:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Static group not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Static group not found")
     resp = StaticGroupResponse.model_validate(group)
     return resp
 
 
-@router.post(
-    "", response_model=StaticGroupResponse, status_code=status.HTTP_201_CREATED
-)
+@router.post("", response_model=StaticGroupResponse, status_code=status.HTTP_201_CREATED)
 async def create_static_group(
     data: StaticGroupCreate,
     service: StaticGroupService = Depends(get_static_group_service),
@@ -67,9 +63,7 @@ async def update_static_group(
 ) -> StaticGroupResponse:
     updated = await service.update_group(group_id, data)
     if not updated:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Static group not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Static group not found")
     await reconciler.recalculate_for_static_group(group_id)
     await revalidate(["static-groups"])
     return StaticGroupResponse.model_validate(updated)
@@ -83,8 +77,6 @@ async def delete_static_group(
 ) -> None:
     deleted = await service.delete_group(group_id)
     if not deleted:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Static group not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Static group not found")
     await reconciler.recalculate_for_static_group(group_id)
     await revalidate(["static-groups"])

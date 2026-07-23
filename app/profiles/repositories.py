@@ -51,25 +51,20 @@ class ProfileRepository:
         values = data.model_dump(exclude_unset=True)
         if not values:
             return await self.get_by_id(record_id)
-        stmt = (
-            update(Profile)
-            .where(Profile.id == record_id)
-            .values(**values)
-            .returning(Profile)
-        )
-        result = await self.db.execute(stmt)
+        stmt = update(Profile).where(Profile.id == record_id).values(**values)
+        await self.db.execute(stmt)
         try:
             await self.db.commit()
         except IntegrityError as err:
             await self.db.rollback()
             raise ConflictError("Profile with this name already exists") from err
-        return result.scalars().one_or_none()
+        return await self.get_by_id(record_id)
 
     async def delete(self, record_id: int) -> bool:
-        stmt = delete(Profile).where(Profile.id == record_id).returning(Profile.id)
-        result = await self.db.execute(stmt)
+        stmt = delete(Profile).where(Profile.id == record_id)
+        await self.db.execute(stmt)
         await self.db.commit()
-        return result.scalar_one_or_none() is not None
+        return True
 
     async def count(self) -> int:
         stmt = select(func.count()).select_from(Profile)
@@ -110,9 +105,7 @@ class ProfileRepository:
             if assignment.desired_state == AssignmentDesiredState.PRESENT
         }
 
-    async def get_current_assignments_for_device(
-        self, device_id: int
-    ) -> list[ProfileAssignment]:
+    async def get_current_assignments_for_device(self, device_id: int) -> list[ProfileAssignment]:
         subq = (
             select(
                 ProfileAssignment.profile_id,
@@ -135,9 +128,7 @@ class ProfileRepository:
         result = await self.db.execute(stmt)
         return list(result.scalars().all())
 
-    async def get_assignment(
-        self, profile_id: int, device_id: int
-    ) -> ProfileAssignment | None:
+    async def get_assignment(self, profile_id: int, device_id: int) -> ProfileAssignment | None:
         stmt = (
             select(ProfileAssignment)
             .where(
@@ -162,9 +153,7 @@ class ProfileRepository:
         return result.scalar_one_or_none()
 
     async def upsert_assignment(self, data: AssignmentUpsert) -> ProfileAssignment:
-        existing = await self.get_assignment_by_version(
-            data.profile_id, data.device_id, data.profile_version
-        )
+        existing = await self.get_assignment_by_version(data.profile_id, data.device_id, data.profile_version)
         if existing:
             for key, value in data.model_dump(exclude_unset=True).items():
                 setattr(existing, key, value)
@@ -177,14 +166,10 @@ class ProfileRepository:
         await self.db.refresh(instance)
         return instance
 
-    async def bulk_upsert_assignments(
-        self, profile_id: int, assignments: list[AssignmentUpsert]
-    ) -> int:
+    async def bulk_upsert_assignments(self, profile_id: int, assignments: list[AssignmentUpsert]) -> int:
         count = 0
         for data in assignments:
-            existing = await self.get_assignment_by_version(
-                data.profile_id, data.device_id, data.profile_version
-            )
+            existing = await self.get_assignment_by_version(data.profile_id, data.device_id, data.profile_version)
             if existing:
                 for key, value in data.model_dump(exclude_unset=True).items():
                     setattr(existing, key, value)
@@ -224,10 +209,7 @@ class ProfileRepository:
                 if target.scope_type == ScopeType.SMART_GROUP:
                     affected.append(profile)
                     break
-                if (
-                    target.scope_type == ScopeType.STATIC_GROUP
-                    and target.target_id in static_group_ids
-                ):
+                if target.scope_type == ScopeType.STATIC_GROUP and target.target_id in static_group_ids:
                     affected.append(profile)
                     break
             else:
@@ -235,12 +217,8 @@ class ProfileRepository:
                     if exclusion.scope_type == ScopeType.SMART_GROUP:
                         affected.append(profile)
                         break
-                    if (
-                        exclusion.scope_type == ScopeType.DEVICE
-                        and exclusion.exclude_id == device_id
-                    ) or (
-                        exclusion.scope_type == ScopeType.STATIC_GROUP
-                        and exclusion.exclude_id in static_group_ids
+                    if (exclusion.scope_type == ScopeType.DEVICE and exclusion.exclude_id == device_id) or (
+                        exclusion.scope_type == ScopeType.STATIC_GROUP and exclusion.exclude_id in static_group_ids
                     ):
                         affected.append(profile)
                         break
@@ -253,9 +231,7 @@ class ProfileRepository:
         result = await self.db.execute(stmt)
         return result.scalar_one()
 
-    async def get_assignment_device_ids_at_version(
-        self, profile_id: int, version: int
-    ) -> set[int]:
+    async def get_assignment_device_ids_at_version(self, profile_id: int, version: int) -> set[int]:
         stmt = select(ProfileAssignment.device_id).where(
             ProfileAssignment.profile_id == profile_id,
             ProfileAssignment.profile_version == version,
@@ -291,9 +267,7 @@ class ProfileRepository:
                 )
             )
 
-    async def mark_assignment_sent(
-        self, assignment_id: int, message_id: str
-    ) -> None:
+    async def mark_assignment_sent(self, assignment_id: int, message_id: str) -> None:
         assignment = await self.db.get(ProfileAssignment, assignment_id)
         if assignment:
             assignment.status = (

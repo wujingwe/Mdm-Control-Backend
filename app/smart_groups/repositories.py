@@ -36,29 +36,20 @@ class SmartGroupRepository:
         values = data.model_dump(exclude_unset=True)
         if not values:
             return await self.get_by_id(record_id)
-        stmt = (
-            update(SmartGroup)
-            .where(SmartGroup.id == record_id)
-            .values(**values)
-            .returning(SmartGroup)
-        )
-        result = await self.db.execute(stmt)
+        stmt = update(SmartGroup).where(SmartGroup.id == record_id).values(**values)
+        await self.db.execute(stmt)
         try:
             await self.db.commit()
         except IntegrityError as err:
             await self.db.rollback()
             raise ConflictError("Resource already exists") from err
-        return result.scalars().one_or_none()
+        return await self.get_by_id(record_id)
 
     async def delete(self, record_id: int) -> bool:
-        stmt = (
-            delete(SmartGroup)
-            .where(SmartGroup.id == record_id)
-            .returning(SmartGroup.id)
-        )
-        result = await self.db.execute(stmt)
+        stmt = delete(SmartGroup).where(SmartGroup.id == record_id)
+        await self.db.execute(stmt)
         await self.db.commit()
-        return result.scalar_one_or_none() is not None
+        return True
 
     async def count(self) -> int:
         stmt = select(func.count()).select_from(SmartGroup)

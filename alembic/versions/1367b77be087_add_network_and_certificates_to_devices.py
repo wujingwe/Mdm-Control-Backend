@@ -35,17 +35,11 @@ def upgrade() -> None:
     )
 
     # add new columns as nullable so existing rows are accepted
-    op.add_column(
-        "devices", sa.Column("connection_status", sa.String(20), nullable=True)
-    )
-    op.add_column(
-        "devices", sa.Column("enrollment_status", sa.String(20), nullable=True)
-    )
+    op.add_column("devices", sa.Column("connection_status", sa.String(20), nullable=True))
+    op.add_column("devices", sa.Column("enrollment_status", sa.String(20), nullable=True))
     op.add_column("devices", sa.Column("created_at", sa.DateTime(), nullable=True))
     op.add_column("devices", sa.Column("updated_at", sa.DateTime(), nullable=True))
-    op.add_column(
-        "devices", sa.Column("last_enrolled_at", sa.DateTime(), nullable=True)
-    )
+    op.add_column("devices", sa.Column("last_enrolled_at", sa.DateTime(), nullable=True))
     op.add_column("devices", sa.Column("network", sa.JSON(), nullable=True))
     op.add_column("devices", sa.Column("certificates", sa.JSON(), nullable=True))
 

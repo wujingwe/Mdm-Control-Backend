@@ -24,11 +24,7 @@ class StaticGroupRepository:
         return list(result.scalars().all())
 
     async def get_by_id(self, record_id: int) -> StaticGroup | None:
-        stmt = (
-            select(StaticGroup)
-            .options(selectinload(StaticGroup.devices))
-            .where(StaticGroup.id == record_id)
-        )
+        stmt = select(StaticGroup).options(selectinload(StaticGroup.devices)).where(StaticGroup.id == record_id)
         result = await self.db.execute(stmt)
         return result.scalar_one_or_none()
 
@@ -62,17 +58,13 @@ class StaticGroupRepository:
         self.db.expire(instance)
         return await self.get_by_id(group_id)
 
-    async def update(
-        self, record_id: int, data: StaticGroupUpdate
-    ) -> StaticGroup | None:
+    async def update(self, record_id: int, data: StaticGroupUpdate) -> StaticGroup | None:
         has_changes = False
 
         # 1. Update scalar fields
         values = data.model_dump(exclude_unset=True, exclude={"device_serial_numbers"})
         if values:
-            stmt = (
-                update(StaticGroup).where(StaticGroup.id == record_id).values(**values)
-            )
+            stmt = update(StaticGroup).where(StaticGroup.id == record_id).values(**values)
             try:
                 await self.db.execute(stmt)
             except IntegrityError as err:
@@ -119,14 +111,10 @@ class StaticGroupRepository:
         return await self.get_by_id(record_id)
 
     async def delete(self, record_id: int) -> bool:
-        stmt = (
-            delete(StaticGroup)
-            .where(StaticGroup.id == record_id)
-            .returning(StaticGroup.id)
-        )
-        result = await self.db.execute(stmt)
+        stmt = delete(StaticGroup).where(StaticGroup.id == record_id)
+        await self.db.execute(stmt)
         await self.db.commit()
-        return result.scalar_one_or_none() is not None
+        return True
 
     async def count(self) -> int:
         stmt = select(func.count()).select_from(StaticGroup)

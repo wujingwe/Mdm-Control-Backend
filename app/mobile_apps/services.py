@@ -7,9 +7,7 @@ class MobileAppService:
     def __init__(self, repo: MobileAppRepository) -> None:
         self.repo = repo
 
-    async def list_mobile_apps(
-        self, skip: int = 0, limit: int = 100
-    ) -> tuple[list[MobileApp], int]:
+    async def list_mobile_apps(self, skip: int = 0, limit: int = 100) -> tuple[list[MobileApp], int]:
         items = await self.repo.list_apps(skip=skip, limit=limit)
         total = await self.repo.count()
         return items, total
@@ -20,9 +18,7 @@ class MobileAppService:
     async def create_mobile_app(self, data: MobileAppCreate) -> MobileApp:
         return await self.repo.create(data)
 
-    async def update_mobile_app(
-        self, mobile_app_id: int, data: MobileAppUpdate
-    ) -> MobileApp | None:
+    async def update_mobile_app(self, mobile_app_id: int, data: MobileAppUpdate) -> MobileApp | None:
         return await self.repo.update(mobile_app_id, data)
 
     async def delete_mobile_app(self, mobile_app_id: int) -> bool:

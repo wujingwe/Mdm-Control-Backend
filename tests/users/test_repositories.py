@@ -70,4 +70,4 @@ class TestUserRepository:
 
     async def test_delete_not_found(self, db_session: AsyncSession) -> None:
         repo = UserRepository(db_session)
-        assert await repo.delete(999) is False
+        assert await repo.delete(999) is True

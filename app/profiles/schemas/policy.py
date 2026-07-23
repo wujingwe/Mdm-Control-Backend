@@ -176,6 +176,7 @@ class WifiState(IntEnum):
 
 # ── Data classes ───────────────────────────────────────────────────────────
 
+
 @dataclass
 class ApplicationPolicy:
     packageName: str

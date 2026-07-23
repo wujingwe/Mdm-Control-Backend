@@ -19,9 +19,7 @@ def _make_producer() -> MagicMock:
     return producer
 
 
-async def _create_device(
-    db: AsyncSession, name: str, serial: str, status: str = "ENROLLED"
-) -> Device:
+async def _create_device(db: AsyncSession, name: str, serial: str, status: str = "ENROLLED") -> Device:
     device = Device(
         name=name,
         serial_number=serial,
@@ -35,9 +33,7 @@ async def _create_device(
     return device
 
 
-async def _create_profile(
-    db: AsyncSession, name: str, scope: Scope | None = None
-) -> Profile:
+async def _create_profile(db: AsyncSession, name: str, scope: Scope | None = None) -> Profile:
     profile = Profile(name=name, scope=scope or Scope(), policy={})
     db.add(profile)
     await db.commit()
@@ -45,9 +41,7 @@ async def _create_profile(
     return profile
 
 
-async def _create_assignment(
-    db: AsyncSession, profile_id: int, device_id: int, version: int = 1
-) -> ProfileAssignment:
+async def _create_assignment(db: AsyncSession, profile_id: int, device_id: int, version: int = 1) -> ProfileAssignment:
     assignment = ProfileAssignment(
         profile_id=profile_id,
         device_id=device_id,
@@ -104,9 +98,7 @@ class TestRecalculateProfile:
         producer.publish_profile_push.assert_not_awaited()
         producer.publish_profile_revoke.assert_not_awaited()
 
-    async def test_force_push_reapplies_existing_assignments(
-        self, db_session: AsyncSession
-    ) -> None:
+    async def test_force_push_reapplies_existing_assignments(self, db_session: AsyncSession) -> None:
         producer = _make_producer()
         repo = ProfileRepository(db_session)
         reconciler = ProfileAssignmentReconciler(repo, producer)
@@ -148,9 +140,7 @@ class TestRecalculateProfile:
             assignment_id=2,
         )
 
-    async def test_empty_scope_delete_is_committed(
-        self, db_session: AsyncSession
-    ) -> None:
+    async def test_empty_scope_delete_is_committed(self, db_session: AsyncSession) -> None:
         producer = _make_producer()
         repo = ProfileRepository(db_session)
         reconciler = ProfileAssignmentReconciler(repo, producer)
@@ -227,19 +217,13 @@ class TestRecalculateDeviceChanges:
 
         profile = await repo.get_by_id(profile.id)
         assert profile is not None
-        profile.scope = Scope(
-            targets=[Target(scope_type=ScopeType.DEVICE, target_id=d1.id)]
-        )
+        profile.scope = Scope(targets=[Target(scope_type=ScopeType.DEVICE, target_id=d1.id)])
         await db_session.commit()
 
         await reconciler.recalculate_profile(profile.id)
 
         assignments = await repo.get_assignments(profile.id)
-        current = {
-            a.device_id
-            for a in assignments
-            if a.desired_state.value == "PRESENT"
-        }
+        current = {a.device_id for a in assignments if a.desired_state.value == "PRESENT"}
         assert current == {d1.id}
         producer.publish_profile_revoke.assert_awaited_once()
 
@@ -269,17 +253,13 @@ class TestRecalculateScopeTypes:
         device_ids = {a.device_id for a in assignments}
         assert device_ids == {d1.id, d2.id}
 
-    async def test_all_devices_only_includes_enrolled_devices(
-        self, db_session: AsyncSession
-    ) -> None:
+    async def test_all_devices_only_includes_enrolled_devices(self, db_session: AsyncSession) -> None:
         producer = _make_producer()
         repo = ProfileRepository(db_session)
         reconciler = ProfileAssignmentReconciler(repo, producer)
 
         enrolled = await _create_device(db_session, "Enrolled", "SN-1", "ENROLLED")
-        unenrolled = await _create_device(
-            db_session, "Unenrolled", "SN-2", "UNENROLLED"
-        )
+        unenrolled = await _create_device(db_session, "Unenrolled", "SN-2", "UNENROLLED")
         profile = await _create_profile(
             db_session,
             "P1",
@@ -311,9 +291,7 @@ class TestRecalculateScopeTypes:
         assert device_ids == {d1.id}
         assert d2.id not in device_ids
 
-    async def test_missing_device_target_is_ignored(
-        self, db_session: AsyncSession
-    ) -> None:
+    async def test_missing_device_target_is_ignored(self, db_session: AsyncSession) -> None:
         producer = _make_producer()
         repo = ProfileRepository(db_session)
         reconciler = ProfileAssignmentReconciler(repo, producer)
@@ -653,9 +631,7 @@ class TestMessageSending:
         assert assignments[0].attempt_count == 1
         assert assignments[0].last_error == "RabbitMQ down"
 
-    async def test_check_in_reconciles_latest_desired_revision(
-        self, db_session: AsyncSession
-    ) -> None:
+    async def test_check_in_reconciles_latest_desired_revision(self, db_session: AsyncSession) -> None:
         producer = _make_producer()
         repo = ProfileRepository(db_session)
         reconciler = ProfileAssignmentReconciler(repo, producer)

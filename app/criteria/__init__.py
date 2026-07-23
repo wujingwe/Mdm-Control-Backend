@@ -31,9 +31,7 @@ def _build_filter(c: Criteria) -> BinaryExpression | None:
     return builder(col, c.value) if builder else None
 
 
-def _combine(
-    left: BinaryExpression, conj: str, right: BinaryExpression
-) -> BinaryExpression:
+def _combine(left: BinaryExpression, conj: str, right: BinaryExpression) -> BinaryExpression:
     """Combine two expressions using the given conjunction."""
     fn = and_ if conj.upper() == "AND" else or_
     result: BinaryExpression = fn(left, right)

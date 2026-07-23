@@ -24,16 +24,12 @@ def upgrade() -> None:
     rows = conn.execute(sa.text("SELECT id FROM profiles")).fetchall()
     for (profile_id,) in rows:
         scope_rows = conn.execute(
-            sa.text(
-                "SELECT target_type, target_id FROM profile_scope WHERE profile_id = :pid"
-            ),
+            sa.text("SELECT target_type, target_id FROM profile_scope WHERE profile_id = :pid"),
             {"pid": profile_id},
         ).fetchall()
-        targets = [
-            {"scope_type": t, "target_id": tid if tid else None}
-            for t, tid in scope_rows
-        ]
+        targets = [{"scope_type": t, "target_id": tid if tid else None} for t, tid in scope_rows]
         import json
+
         conn.execute(
             sa.text("UPDATE profiles SET scope = :scope WHERE id = :id"),
             {"scope": json.dumps({"targets": targets, "exclusions": []}), "id": profile_id},
@@ -56,14 +52,13 @@ def downgrade() -> None:
     conn = op.get_bind()
     rows = conn.execute(sa.text("SELECT id, scope FROM profiles")).fetchall()
     import json
+
     for profile_id, scope_json in rows:
         if scope_json:
             data = json.loads(scope_json) if isinstance(scope_json, str) else scope_json
             for target in data.get("targets", []):
                 conn.execute(
-                    sa.text(
-                        "INSERT INTO profile_scope (profile_id, target_type, target_id) VALUES (:pid, :tt, :tid)"
-                    ),
+                    sa.text("INSERT INTO profile_scope (profile_id, target_type, target_id) VALUES (:pid, :tt, :tid)"),
                     {"pid": profile_id, "tt": target["scope_type"], "tid": target.get("target_id") or 0},
                 )
 

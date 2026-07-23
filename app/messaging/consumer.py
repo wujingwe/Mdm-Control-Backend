@@ -25,9 +25,7 @@ try:
         AbstractQueue,
         AbstractRobustConnection,
     )
-except (
-    ModuleNotFoundError
-):  # pragma: no cover - exercised only without optional deps installed
+except ModuleNotFoundError:  # pragma: no cover - exercised only without optional deps installed
     aio_pika = None  # type: ignore[assignment]
     AbstractChannel = Any  # type: ignore[misc,assignment]
     AbstractExchange = Any  # type: ignore[misc,assignment]
@@ -93,9 +91,7 @@ class RabbitMQConsumer:
         self._queue = queue
         self._consumer_tag = await queue.consume(self._on_message)
         self._stopped.clear()
-        logger.info(
-            "RabbitMQ consumer listening on queue '%s'", self._config.queue_name
-        )
+        logger.info("RabbitMQ consumer listening on queue '%s'", self._config.queue_name)
 
     async def stop(self) -> None:
         queue = self._queue
@@ -145,9 +141,7 @@ class RabbitMQConsumer:
         try:
             return aio_pika.ExchangeType(self._config.exchange_type)
         except ValueError as err:
-            raise ValueError(
-                f"Unsupported RabbitMQ exchange type: {self._config.exchange_type}"
-            ) from err
+            raise ValueError(f"Unsupported RabbitMQ exchange type: {self._config.exchange_type}") from err
 
     @property
     def healthy(self) -> bool:
@@ -230,9 +224,7 @@ async def process_profile_status_message(data: dict[str, Any]) -> None:
         try:
             await send_validation_webhook(str(device_id))
         except Exception:  # noqa: BLE001 — side-effect failure must not nack the message
-            logger.exception(
-                "Failed to send validation webhook for device %s", device_id
-            )
+            logger.exception("Failed to send validation webhook for device %s", device_id)
     else:
         logger.debug("Ignoring event_type=%s", event_type)
 

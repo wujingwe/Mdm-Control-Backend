@@ -35,9 +35,7 @@ async def get_mobile_app(
 ) -> MobileAppResponse:
     app = await service.get_mobile_app(mobile_app_id)
     if not app:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Mobile app not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Mobile app not found")
     return MobileAppResponse.model_validate(app)
 
 
@@ -59,9 +57,7 @@ async def update_mobile_app(
 ) -> MobileAppResponse:
     updated = await service.update_mobile_app(mobile_app_id, data)
     if not updated:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Mobile app not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Mobile app not found")
     await revalidate(["mobile-apps"])
     return MobileAppResponse.model_validate(updated)
 
@@ -73,7 +69,5 @@ async def delete_mobile_app(
 ) -> None:
     deleted = await service.delete_mobile_app(mobile_app_id)
     if not deleted:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Mobile app not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Mobile app not found")
     await revalidate(["mobile-apps"])

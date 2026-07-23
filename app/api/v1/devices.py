@@ -33,9 +33,7 @@ async def get_device(
 ) -> DeviceResponse:
     device = await service.get_device(device_id)
     if not device:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Device not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Device not found")
     return DeviceResponse.model_validate(device)
 
 
@@ -48,9 +46,7 @@ async def update_device(
 ) -> DeviceResponse:
     device = await service.update_device(device_id, data)
     if not device:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Device not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Device not found")
     await reconciler.recalculate_for_device(device_id)
     return DeviceResponse.model_validate(device)
 
@@ -63,9 +59,7 @@ async def device_check_in(
 ) -> dict[str, str]:
     device = await service.get_device(device_id)
     if not device:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Device not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Device not found")
     # Recalculate desired state first, then send one consolidated latest revision.
     await reconciler.recalculate_for_device(device_id, publish=False)
     await reconciler.reconcile_device(device_id)
@@ -96,9 +90,7 @@ async def get_device_command(
 ) -> CommandResponse:
     command = await service.get_command(command_id)
     if not command or command.device_id != device_id:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Command not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Command not found")
     return CommandResponse.model_validate(command)
 
 

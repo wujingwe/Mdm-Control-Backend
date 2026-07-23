@@ -44,7 +44,9 @@ class TestProfilesAPI:
         assert data["total"] >= 1 and len(data["items"]) >= 1
 
     async def test_set_scope(self, client: AsyncClient) -> None:
-        create = await client.post(self.BASE, json={"name": "P", "policy": {}, "scope": {"targets": [], "exclusions": []}})
+        create = await client.post(
+            self.BASE, json={"name": "P", "policy": {}, "scope": {"targets": [], "exclusions": []}}
+        )
         pid = create.json()["id"]
         resp = await client.put(
             f"{self.BASE}/{pid}/scope",
@@ -56,10 +58,10 @@ class TestProfilesAPI:
         assert resp.status_code == 200
         assert len(resp.json()["targets"]) == 1
 
-    async def test_settings_update_forces_recalculation_push(
-        self, client: AsyncClient
-    ) -> None:
-        create = await client.post(self.BASE, json={"name": "SettingsProfile", "policy": {}, "scope": {"targets": [], "exclusions": []}})
+    async def test_settings_update_forces_recalculation_push(self, client: AsyncClient) -> None:
+        create = await client.post(
+            self.BASE, json={"name": "SettingsProfile", "policy": {}, "scope": {"targets": [], "exclusions": []}}
+        )
         pid = create.json()["id"]
 
         reconciler = MagicMock()
@@ -74,14 +76,12 @@ class TestProfilesAPI:
             app.dependency_overrides.pop(get_reconciler, None)
 
         assert resp.status_code == 200
-        reconciler.recalculate_profile.assert_awaited_once_with(
-            pid, force_push=True
-        )
+        reconciler.recalculate_profile.assert_awaited_once_with(pid, force_push=True)
 
-    async def test_scope_update_recalculates_without_force_push(
-        self, client: AsyncClient
-    ) -> None:
-        create = await client.post(self.BASE, json={"name": "ScopeProfile", "policy": {}, "scope": {"targets": [], "exclusions": []}})
+    async def test_scope_update_recalculates_without_force_push(self, client: AsyncClient) -> None:
+        create = await client.post(
+            self.BASE, json={"name": "ScopeProfile", "policy": {}, "scope": {"targets": [], "exclusions": []}}
+        )
         pid = create.json()["id"]
 
         reconciler = MagicMock()
@@ -121,7 +121,9 @@ class TestProfilesAPI:
         assert len(resp.json()["targets"]) == 1
 
     async def test_get_assignments_empty(self, client: AsyncClient) -> None:
-        create = await client.post(self.BASE, json={"name": "P", "policy": {}, "scope": {"targets": [], "exclusions": []}})
+        create = await client.post(
+            self.BASE, json={"name": "P", "policy": {}, "scope": {"targets": [], "exclusions": []}}
+        )
         pid = create.json()["id"]
         resp = await client.get(f"{self.BASE}/{pid}/assignments")
         assert resp.status_code == 200

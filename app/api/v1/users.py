@@ -31,9 +31,7 @@ async def get_user(
 ) -> UserResponse:
     user = await service.get_user(user_id)
     if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
     return UserResponse.model_validate(user)
 
 
@@ -44,9 +42,7 @@ async def get_user_by_email(
 ) -> UserResponse:
     user = await service.get_user_by_email(email)
     if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
     return UserResponse.model_validate(user)
 
 
@@ -68,9 +64,7 @@ async def update_user(
 ) -> UserResponse:
     updated = await service.update_user(user_id, data)
     if not updated:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
     await revalidate(["users"])
     return UserResponse.model_validate(updated)
 
@@ -82,7 +76,5 @@ async def delete_user(
 ) -> None:
     deleted = await service.delete_user(user_id)
     if not deleted:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
     await revalidate(["users"])

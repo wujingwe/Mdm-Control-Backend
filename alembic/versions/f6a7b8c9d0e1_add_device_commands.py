@@ -80,9 +80,7 @@ def upgrade() -> None:
     )
     op.create_index("ix_device_commands_device_id", "device_commands", ["device_id"])
     op.create_index("ix_device_commands_status", "device_commands", ["status"])
-    op.create_index(
-        "ix_device_commands_command_type", "device_commands", ["command_type"]
-    )
+    op.create_index("ix_device_commands_command_type", "device_commands", ["command_type"])
     op.create_index("ix_device_commands_created_at", "device_commands", ["created_at"])
 
 

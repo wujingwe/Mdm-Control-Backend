@@ -48,9 +48,7 @@ class TestCommandsAPI:
         assert list_resp.status_code == 200
         assert list_resp.json()["total"] >= 1
 
-    async def test_get_not_found(
-        self, client: AsyncClient, db_session: AsyncSession
-    ) -> None:
+    async def test_get_not_found(self, client: AsyncClient, db_session: AsyncSession) -> None:
         device = await _create_device(client, db_session)
         resp = await client.get(f"{self.BASE}/{device.id}/commands/999")
         assert resp.status_code == 404

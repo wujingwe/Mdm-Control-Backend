@@ -11,9 +11,7 @@ class UserService:
     def __init__(self, repo: UserRepository) -> None:
         self.repo = repo
 
-    async def list_users(
-        self, skip: int = 0, limit: int = 100
-    ) -> tuple[list[User], int]:
+    async def list_users(self, skip: int = 0, limit: int = 100) -> tuple[list[User], int]:
         items = await self.repo.list_all(skip=skip, limit=limit)
         total = await self.repo.count()
         return items, total

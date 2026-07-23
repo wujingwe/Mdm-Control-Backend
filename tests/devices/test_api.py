@@ -11,9 +11,7 @@ class TestDevicesAPI:
         assert data["items"] == []
         assert data["total"] == 0
 
-    async def test_list_returns_multiple(
-        self, client: AsyncClient, db_session: AsyncSession
-    ) -> None:
+    async def test_list_returns_multiple(self, client: AsyncClient, db_session: AsyncSession) -> None:
         from app.devices.repositories import DeviceRepository
 
         repo = DeviceRepository(db_session)
@@ -41,9 +39,7 @@ class TestDevicesAPI:
         assert data["total"] == 2
         assert len(data["items"]) == 2
 
-    async def test_list_pagination(
-        self, client: AsyncClient, db_session: AsyncSession
-    ) -> None:
+    async def test_list_pagination(self, client: AsyncClient, db_session: AsyncSession) -> None:
         from app.devices.repositories import DeviceRepository
 
         repo = DeviceRepository(db_session)
@@ -63,9 +59,7 @@ class TestDevicesAPI:
         assert len(data["items"]) == 2
         assert data["total"] == 5
 
-    async def test_list_pagination_second_page(
-        self, client: AsyncClient, db_session: AsyncSession
-    ) -> None:
+    async def test_list_pagination_second_page(self, client: AsyncClient, db_session: AsyncSession) -> None:
         from app.devices.repositories import DeviceRepository
 
         repo = DeviceRepository(db_session)
@@ -85,9 +79,7 @@ class TestDevicesAPI:
         assert len(data["items"]) == 2
         assert data["total"] == 5
 
-    async def test_get_device(
-        self, client: AsyncClient, db_session: AsyncSession
-    ) -> None:
+    async def test_get_device(self, client: AsyncClient, db_session: AsyncSession) -> None:
         from app.devices.repositories import DeviceRepository
 
         repo = DeviceRepository(db_session)
@@ -111,9 +103,7 @@ class TestDevicesAPI:
         assert resp.status_code == 404
         assert resp.json()["detail"] == "Device not found"
 
-    async def test_device_response_shape(
-        self, client: AsyncClient, db_session: AsyncSession
-    ) -> None:
+    async def test_device_response_shape(self, client: AsyncClient, db_session: AsyncSession) -> None:
         from app.devices.repositories import DeviceRepository
 
         repo = DeviceRepository(db_session)
@@ -140,9 +130,7 @@ class TestDevicesAPI:
         assert body["network"]["wifi"]["ssid"] == "Office"
         assert body["certificates"][0]["common_name"] == "example.com"
 
-    async def test_device_response_optional_fields(
-        self, client: AsyncClient, db_session: AsyncSession
-    ) -> None:
+    async def test_device_response_optional_fields(self, client: AsyncClient, db_session: AsyncSession) -> None:
         from app.devices.repositories import DeviceRepository
 
         repo = DeviceRepository(db_session)
@@ -163,9 +151,7 @@ class TestDevicesAPI:
         assert body["certificates"] is None
         assert body["extension_attributes"] == []
 
-    async def test_update_device(
-        self, client: AsyncClient, db_session: AsyncSession
-    ) -> None:
+    async def test_update_device(self, client: AsyncClient, db_session: AsyncSession) -> None:
         from app.devices.repositories import DeviceRepository
 
         repo = DeviceRepository(db_session)
@@ -199,9 +185,7 @@ class TestDevicesAPI:
         assert resp.status_code == 404
         assert resp.json()["detail"] == "Device not found"
 
-    async def test_update_device_network(
-        self, client: AsyncClient, db_session: AsyncSession
-    ) -> None:
+    async def test_update_device_network(self, client: AsyncClient, db_session: AsyncSession) -> None:
         from app.devices.repositories import DeviceRepository
 
         repo = DeviceRepository(db_session)
@@ -230,9 +214,7 @@ class TestDevicesAPI:
         assert body["network"]["cellular"]["carrier"] == "Verizon"
         assert body["network"]["cellular"]["roaming"] is False
 
-    async def test_update_device_clear_network(
-        self, client: AsyncClient, db_session: AsyncSession
-    ) -> None:
+    async def test_update_device_clear_network(self, client: AsyncClient, db_session: AsyncSession) -> None:
         from app.devices.repositories import DeviceRepository
         from app.devices.schemas import Network, Wifi
 
@@ -255,9 +237,7 @@ class TestDevicesAPI:
         body = resp.json()
         assert body["network"] is None
 
-    async def test_update_device_ext_attributes(
-        self, client: AsyncClient, db_session: AsyncSession
-    ) -> None:
+    async def test_update_device_ext_attributes(self, client: AsyncClient, db_session: AsyncSession) -> None:
         from app.devices.repositories import DeviceRepository
         from app.extension_attributes.repositories import ExtensionAttributeRepository
         from app.extension_attributes.schemas import ExtensionAttributeCreate
@@ -304,9 +284,7 @@ class TestDevicesAPI:
         assert get_resp.status_code == 200
         assert len(get_resp.json()["extension_attributes"]) == 1
 
-    async def test_update_device_clear_ext_attributes(
-        self, client: AsyncClient, db_session: AsyncSession
-    ) -> None:
+    async def test_update_device_clear_ext_attributes(self, client: AsyncClient, db_session: AsyncSession) -> None:
         from app.devices.repositories import DeviceRepository
         from app.extension_attributes.repositories import ExtensionAttributeRepository
         from app.extension_attributes.schemas import ExtensionAttributeCreate
@@ -354,9 +332,7 @@ class TestDevicesAPI:
         assert get_resp.status_code == 200
         assert get_resp.json()["extension_attributes"] == []
 
-    async def test_update_device_certificates(
-        self, client: AsyncClient, db_session: AsyncSession
-    ) -> None:
+    async def test_update_device_certificates(self, client: AsyncClient, db_session: AsyncSession) -> None:
         from app.devices.repositories import DeviceRepository
 
         repo = DeviceRepository(db_session)
@@ -384,9 +360,7 @@ class TestDevicesAPI:
         assert len(body["certificates"]) == 2
         assert body["certificates"][0]["common_name"] == "new.com"
 
-    async def test_update_device_clear_certificates(
-        self, client: AsyncClient, db_session: AsyncSession
-    ) -> None:
+    async def test_update_device_clear_certificates(self, client: AsyncClient, db_session: AsyncSession) -> None:
         from app.devices.repositories import DeviceRepository
 
         repo = DeviceRepository(db_session)
@@ -407,9 +381,7 @@ class TestDevicesAPI:
         assert resp.status_code == 200
         assert resp.json()["certificates"] is None
 
-    async def test_update_device_multiple_fields(
-        self, client: AsyncClient, db_session: AsyncSession
-    ) -> None:
+    async def test_update_device_multiple_fields(self, client: AsyncClient, db_session: AsyncSession) -> None:
         from app.devices.repositories import DeviceRepository
 
         repo = DeviceRepository(db_session)
@@ -439,9 +411,7 @@ class TestDevicesAPI:
         assert body["battery_status"] == 15
         assert body["total_memory"] == 16
 
-    async def test_update_device_invalid_connection_status(
-        self, client: AsyncClient, db_session: AsyncSession
-    ) -> None:
+    async def test_update_device_invalid_connection_status(self, client: AsyncClient, db_session: AsyncSession) -> None:
         from app.devices.repositories import DeviceRepository
 
         repo = DeviceRepository(db_session)
@@ -460,9 +430,7 @@ class TestDevicesAPI:
         )
         assert resp.status_code == 422
 
-    async def test_update_device_invalid_status(
-        self, client: AsyncClient, db_session: AsyncSession
-    ) -> None:
+    async def test_update_device_invalid_status(self, client: AsyncClient, db_session: AsyncSession) -> None:
         from app.devices.repositories import DeviceRepository
 
         repo = DeviceRepository(db_session)
@@ -481,9 +449,7 @@ class TestDevicesAPI:
         )
         assert resp.status_code == 422
 
-    async def test_update_device_empty_body(
-        self, client: AsyncClient, db_session: AsyncSession
-    ) -> None:
+    async def test_update_device_empty_body(self, client: AsyncClient, db_session: AsyncSession) -> None:
         from app.devices.repositories import DeviceRepository
 
         repo = DeviceRepository(db_session)
@@ -522,9 +488,7 @@ class TestCommandsAPI:
             }
         )
 
-    async def test_list_empty(
-        self, client: AsyncClient, db_session: AsyncSession
-    ) -> None:
+    async def test_list_empty(self, client: AsyncClient, db_session: AsyncSession) -> None:
         device = await self._create_device(db_session)
         resp = await client.get(f"/api/v1/devices/{device.id}/commands")
         assert resp.status_code == 200
@@ -532,9 +496,7 @@ class TestCommandsAPI:
         assert data["items"] == []
         assert data["total"] == 0
 
-    async def test_trigger_and_get(
-        self, client: AsyncClient, db_session: AsyncSession
-    ) -> None:
+    async def test_trigger_and_get(self, client: AsyncClient, db_session: AsyncSession) -> None:
         device = await self._create_device(db_session)
         create_resp = await client.post(
             f"/api/v1/devices/{device.id}/commands",
@@ -546,15 +508,11 @@ class TestCommandsAPI:
         assert cmd["status"] == "PENDING"
         command_id = cmd["id"]
 
-        get_resp = await client.get(
-            f"/api/v1/devices/{device.id}/commands/{command_id}"
-        )
+        get_resp = await client.get(f"/api/v1/devices/{device.id}/commands/{command_id}")
         assert get_resp.status_code == 200
         assert get_resp.json()["id"] == command_id
 
-    async def test_trigger_invalid_command_type(
-        self, client: AsyncClient, db_session: AsyncSession
-    ) -> None:
+    async def test_trigger_invalid_command_type(self, client: AsyncClient, db_session: AsyncSession) -> None:
         device = await self._create_device(db_session)
         resp = await client.post(
             f"/api/v1/devices/{device.id}/commands",
@@ -562,17 +520,13 @@ class TestCommandsAPI:
         )
         assert resp.status_code == 422
 
-    async def test_get_command_not_found(
-        self, client: AsyncClient, db_session: AsyncSession
-    ) -> None:
+    async def test_get_command_not_found(self, client: AsyncClient, db_session: AsyncSession) -> None:
         device = await self._create_device(db_session)
         resp = await client.get(f"/api/v1/devices/{device.id}/commands/999")
         assert resp.status_code == 404
         assert resp.json()["detail"] == "Command not found"
 
-    async def test_get_command_wrong_device(
-        self, client: AsyncClient, db_session: AsyncSession
-    ) -> None:
+    async def test_get_command_wrong_device(self, client: AsyncClient, db_session: AsyncSession) -> None:
         device = await self._create_device(db_session)
         create_resp = await client.post(
             f"/api/v1/devices/{device.id}/commands",
@@ -582,28 +536,18 @@ class TestCommandsAPI:
         resp = await client.get(f"/api/v1/devices/99999/commands/{command_id}")
         assert resp.status_code == 404
 
-    async def test_list_device_commands(
-        self, client: AsyncClient, db_session: AsyncSession
-    ) -> None:
+    async def test_list_device_commands(self, client: AsyncClient, db_session: AsyncSession) -> None:
         device = await self._create_device(db_session)
-        await client.post(
-            f"/api/v1/devices/{device.id}/commands", json={"command_type": "LOCK"}
-        )
-        await client.post(
-            f"/api/v1/devices/{device.id}/commands", json={"command_type": "UNLOCK"}
-        )
+        await client.post(f"/api/v1/devices/{device.id}/commands", json={"command_type": "LOCK"})
+        await client.post(f"/api/v1/devices/{device.id}/commands", json={"command_type": "UNLOCK"})
         resp = await client.get(f"/api/v1/devices/{device.id}/commands")
         data = resp.json()
         assert data["total"] == 2
 
-    async def test_list_device_commands_pagination(
-        self, client: AsyncClient, db_session: AsyncSession
-    ) -> None:
+    async def test_list_device_commands_pagination(self, client: AsyncClient, db_session: AsyncSession) -> None:
         device = await self._create_device(db_session)
         for _ in range(5):
-            await client.post(
-                f"/api/v1/devices/{device.id}/commands", json={"command_type": "LOCK"}
-            )
+            await client.post(f"/api/v1/devices/{device.id}/commands", json={"command_type": "LOCK"})
         resp = await client.get(f"/api/v1/devices/{device.id}/commands?skip=0&limit=2")
         data = resp.json()
         assert len(data["items"]) == 2
