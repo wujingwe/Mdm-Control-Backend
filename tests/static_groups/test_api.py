@@ -1,13 +1,13 @@
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.devices.models import Device
+
 
 class TestStaticGroupsAPI:
     BASE = "/api/v1/static-groups"
 
     async def test_crud_flow(self, client: AsyncClient, db_session: AsyncSession) -> None:
-        from app.devices.models import Device
-
         dev1 = Device(
             name="D1",
             serial_number="SN001",
@@ -37,13 +37,13 @@ class TestStaticGroupsAPI:
             json={
                 "name": "Static Group A",
                 "description": "desc",
-                "device_serial_numbers": ["SN001", "SN002"],
+                "deviceSerialNumbers": ["SN001", "SN002"],
             },
         )
         assert create.status_code == 201
         gid = create.json()["id"]
         assert create.json()["name"] == "Static Group A"
-        assert {d["serial_number"] for d in create.json()["devices"]} == {
+        assert {d["serialNumber"] for d in create.json()["devices"]} == {
             "SN001",
             "SN002",
         }
@@ -51,18 +51,18 @@ class TestStaticGroupsAPI:
         get = await client.get(f"{self.BASE}/{gid}")
         assert get.status_code == 200
         assert get.json()["name"] == "Static Group A"
-        assert {d["serial_number"] for d in get.json()["devices"]} == {"SN001", "SN002"}
+        assert {d["serialNumber"] for d in get.json()["devices"]} == {"SN001", "SN002"}
 
         update = await client.put(
             f"{self.BASE}/{gid}",
             json={
                 "name": "Static Group B",
-                "device_serial_numbers": ["SN003"],
+                "deviceSerialNumbers": ["SN003"],
             },
         )
         assert update.status_code == 200
         assert update.json()["name"] == "Static Group B"
-        assert [d["serial_number"] for d in update.json()["devices"]] == ["SN003"]
+        assert [d["serialNumber"] for d in update.json()["devices"]] == ["SN003"]
 
         delete = await client.delete(f"{self.BASE}/{gid}")
         assert delete.status_code == 204

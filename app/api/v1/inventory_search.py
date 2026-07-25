@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app.common.schemas import PaginatedResponse
-from app.dependencies import get_inventory_search_service
+from app.dependencies import get_inventory_search_service, require_permission
 from app.devices.schemas import DeviceResponse
 from app.inventory_search.schemas import (
     InventorySearchCreate,
@@ -10,6 +10,7 @@ from app.inventory_search.schemas import (
     InventorySearchUpdate,
 )
 from app.inventory_search.services import InventorySearchService
+from app.users.models import User
 from app.webhook_client import revalidate
 
 router = APIRouter(prefix="/inventory-search", tags=["InventorySearch"])
@@ -45,8 +46,9 @@ async def get_inventory_search(
 async def create_inventory_search(
     data: InventorySearchCreate,
     service: InventorySearchService = Depends(get_inventory_search_service),
+    current_user: User = Depends(require_permission("editor")),
 ) -> InventorySearchResponse:
-    search = await service.create_search(data)
+    search = await service.create_search(data, current_user.id)
     await revalidate(["inventory-search"])
     return InventorySearchResponse.model_validate(search)
 
@@ -56,6 +58,7 @@ async def update_inventory_search(
     search_id: int,
     data: InventorySearchUpdate,
     service: InventorySearchService = Depends(get_inventory_search_service),
+    _current_user: User = Depends(require_permission("editor")),
 ) -> InventorySearchResponse:
     updated = await service.update_search(search_id, data)
     if not updated:
@@ -68,6 +71,7 @@ async def update_inventory_search(
 async def delete_inventory_search(
     search_id: int,
     service: InventorySearchService = Depends(get_inventory_search_service),
+    _current_user: User = Depends(require_permission("editor")),
 ) -> None:
     deleted = await service.delete_search(search_id)
     if not deleted:

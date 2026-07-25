@@ -1,13 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app.common.schemas import PaginatedResponse
-from app.dependencies import get_mobile_app_service
+from app.dependencies import get_mobile_app_service, require_permission
 from app.mobile_apps.schemas import (
     MobileAppCreate,
     MobileAppResponse,
     MobileAppUpdate,
 )
 from app.mobile_apps.services import MobileAppService
+from app.users.models import User
 from app.webhook_client import revalidate
 
 router = APIRouter(prefix="/mobile-apps", tags=["MobileApps"])
@@ -43,8 +44,9 @@ async def get_mobile_app(
 async def create_mobile_app(
     data: MobileAppCreate,
     service: MobileAppService = Depends(get_mobile_app_service),
+    current_user: User = Depends(require_permission("editor")),
 ) -> MobileAppResponse:
-    app = await service.create_mobile_app(data)
+    app = await service.create_mobile_app(data, current_user.id)
     await revalidate(["mobile-apps"])
     return MobileAppResponse.model_validate(app)
 
@@ -54,6 +56,7 @@ async def update_mobile_app(
     mobile_app_id: int,
     data: MobileAppUpdate,
     service: MobileAppService = Depends(get_mobile_app_service),
+    _current_user: User = Depends(require_permission("editor")),
 ) -> MobileAppResponse:
     updated = await service.update_mobile_app(mobile_app_id, data)
     if not updated:
@@ -66,6 +69,7 @@ async def update_mobile_app(
 async def delete_mobile_app(
     mobile_app_id: int,
     service: MobileAppService = Depends(get_mobile_app_service),
+    _current_user: User = Depends(require_permission("editor")),
 ) -> None:
     deleted = await service.delete_mobile_app(mobile_app_id)
     if not deleted:

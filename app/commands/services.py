@@ -18,7 +18,7 @@ class CommandService:
         self,
         device_id: int,
         data: CommandCreate,
-        created_by: int | None = None,
+        created_by: int,
     ) -> dict[str, object]:
         command = await self.repo.create(device_id, data, created_by)
         event_type = f"device.command.{data.command_type.value.lower()}"
@@ -48,8 +48,8 @@ class CommandService:
         skip: int = 0,
         limit: int = 100,
     ) -> tuple[list[Command], int]:
-        items = await self.repo.list_all(skip=skip, limit=limit)
-        total = await self.repo.count_all()
+        items = await self.repo.list(skip=skip, limit=limit)
+        total = await self.repo.count()
         return items, total
 
     async def list_device_commands(

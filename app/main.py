@@ -14,6 +14,7 @@ from app.config.settings import settings
 from app.dependencies import get_db
 from app.lifecycle import Lifecycle
 from app.messaging.producer import rabbitmq_producer
+from app.mock.seed import seed_database
 
 APP_VERSION = "1.0.0"
 _start_time = time.monotonic()
@@ -30,8 +31,6 @@ _lifecycle = Lifecycle()
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     if settings.mock_db:
-        from app.mock.seed import seed_database
-
         await seed_database()
     await _lifecycle.start()
     yield

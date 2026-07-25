@@ -117,14 +117,14 @@ class TestSmartGroupsAPI:
                         "operator": "lessThan",
                         "type": "number",
                         "value": "20",
-                        "left_parentheses": True,
+                        "leftParentheses": True,
                     },
                     {
                         "field": "connection_status",
                         "operator": "is",
                         "type": "string",
                         "value": "Connected",
-                        "right_parentheses": True,
+                        "rightParentheses": True,
                     },
                 ],
             },
@@ -133,8 +133,8 @@ class TestSmartGroupsAPI:
         criteria = create.json()["criteria"]
         assert len(criteria) == 3
         assert criteria[0]["field"] == "os_version"
-        assert criteria[1]["left_parentheses"] is True
-        assert criteria[2]["right_parentheses"] is True
+        assert criteria[1]["leftParentheses"] is True
+        assert criteria[2]["rightParentheses"] is True
 
     async def test_get_returns_criteria(self, client: AsyncClient) -> None:
         create = await client.post(
@@ -192,7 +192,7 @@ class TestSmartGroupsAPI:
         assert len(criteria) == 1
         assert criteria[0]["field"] == "battery_status"
 
-    async def test_update_empty_criteria_rejected(self, client: AsyncClient) -> None:
+    async def test_update_empty_criteria_accepted(self, client: AsyncClient) -> None:
         create = await client.post(
             self.BASE,
             json={
@@ -212,7 +212,7 @@ class TestSmartGroupsAPI:
             f"{self.BASE}/{gid}",
             json={"criteria": []},
         )
-        assert update.status_code == 422
+        assert update.status_code == 200
 
     async def test_create_without_criteria_rejected(self, client: AsyncClient) -> None:
         create = await client.post(

@@ -2,7 +2,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.common.schemas import Exclusion, Scope, ScopeType, Target
+from app.common.schemas import ScopeExclusion, Scope, ScopeType, ScopeTarget
 from app.devices.models import Device
 from app.messaging.producer import RabbitMQProducer
 from app.profiles.models import Profile, ProfileAssignment
@@ -34,7 +34,7 @@ async def _create_device(db: AsyncSession, name: str, serial: str, status: str =
 
 
 async def _create_profile(db: AsyncSession, name: str, scope: Scope | None = None) -> Profile:
-    profile = Profile(name=name, scope=scope or Scope(), policy={})
+    profile = Profile(name=name, scope=scope or Scope(), policy={}, created_by=1)
     db.add(profile)
     await db.commit()
     await db.refresh(profile)
@@ -67,7 +67,7 @@ class TestRecalculateProfile:
         profile = await _create_profile(
             db_session,
             "P1",
-            Scope(targets=[Target(scope_type=ScopeType.ALL_DEVICES)]),
+            Scope(targets=[ScopeTarget(scope_type=ScopeType.ALL_DEVICES)]),
         )
 
         await reconciler.recalculate_profile(profile.id)
@@ -87,7 +87,7 @@ class TestRecalculateProfile:
         profile = await _create_profile(
             db_session,
             "P1",
-            Scope(targets=[Target(scope_type=ScopeType.ALL_DEVICES)]),
+            Scope(targets=[ScopeTarget(scope_type=ScopeType.ALL_DEVICES)]),
         )
         await _create_assignment(db_session, profile.id, device.id)
 
@@ -107,7 +107,7 @@ class TestRecalculateProfile:
         profile = await _create_profile(
             db_session,
             "P1",
-            Scope(targets=[Target(scope_type=ScopeType.DEVICE, target_id=device.id)]),
+            Scope(targets=[ScopeTarget(scope_type=ScopeType.DEVICE, target_id=device.id)]),
         )
         await _create_assignment(db_session, profile.id, device.id)
 
@@ -181,7 +181,7 @@ class TestRecalculateDeviceChanges:
         profile = await _create_profile(
             db_session,
             "P1",
-            Scope(targets=[Target(scope_type=ScopeType.ALL_DEVICES)]),
+            Scope(targets=[ScopeTarget(scope_type=ScopeType.ALL_DEVICES)]),
         )
         await _create_assignment(db_session, profile.id, d1.id)
 
@@ -207,8 +207,8 @@ class TestRecalculateDeviceChanges:
             "P1",
             Scope(
                 targets=[
-                    Target(scope_type=ScopeType.DEVICE, target_id=d1.id),
-                    Target(scope_type=ScopeType.DEVICE, target_id=d2.id),
+                    ScopeTarget(scope_type=ScopeType.DEVICE, target_id=d1.id),
+                    ScopeTarget(scope_type=ScopeType.DEVICE, target_id=d2.id),
                 ]
             ),
         )
@@ -217,7 +217,7 @@ class TestRecalculateDeviceChanges:
 
         profile = await repo.get_by_id(profile.id)
         assert profile is not None
-        profile.scope = Scope(targets=[Target(scope_type=ScopeType.DEVICE, target_id=d1.id)])
+        profile.scope = Scope(targets=[ScopeTarget(scope_type=ScopeType.DEVICE, target_id=d1.id)])
         await db_session.commit()
 
         await reconciler.recalculate_profile(profile.id)
@@ -244,7 +244,7 @@ class TestRecalculateScopeTypes:
         profile = await _create_profile(
             db_session,
             "P1",
-            Scope(targets=[Target(scope_type=ScopeType.ALL_DEVICES)]),
+            Scope(targets=[ScopeTarget(scope_type=ScopeType.ALL_DEVICES)]),
         )
 
         await reconciler.recalculate_profile(profile.id)
@@ -263,7 +263,7 @@ class TestRecalculateScopeTypes:
         profile = await _create_profile(
             db_session,
             "P1",
-            Scope(targets=[Target(scope_type=ScopeType.ALL_DEVICES)]),
+            Scope(targets=[ScopeTarget(scope_type=ScopeType.ALL_DEVICES)]),
         )
 
         await reconciler.recalculate_profile(profile.id)
@@ -281,7 +281,7 @@ class TestRecalculateScopeTypes:
         profile = await _create_profile(
             db_session,
             "P1",
-            Scope(targets=[Target(scope_type=ScopeType.DEVICE, target_id=d1.id)]),
+            Scope(targets=[ScopeTarget(scope_type=ScopeType.DEVICE, target_id=d1.id)]),
         )
 
         await reconciler.recalculate_profile(profile.id)
@@ -299,7 +299,7 @@ class TestRecalculateScopeTypes:
         profile = await _create_profile(
             db_session,
             "P1",
-            Scope(targets=[Target(scope_type=ScopeType.DEVICE, target_id=99999)]),
+            Scope(targets=[ScopeTarget(scope_type=ScopeType.DEVICE, target_id=99999)]),
         )
 
         await reconciler.recalculate_profile(profile.id)
@@ -314,7 +314,7 @@ class TestRecalculateScopeTypes:
 
         d1 = await _create_device(db_session, "Mac1", "SN-1")
         await _create_device(db_session, "Mac2", "SN-2")
-        sg = StaticGroup(name="SG1")
+        sg = StaticGroup(name="SG1", created_by=1)
         db_session.add(sg)
         await db_session.commit()
         await db_session.refresh(sg)
@@ -325,7 +325,7 @@ class TestRecalculateScopeTypes:
         profile = await _create_profile(
             db_session,
             "P1",
-            Scope(targets=[Target(scope_type=ScopeType.STATIC_GROUP, target_id=sg.id)]),
+            Scope(targets=[ScopeTarget(scope_type=ScopeType.STATIC_GROUP, target_id=sg.id)]),
         )
 
         await reconciler.recalculate_profile(profile.id)
@@ -345,6 +345,7 @@ class TestRecalculateScopeTypes:
         sg = SmartGroup(
             name="Macs",
             criteria=[{"field": "name", "operator": "like", "type": "string", "value": "Mac"}],
+            created_by=1,
         )
         db_session.add(sg)
         await db_session.commit()
@@ -353,7 +354,7 @@ class TestRecalculateScopeTypes:
         profile = await _create_profile(
             db_session,
             "P1",
-            Scope(targets=[Target(scope_type=ScopeType.SMART_GROUP, target_id=sg.id)]),
+            Scope(targets=[ScopeTarget(scope_type=ScopeType.SMART_GROUP, target_id=sg.id)]),
         )
 
         await reconciler.recalculate_profile(profile.id)
@@ -379,8 +380,8 @@ class TestRecalculateExclusions:
             db_session,
             "P1",
             Scope(
-                targets=[Target(scope_type=ScopeType.ALL_DEVICES)],
-                exclusions=[Exclusion(scope_type=ScopeType.DEVICE, exclude_id=d1.id)],
+                targets=[ScopeTarget(scope_type=ScopeType.ALL_DEVICES)],
+                exclusions=[ScopeExclusion(scope_type=ScopeType.DEVICE, exclude_id=d1.id)],
             ),
         )
 
@@ -400,8 +401,8 @@ class TestRecalculateExclusions:
             db_session,
             "P1",
             Scope(
-                targets=[Target(scope_type=ScopeType.ALL_DEVICES)],
-                exclusions=[Exclusion(scope_type=ScopeType.DEVICE, exclude_id=d1.id)],
+                targets=[ScopeTarget(scope_type=ScopeType.ALL_DEVICES)],
+                exclusions=[ScopeExclusion(scope_type=ScopeType.DEVICE, exclude_id=d1.id)],
             ),
         )
 
@@ -422,6 +423,7 @@ class TestRecalculateExclusions:
         sg = SmartGroup(
             name="Macs",
             criteria=[{"field": "name", "operator": "like", "type": "string", "value": "MacBook"}],
+            created_by=1,
         )
         db_session.add(sg)
         await db_session.commit()
@@ -430,6 +432,7 @@ class TestRecalculateExclusions:
         excl_sg = SmartGroup(
             name="Pros",
             criteria=[{"field": "name", "operator": "like", "type": "string", "value": "Pro"}],
+            created_by=1,
         )
         db_session.add(excl_sg)
         await db_session.commit()
@@ -439,8 +442,8 @@ class TestRecalculateExclusions:
             db_session,
             "P1",
             Scope(
-                targets=[Target(scope_type=ScopeType.SMART_GROUP, target_id=sg.id)],
-                exclusions=[Exclusion(scope_type=ScopeType.SMART_GROUP, exclude_id=excl_sg.id)],
+                targets=[ScopeTarget(scope_type=ScopeType.SMART_GROUP, target_id=sg.id)],
+                exclusions=[ScopeExclusion(scope_type=ScopeType.SMART_GROUP, exclude_id=excl_sg.id)],
             ),
         )
 
@@ -465,7 +468,7 @@ class TestRecalculateVersion:
         profile = await _create_profile(
             db_session,
             "P1",
-            Scope(targets=[Target(scope_type=ScopeType.ALL_DEVICES)]),
+            Scope(targets=[ScopeTarget(scope_type=ScopeType.ALL_DEVICES)]),
         )
 
         await reconciler.recalculate_profile(profile.id)
@@ -482,7 +485,7 @@ class TestRecalculateVersion:
         profile = await _create_profile(
             db_session,
             "P1",
-            Scope(targets=[Target(scope_type=ScopeType.DEVICE, target_id=d1.id)]),
+            Scope(targets=[ScopeTarget(scope_type=ScopeType.DEVICE, target_id=d1.id)]),
         )
         await _create_assignment(db_session, profile.id, d1.id, version=5)
 
@@ -491,8 +494,8 @@ class TestRecalculateVersion:
         assert profile is not None
         profile.scope = Scope(
             targets=[
-                Target(scope_type=ScopeType.DEVICE, target_id=d1.id),
-                Target(scope_type=ScopeType.DEVICE, target_id=d2.id),
+                ScopeTarget(scope_type=ScopeType.DEVICE, target_id=d1.id),
+                ScopeTarget(scope_type=ScopeType.DEVICE, target_id=d2.id),
             ]
         )
         await db_session.commit()
@@ -526,12 +529,12 @@ class TestRecalculateForDevice:
         p1 = await _create_profile(
             db_session,
             "P1",
-            Scope(targets=[Target(scope_type=ScopeType.ALL_DEVICES)]),
+            Scope(targets=[ScopeTarget(scope_type=ScopeType.ALL_DEVICES)]),
         )
         p2 = await _create_profile(
             db_session,
             "P2",
-            Scope(targets=[Target(scope_type=ScopeType.ALL_DEVICES)]),
+            Scope(targets=[ScopeTarget(scope_type=ScopeType.ALL_DEVICES)]),
         )
         await _create_profile(db_session, "P3")
 
@@ -569,7 +572,7 @@ class TestMessageSending:
         profile = await _create_profile(
             db_session,
             "P1",
-            Scope(targets=[Target(scope_type=ScopeType.ALL_DEVICES)]),
+            Scope(targets=[ScopeTarget(scope_type=ScopeType.ALL_DEVICES)]),
         )
 
         await reconciler.recalculate_profile(profile.id)
@@ -594,7 +597,7 @@ class TestMessageSending:
         profile = await _create_profile(
             db_session,
             "P1",
-            Scope(targets=[Target(scope_type=ScopeType.DEVICE, target_id=d1.id)]),
+            Scope(targets=[ScopeTarget(scope_type=ScopeType.DEVICE, target_id=d1.id)]),
         )
 
         # Pre-create an assignment for d2 (stale — d2 is not in scope)
@@ -619,7 +622,7 @@ class TestMessageSending:
         profile = await _create_profile(
             db_session,
             "P1",
-            Scope(targets=[Target(scope_type=ScopeType.ALL_DEVICES)]),
+            Scope(targets=[ScopeTarget(scope_type=ScopeType.ALL_DEVICES)]),
         )
 
         await reconciler.recalculate_profile(profile.id)
@@ -640,7 +643,7 @@ class TestMessageSending:
         profile = await _create_profile(
             db_session,
             "P1",
-            Scope(targets=[Target(scope_type=ScopeType.DEVICE, target_id=device.id)]),
+            Scope(targets=[ScopeTarget(scope_type=ScopeType.DEVICE, target_id=device.id)]),
         )
         await reconciler.recalculate_profile(profile.id)
         producer.publish_profile_push.reset_mock()

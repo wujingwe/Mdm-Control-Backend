@@ -9,8 +9,8 @@ class TestExtensionAttributesAPI:
             self.BASE,
             json={
                 "name": "Ext1",
-                "data_type": "string",
-                "input_type": "Text field",
+                "dataType": "string",
+                "inputType": "Text field",
             },
         )
         assert create.status_code == 201
@@ -36,8 +36,8 @@ class TestExtensionAttributesAPI:
             self.BASE,
             json={
                 "name": "Ext1",
-                "data_type": "string",
-                "input_type": "Text field",
+                "dataType": "string",
+                "inputType": "Text field",
             },
         )
         resp = await client.get(self.BASE)

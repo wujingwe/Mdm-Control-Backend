@@ -11,18 +11,18 @@ class InventorySearchRepository:
     def __init__(self, db: AsyncSession) -> None:
         self.db = db
 
-    async def list_all(self, skip: int = 0, limit: int = 100) -> list[InventorySearch]:
+    async def list(self, skip: int = 0, limit: int = 100) -> list[InventorySearch]:
         stmt = select(InventorySearch).order_by(InventorySearch.id).offset(skip).limit(limit)
         result = await self.db.execute(stmt)
         return list(result.scalars().all())
 
-    async def get_by_id(self, record_id: int) -> InventorySearch | None:
-        stmt = select(InventorySearch).where(InventorySearch.id == record_id)
+    async def get_by_id(self, search_id: int) -> InventorySearch | None:
+        stmt = select(InventorySearch).where(InventorySearch.id == search_id)
         result = await self.db.execute(stmt)
         return result.scalar_one_or_none()
 
-    async def create(self, data: InventorySearchCreate) -> InventorySearch:
-        instance = InventorySearch(**data.model_dump())
+    async def create(self, data: InventorySearchCreate, created_by: int) -> InventorySearch:
+        instance = InventorySearch(**data.model_dump(), created_by=created_by)
         self.db.add(instance)
         try:
             await self.db.commit()

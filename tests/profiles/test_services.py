@@ -50,7 +50,7 @@ class TestProfileService:
         fake = MagicMock()
         repo.create = AsyncMock(return_value=fake)
         svc = ProfileService(repo)
-        result = await svc.create_profile(ProfileCreate(name="P", policy=Policy(), scope=Scope(), created_by=1))
+        result = await svc.create_profile(ProfileCreate(name="P", policy=Policy(), scope=Scope()), created_by=1)
         assert result is fake
 
     async def test_update_profile(self, repo: MagicMock) -> None:

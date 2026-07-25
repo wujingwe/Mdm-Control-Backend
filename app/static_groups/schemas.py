@@ -1,30 +1,26 @@
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict
-
+from app.common.schemas import CamelModel
 from app.devices.schemas import DeviceResponse
 
 
-class StaticGroupCreate(BaseModel):
+class StaticGroupCreate(CamelModel):
     name: str
     description: str | None = None
     device_serial_numbers: list[str] = []
-    created_by: int = 1
 
 
-class StaticGroupUpdate(BaseModel):
+class StaticGroupUpdate(CamelModel):
     name: str | None = None
     description: str | None = None
     device_serial_numbers: list[str] | None = None
 
 
-class StaticGroupResponse(BaseModel):
+class StaticGroupResponse(CamelModel):
     id: int
     name: str
     description: str | None = None
-    created_at: datetime
     created_by: int
+    created_at: datetime
     updated_at: datetime | None = None
     devices: list[DeviceResponse]
-
-    model_config = ConfigDict(from_attributes=True)

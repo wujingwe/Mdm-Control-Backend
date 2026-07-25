@@ -8,7 +8,7 @@ class TestStaticGroupService:
     @pytest.fixture
     def repo(self) -> None:
         m = MagicMock()
-        m.list_all = AsyncMock(return_value=[])
+        m.list = AsyncMock(return_value=[])
         m.get_by_id = AsyncMock(return_value=None)
         m.create = AsyncMock()
         m.update = AsyncMock()
@@ -21,13 +21,13 @@ class TestStaticGroupService:
         svc = StaticGroupService(repo)
         result = await svc.list_groups()
         assert result == ([], 0)
-        repo.list_all.assert_called_once_with(skip=0, limit=100)
+        repo.list.assert_called_once_with(skip=0, limit=100)
         repo.count.assert_awaited_once()
 
     async def test_list_groups_paginated(self, repo: MagicMock) -> None:
         svc = StaticGroupService(repo)
         await svc.list_groups(skip=5, limit=15)
-        repo.list_all.assert_called_once_with(skip=5, limit=15)
+        repo.list.assert_called_once_with(skip=5, limit=15)
 
     async def test_get_group_found(self, repo: MagicMock) -> None:
         fake = MagicMock()
@@ -45,10 +45,10 @@ class TestStaticGroupService:
         fake = MagicMock()
         repo.create = AsyncMock(return_value=fake)
         svc = StaticGroupService(repo)
-        data = StaticGroupCreate(name="G", created_by=1, device_serial_numbers=["SN001"])
-        result = await svc.create_group(data)
+        data = StaticGroupCreate(name="G", device_serial_numbers=["SN001"])
+        result = await svc.create_group(data, created_by=1)
         assert result is fake
-        repo.create.assert_called_once_with(data)
+        repo.create.assert_called_once_with(data, 1)
 
     async def test_update_group(self, repo: MagicMock) -> None:
         fake = MagicMock()

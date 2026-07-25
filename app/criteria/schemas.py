@@ -1,9 +1,8 @@
-from pydantic import BaseModel
-
 from app.common.enums import CriteriaType
+from app.common.schemas import CamelModel
 
 
-class Criteria(BaseModel):
+class Criteria(CamelModel):
     field: str
     operator: str
     type: CriteriaType

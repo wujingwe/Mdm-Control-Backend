@@ -3,6 +3,8 @@ from datetime import datetime, timezone
 import pytest
 from pydantic import ValidationError
 
+from app.common.enums import CriteriaType
+from app.criteria import Criteria
 from app.smart_groups.schemas import (
     SmartGroupCreate,
     SmartGroupResponse,
@@ -15,12 +17,12 @@ class TestSmartGroupSchemas:
         data = SmartGroupCreate(
             name="Group A",
             criteria=[
-                {
-                    "field": "os_version",
-                    "operator": "is",
-                    "type": "string",
-                    "value": "Android 14",
-                }
+                Criteria(
+                    field="os_version",
+                    operator="is",
+                    type=CriteriaType.STRING,
+                    value="Android 14",
+                ),
             ],
         )
         assert data.name == "Group A"
@@ -31,12 +33,12 @@ class TestSmartGroupSchemas:
             name="Group A",
             description="desc",
             criteria=[
-                {
-                    "field": "os_version",
-                    "operator": "is",
-                    "type": "string",
-                    "value": "Android 14",
-                }
+                Criteria(
+                    field="os_version",
+                    operator="is",
+                    type=CriteriaType.STRING,
+                    value="Android 14",
+                ),
             ],
         )
         assert data.description == "desc"
@@ -51,5 +53,19 @@ class TestSmartGroupSchemas:
 
     def test_response(self) -> None:
         now = datetime.now(timezone.utc)
-        data = SmartGroupResponse(id=1, name="Group A", created_by=1, created_at=now)
+        data = SmartGroupResponse(
+            id=1,
+            name="Group A",
+            criteria=[
+                Criteria(
+                    field="os_version",
+                    operator="is",
+                    type=CriteriaType.STRING,
+                    value="Android 14",
+                ),
+            ],
+            created_by=1,
+            created_at=now,
+            updated_at=now,
+        )
         assert data.id == 1

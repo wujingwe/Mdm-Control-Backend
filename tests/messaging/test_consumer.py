@@ -3,6 +3,7 @@ from typing import Any
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 from app.common.enums import CommandStatus
+from app.messaging.consumer import process_profile_status_message
 
 
 class TestProcessProfileStatusMessage:
@@ -12,7 +13,6 @@ class TestProcessProfileStatusMessage:
     async def test_profile_status_reported_updates_assignment(
         self, mock_session_factory: Any, mock_webhook: Any
     ) -> None:
-        from app.messaging.consumer import process_profile_status_message
 
         mock_assignment = MagicMock()
         mock_assignment.profile_id = 1
@@ -40,7 +40,6 @@ class TestProcessProfileStatusMessage:
     @pytest.mark.asyncio
     @patch("app.messaging.consumer.send_validation_webhook", new_callable=AsyncMock)
     async def test_profile_status_ignored_event(self, mock_webhook: Any) -> None:
-        from app.messaging.consumer import process_profile_status_message
 
         data = {"event_type": "other.event"}
         await process_profile_status_message(data)
@@ -49,7 +48,6 @@ class TestProcessProfileStatusMessage:
     @pytest.mark.asyncio
     @patch("app.messaging.consumer.send_validation_webhook", new_callable=AsyncMock)
     async def test_profile_status_invalid_status(self, mock_webhook: Any) -> None:
-        from app.messaging.consumer import process_profile_status_message
 
         data = {
             "event_type": "profile.status.reported",

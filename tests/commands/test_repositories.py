@@ -31,6 +31,7 @@ class TestCommandRepository:
         created = await repo.create(
             device_id=device.id,
             data=CommandCreate(command_type=CommandType.LOCK),
+            created_by=1,
         )
         assert created.id is not None
         assert created.command_type == CommandType.LOCK
@@ -42,6 +43,7 @@ class TestCommandRepository:
         created = await repo.create(
             device_id=device.id,
             data=CommandCreate(command_type=CommandType.LOCK),
+            created_by=1,
         )
         found = await repo.get_by_id(created.id)
         assert found is not None
@@ -54,8 +56,8 @@ class TestCommandRepository:
     async def test_list_for_device(self, db_session: AsyncSession) -> None:
         device = await _create_device(db_session)
         repo = CommandRepository(db_session)
-        await repo.create(device_id=device.id, data=CommandCreate(command_type=CommandType.LOCK))
-        await repo.create(device_id=device.id, data=CommandCreate(command_type=CommandType.WIPE))
+        await repo.create(device_id=device.id, data=CommandCreate(command_type=CommandType.LOCK), created_by=1)
+        await repo.create(device_id=device.id, data=CommandCreate(command_type=CommandType.WIPE), created_by=1)
         items = await repo.list_for_device(device.id)
         assert len(items) == 2
 
@@ -65,6 +67,7 @@ class TestCommandRepository:
         created = await repo.create(
             device_id=device.id,
             data=CommandCreate(command_type=CommandType.LOCK),
+            created_by=1,
         )
         updated = await repo.mark_sent(created.id, "msg-123")
         assert updated.status == CommandStatus.SENT
@@ -75,6 +78,7 @@ class TestCommandRepository:
         created = await repo.create(
             device_id=device.id,
             data=CommandCreate(command_type=CommandType.LOCK),
+            created_by=1,
         )
         updated = await repo.update_status(created.id, CommandStatus.COMPLETED, result_message="done")
         assert updated.status == CommandStatus.COMPLETED
@@ -83,12 +87,12 @@ class TestCommandRepository:
     async def test_count_all(self, db_session: AsyncSession) -> None:
         device = await _create_device(db_session)
         repo = CommandRepository(db_session)
-        assert await repo.count_all() == 0
-        await repo.create(device_id=device.id, data=CommandCreate(command_type=CommandType.LOCK))
-        assert await repo.count_all() == 1
+        assert await repo.count() == 0
+        await repo.create(device_id=device.id, data=CommandCreate(command_type=CommandType.LOCK), created_by=1)
+        assert await repo.count() == 1
 
     async def test_count_for_device(self, db_session: AsyncSession) -> None:
         device = await _create_device(db_session)
         repo = CommandRepository(db_session)
-        await repo.create(device_id=device.id, data=CommandCreate(command_type=CommandType.LOCK))
+        await repo.create(device_id=device.id, data=CommandCreate(command_type=CommandType.LOCK), created_by=1)
         assert await repo.count_for_device(device.id) == 1

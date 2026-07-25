@@ -36,8 +36,8 @@ class ProfileRepository:
         result = await self.db.execute(stmt)
         return result.scalar_one_or_none()
 
-    async def create(self, data: ProfileCreate) -> Profile:
-        instance = Profile(**data.model_dump())
+    async def create(self, data: ProfileCreate, created_by: int) -> Profile:
+        instance = Profile(**data.model_dump(), created_by=created_by)
         self.db.add(instance)
         try:
             await self.db.commit()

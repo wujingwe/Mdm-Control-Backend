@@ -11,7 +11,7 @@ class SmartGroupRepository:
     def __init__(self, db: AsyncSession) -> None:
         self.db = db
 
-    async def list_all(self, skip: int = 0, limit: int = 100) -> list[SmartGroup]:
+    async def list(self, skip: int = 0, limit: int = 100) -> list[SmartGroup]:
         stmt = select(SmartGroup).order_by(SmartGroup.id).offset(skip).limit(limit)
         result = await self.db.execute(stmt)
         return list(result.scalars().all())
@@ -21,8 +21,8 @@ class SmartGroupRepository:
         result = await self.db.execute(stmt)
         return result.scalar_one_or_none()
 
-    async def create(self, data: SmartGroupCreate) -> SmartGroup:
-        instance = SmartGroup(**data.model_dump())
+    async def create(self, data: SmartGroupCreate, created_by: int) -> SmartGroup:
+        instance = SmartGroup(**data.model_dump(), created_by=created_by)
         self.db.add(instance)
         try:
             await self.db.commit()

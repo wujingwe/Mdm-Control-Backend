@@ -1,11 +1,11 @@
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict
 
 from app.common.enums import ConnectionStatus, DeviceStatus
+from app.common.schemas import CamelModel
 
 
-class Wifi(BaseModel):
+class Wifi(CamelModel):
     ssid: str | None = None
     bssid: str | None = None
     ip_address: str | None = None
@@ -16,7 +16,7 @@ class Wifi(BaseModel):
     signal_strength: int | None = None
 
 
-class Cellular(BaseModel):
+class Cellular(CamelModel):
     carrier: str | None = None
     ip_address: str | None = None
     gateway: str | None = None
@@ -28,12 +28,12 @@ class Cellular(BaseModel):
     roaming: bool | None = None
 
 
-class Network(BaseModel):
+class Network(CamelModel):
     wifi: Wifi | None = None
     cellular: Cellular | None = None
 
 
-class Certificate(BaseModel):
+class Certificate(CamelModel):
     common_name: str | None = None
     issuer: str | None = None
     expiry: str | None = None
@@ -42,15 +42,13 @@ class Certificate(BaseModel):
     serial_number: str | None = None
 
 
-class DeviceExtensionAttributeResponse(BaseModel):
+class ExtensionAttributeValueResponse(CamelModel):
     extension_attribute_id: int
     extension_attribute_name: str
     value: str
 
-    model_config = ConfigDict(from_attributes=True)
 
-
-class DeviceResponse(BaseModel):
+class DeviceResponse(CamelModel):
     id: int
     name: str
     serial_number: str
@@ -67,18 +65,16 @@ class DeviceResponse(BaseModel):
     available_memory: int | None = None
     network: Network | dict | None = None
     certificates: list[Certificate] | list | None = None
-    extension_attributes: list[DeviceExtensionAttributeResponse] | None = None
-
-    model_config = ConfigDict(from_attributes=True)
+    extension_attribute_values: list[ExtensionAttributeValueResponse] | None = None
 
 
-class DeviceExtensionAttributeCreate(BaseModel):
+class ExtensionAttributeValueCreate(CamelModel):
     extension_attribute_id: int
     extension_attribute_name: str
     value: str
 
 
-class DeviceUpdate(BaseModel):
+class DeviceUpdate(CamelModel):
     connection_status: ConnectionStatus | None = None
     status: DeviceStatus | None = None
     battery_status: int | None = None
@@ -88,4 +84,4 @@ class DeviceUpdate(BaseModel):
     available_memory: int | None = None
     network: Network | None = None
     certificates: list[Certificate] | None = None
-    extension_attributes: list[DeviceExtensionAttributeCreate] | None = None
+    extension_attribute_values: list[ExtensionAttributeValueCreate] | None = None

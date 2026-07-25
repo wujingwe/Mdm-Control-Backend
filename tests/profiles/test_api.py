@@ -49,14 +49,16 @@ class TestProfilesAPI:
         )
         pid = create.json()["id"]
         resp = await client.put(
-            f"{self.BASE}/{pid}/scope",
+            f"{self.BASE}/{pid}",
             json={
-                "targets": [{"scope_type": "ALL_DEVICES"}],
-                "exclusions": [],
+                "scope": {
+                    "targets": [{"scope_type": "ALL_DEVICES"}],
+                    "exclusions": [],
+                },
             },
         )
         assert resp.status_code == 200
-        assert len(resp.json()["targets"]) == 1
+        assert len(resp.json()["scope"]["targets"]) == 1
 
     async def test_settings_update_forces_recalculation_push(self, client: AsyncClient) -> None:
         create = await client.post(
@@ -116,9 +118,9 @@ class TestProfilesAPI:
             },
         )
         pid = create.json()["id"]
-        resp = await client.get(f"{self.BASE}/{pid}/scope")
+        resp = await client.get(f"{self.BASE}/{pid}")
         assert resp.status_code == 200
-        assert len(resp.json()["targets"]) == 1
+        assert len(resp.json()["scope"]["targets"]) == 1
 
     async def test_get_assignments_empty(self, client: AsyncClient) -> None:
         create = await client.post(

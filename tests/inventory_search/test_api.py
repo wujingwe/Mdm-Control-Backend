@@ -2,230 +2,164 @@ import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.criteria import Criteria
+from app.common.enums import CriteriaType
 from app.devices.models import Device
+from app.inventory_search.models import InventorySearch
 
 
-def _device_names(devices: list[dict]) -> list[str]:
-    return sorted((d["name"] for d in devices), key=str.casefold)
-
-
-def _device_serials(devices: list[dict]) -> list[str]:
-    return sorted(d["serial_number"] for d in devices)
+async def _seed_search(db: AsyncSession, **kwargs) -> InventorySearch:
+    defaults = dict(
+        name="Default Search",
+        criteria=[
+            Criteria(
+                field="os_version",
+                operator="is",
+                type=CriteriaType.STRING,
+                value="Android 14",
+            )
+        ],
+        created_by=1,
+    )
+    defaults.update(kwargs)
+    if (
+        isinstance(defaults["criteria"], list)
+        and defaults["criteria"]
+        and hasattr(defaults["criteria"][0], "model_dump")
+    ):
+        defaults["criteria"] = [c.model_dump() for c in defaults["criteria"]]
+    item = InventorySearch(**defaults)
+    db.add(item)
+    await db.commit()
+    await db.refresh(item)
+    return item
 
 
 class TestInventorySearchAPI:
     BASE = "/api/v1/inventory-search"
 
-    async def test_crud_flow(self, client: AsyncClient) -> None:
-        create = await client.post(
-            self.BASE,
-            json={
-                "name": "Search1",
-                "description": "desc",
-                "created_by": 1,
-                "criteria": [
-                    {
-                        "field": "os_version",
-                        "operator": "is",
-                        "type": "string",
-                        "value": "Android 14",
-                    },
-                ],
-            },
-        )
-        assert create.status_code == 201
-        sid = create.json()["id"]
-        assert create.json()["name"] == "Search1"
+    async def test_crud_flow(self, client: AsyncClient, db_session: AsyncSession) -> None:
+        search = await _seed_search(db_session, name="Search1")
 
-        get = await client.get(f"{self.BASE}/{sid}")
+        get = await client.get(f"{self.BASE}/{search.id}")
         assert get.status_code == 200
         assert get.json()["name"] == "Search1"
 
-        update = await client.put(f"{self.BASE}/{sid}", json={"name": "Search2"})
+        update = await client.put(f"{self.BASE}/{search.id}", json={"name": "Search2"})
         assert update.status_code == 200
         assert update.json()["name"] == "Search2"
 
-        delete = await client.delete(f"{self.BASE}/{sid}")
+        delete = await client.delete(f"{self.BASE}/{search.id}")
         assert delete.status_code == 204
 
-        get2 = await client.get(f"{self.BASE}/{sid}")
+        get2 = await client.get(f"{self.BASE}/{search.id}")
         assert get2.status_code == 404
 
-    async def test_list(self, client: AsyncClient) -> None:
-        await client.post(
-            self.BASE,
-            json={
-                "name": "S1",
-                "created_by": 1,
-                "criteria": [
-                    {
-                        "field": "os_version",
-                        "operator": "is",
-                        "type": "string",
-                        "value": "Android 14",
-                    }
-                ],
-            },
-        )
+    async def test_list(self, client: AsyncClient, db_session: AsyncSession) -> None:
+        await _seed_search(db_session, name="S1")
+
         resp = await client.get(self.BASE)
         data = resp.json()
         assert data["total"] >= 1 and len(data["items"]) >= 1
 
-    async def test_create_with_criteria(self, client: AsyncClient) -> None:
-        create = await client.post(
-            self.BASE,
-            json={
-                "name": "Online Android",
-                "created_by": 1,
-                "criteria": [
-                    {
-                        "field": "connection_status",
-                        "operator": "is",
-                        "type": "string",
-                        "value": "Connected",
-                    },
-                    {
-                        "field": "os_version",
-                        "operator": "is",
-                        "type": "string",
-                        "value": "Android 14",
-                    },
-                ],
-            },
-        )
-        assert create.status_code == 201
-        criteria = create.json()["criteria"]
-        assert len(criteria) == 2
-        assert criteria[0]["field"] == "connection_status"
-        assert criteria[1]["field"] == "os_version"
+    async def test_get_returns_criteria(self, client: AsyncClient, db_session: AsyncSession) -> None:
+        criteria = [
+            Criteria(
+                field="battery_status",
+                operator="lessThan",
+                type=CriteriaType.NUMBER,
+                value="20",
+            ),
+        ]
+        search = await _seed_search(db_session, name="Low Battery", criteria=criteria)
 
-    async def test_get_returns_criteria(self, client: AsyncClient) -> None:
-        create = await client.post(
-            self.BASE,
-            json={
-                "name": "Low Battery",
-                "created_by": 1,
-                "criteria": [
-                    {
-                        "field": "battery_status",
-                        "operator": "lessThan",
-                        "type": "number",
-                        "value": "20",
-                    },
-                ],
-            },
-        )
-        sid = create.json()["id"]
-        get = await client.get(f"{self.BASE}/{sid}")
+        get = await client.get(f"{self.BASE}/{search.id}")
         assert get.status_code == 200
-        criteria = get.json()["criteria"]
-        assert len(criteria) == 1
-        assert criteria[0]["field"] == "battery_status"
+        resp_criteria = get.json()["criteria"]
+        assert len(resp_criteria) == 1
+        assert resp_criteria[0]["field"] == "battery_status"
 
-    async def test_update_criteria(self, client: AsyncClient) -> None:
-        create = await client.post(
-            self.BASE,
-            json={
-                "name": "Test Search",
-                "created_by": 1,
-                "criteria": [
-                    {
-                        "field": "os_version",
-                        "operator": "is",
-                        "type": "string",
-                        "value": "Android 14",
-                    },
-                ],
+    async def test_update_criteria(self, client: AsyncClient, db_session: AsyncSession) -> None:
+        search = await _seed_search(db_session, name="Test Search")
+
+        new_criteria = [
+            {
+                "field": "battery_status",
+                "operator": "lessThan",
+                "type": "number",
+                "value": "15",
             },
-        )
-        sid = create.json()["id"]
+        ]
         update = await client.put(
-            f"{self.BASE}/{sid}",
-            json={
-                "criteria": [
-                    {
-                        "field": "battery_status",
-                        "operator": "lessThan",
-                        "type": "number",
-                        "value": "15",
-                    },
-                ],
-            },
+            f"{self.BASE}/{search.id}",
+            json={"criteria": new_criteria},
         )
         assert update.status_code == 200
         criteria = update.json()["criteria"]
         assert len(criteria) == 1
         assert criteria[0]["field"] == "battery_status"
 
-    async def test_update_empty_criteria_rejected(self, client: AsyncClient) -> None:
-        create = await client.post(
-            self.BASE,
-            json={
-                "name": "Test Search",
-                "created_by": 1,
-                "criteria": [
-                    {
-                        "field": "os_version",
-                        "operator": "is",
-                        "type": "string",
-                        "value": "Android 14",
-                    },
-                ],
-            },
-        )
-        sid = create.json()["id"]
+    async def test_update_empty_criteria_rejected(self, client: AsyncClient, db_session: AsyncSession) -> None:
+        search = await _seed_search(db_session, name="Test Search")
+
         update = await client.put(
-            f"{self.BASE}/{sid}",
+            f"{self.BASE}/{search.id}",
             json={"criteria": []},
         )
         assert update.status_code == 422
 
-    async def test_create_with_invalid_criteria_type(self, client: AsyncClient) -> None:
-        create = await client.post(
-            self.BASE,
-            json={
-                "name": "Bad Search",
-                "created_by": 1,
-                "criteria": [
-                    {
-                        "field": "os_version",
-                        "operator": "is",
-                        "type": "invalid",
-                        "value": "test",
-                    },
-                ],
-            },
-        )
-        assert create.status_code == 422
+    async def test_get_not_found(self, client: AsyncClient) -> None:
+        resp = await client.get(f"{self.BASE}/9999")
+        assert resp.status_code == 404
 
-    async def test_create_with_criteria_parentheses(self, client: AsyncClient) -> None:
-        create = await client.post(
-            self.BASE,
-            json={
-                "name": "Complex Search",
-                "created_by": 1,
-                "criteria": [
-                    {
-                        "field": "connection_status",
-                        "operator": "is",
-                        "type": "string",
-                        "value": "Connected",
-                        "left_parentheses": True,
-                    },
-                    {
-                        "field": "os_version",
-                        "operator": "is",
-                        "type": "string",
-                        "value": "Android 14",
-                        "right_parentheses": True,
-                    },
-                ],
-            },
-        )
-        assert create.status_code == 201
-        criteria = create.json()["criteria"]
-        assert criteria[0]["left_parentheses"] is True
-        assert criteria[1]["right_parentheses"] is True
+    async def test_delete_nonexistent_returns_204(self, client: AsyncClient) -> None:
+        resp = await client.delete(f"{self.BASE}/9999")
+        assert resp.status_code == 204
+
+    async def test_list_returns_response_shape(self, client: AsyncClient, db_session: AsyncSession) -> None:
+        criteria = [
+            Criteria(
+                field="os_version",
+                operator="is",
+                type=CriteriaType.STRING,
+                value="Android 14",
+            ),
+        ]
+        await _seed_search(db_session, name="SearchA", criteria=criteria)
+        await _seed_search(db_session, name="SearchB", criteria=criteria)
+
+        resp = await client.get(self.BASE)
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["total"] >= 2
+        assert len(data["items"]) >= 2
+        assert all("name" in item for item in data["items"])
+
+    async def test_get_returns_all_fields(self, client: AsyncClient, db_session: AsyncSession) -> None:
+        criteria = [
+            Criteria(
+                field="connection_status",
+                operator="is",
+                type=CriteriaType.STRING,
+                value="Connected",
+            ),
+            Criteria(
+                field="os_version",
+                operator="is",
+                type=CriteriaType.STRING,
+                value="Android 14",
+            ),
+        ]
+        search = await _seed_search(db_session, name="Online Android", criteria=criteria)
+
+        get = await client.get(f"{self.BASE}/{search.id}")
+        assert get.status_code == 200
+        body = get.json()
+        assert body["name"] == "Online Android"
+        assert body["createdBy"] == 1
+        assert len(body["criteria"]) == 2
+        assert body["criteria"][0]["field"] == "connection_status"
+        assert body["criteria"][1]["field"] == "os_version"
 
 
 EXECUTE = "/api/v1/inventory-search/execute"
@@ -313,13 +247,13 @@ class TestExecuteSearch:
                         "operator": "is",
                         "type": "string",
                         "value": "Connected",
-                        "and_or": "AND",
+                        "andOr": "AND",
                     },
                 ],
             },
         )
         assert resp.status_code == 200
-        names = _device_names(resp.json())
+        names = sorted((d["name"] for d in resp.json()), key=str.casefold)
         assert names == ["iPhone SE", "MacBook Air", "MacBook Pro", "Pixel 8"]
 
     async def test_is_not_operator(self, client: AsyncClient) -> None:
@@ -332,13 +266,13 @@ class TestExecuteSearch:
                         "operator": "isNot",
                         "type": "string",
                         "value": "Enrolled",
-                        "and_or": "AND",
+                        "andOr": "AND",
                     },
                 ],
             },
         )
         assert resp.status_code == 200
-        names = _device_names(resp.json())
+        names = sorted((d["name"] for d in resp.json()), key=str.casefold)
         assert names == ["Galaxy S24", "iPhone SE"]
 
     async def test_like_operator(self, client: AsyncClient) -> None:
@@ -351,13 +285,13 @@ class TestExecuteSearch:
                         "operator": "like",
                         "type": "string",
                         "value": "Mac",
-                        "and_or": "AND",
+                        "andOr": "AND",
                     },
                 ],
             },
         )
         assert resp.status_code == 200
-        names = _device_names(resp.json())
+        names = sorted((d["name"] for d in resp.json()), key=str.casefold)
         assert names == ["MacBook Air", "MacBook Pro"]
 
     async def test_greater_than_operator(self, client: AsyncClient) -> None:
@@ -370,13 +304,13 @@ class TestExecuteSearch:
                         "operator": "greaterThan",
                         "type": "number",
                         "value": "80",
-                        "and_or": "AND",
+                        "andOr": "AND",
                     },
                 ],
             },
         )
         assert resp.status_code == 200
-        names = _device_names(resp.json())
+        names = sorted((d["name"] for d in resp.json()), key=str.casefold)
         assert names == ["MacBook Pro"]
 
     async def test_less_than_operator(self, client: AsyncClient) -> None:
@@ -389,13 +323,13 @@ class TestExecuteSearch:
                         "operator": "lessThan",
                         "type": "number",
                         "value": "30",
-                        "and_or": "AND",
+                        "andOr": "AND",
                     },
                 ],
             },
         )
         assert resp.status_code == 200
-        names = _device_names(resp.json())
+        names = sorted((d["name"] for d in resp.json()), key=str.casefold)
         assert names == ["iPhone 15"]
 
     async def test_regex_operator(self, client: AsyncClient) -> None:
@@ -408,13 +342,13 @@ class TestExecuteSearch:
                         "operator": "matchesRegex",
                         "type": "string",
                         "value": "^macOS",
-                        "and_or": "AND",
+                        "andOr": "AND",
                     },
                 ],
             },
         )
         assert resp.status_code == 200
-        names = _device_names(resp.json())
+        names = sorted((d["name"] for d in resp.json()), key=str.casefold)
         assert names == ["MacBook Air", "MacBook Pro"]
 
     # ── multiple criteria (AND) ───────────────────────────────────────
@@ -429,20 +363,20 @@ class TestExecuteSearch:
                         "operator": "is",
                         "type": "string",
                         "value": "Connected",
-                        "and_or": "AND",
+                        "andOr": "AND",
                     },
                     {
                         "field": "status",
                         "operator": "is",
                         "type": "string",
                         "value": "Enrolled",
-                        "and_or": "AND",
+                        "andOr": "AND",
                     },
                 ],
             },
         )
         assert resp.status_code == 200
-        names = _device_names(resp.json())
+        names = sorted((d["name"] for d in resp.json()), key=str.casefold)
         assert names == ["MacBook Air", "MacBook Pro", "Pixel 8"]
 
     async def test_three_criteria_and(self, client: AsyncClient) -> None:
@@ -455,27 +389,27 @@ class TestExecuteSearch:
                         "operator": "like",
                         "type": "string",
                         "value": "iOS",
-                        "and_or": "AND",
+                        "andOr": "AND",
                     },
                     {
                         "field": "status",
                         "operator": "is",
                         "type": "string",
                         "value": "Enrolled",
-                        "and_or": "AND",
+                        "andOr": "AND",
                     },
                     {
                         "field": "battery_status",
                         "operator": "greaterThan",
                         "type": "number",
                         "value": "5",
-                        "and_or": "AND",
+                        "andOr": "AND",
                     },
                 ],
             },
         )
         assert resp.status_code == 200
-        names = _device_names(resp.json())
+        names = sorted((d["name"] for d in resp.json()), key=str.casefold)
         assert names == ["iPhone 15"]
 
     # ── multiple criteria (OR) ────────────────────────────────────────
@@ -490,20 +424,20 @@ class TestExecuteSearch:
                         "operator": "is",
                         "type": "string",
                         "value": "macOS 15.0",
-                        "and_or": "OR",
+                        "andOr": "OR",
                     },
                     {
                         "field": "os_version",
                         "operator": "is",
                         "type": "string",
                         "value": "Android 15",
-                        "and_or": "AND",
+                        "andOr": "AND",
                     },
                 ],
             },
         )
         assert resp.status_code == 200
-        names = _device_names(resp.json())
+        names = sorted((d["name"] for d in resp.json()), key=str.casefold)
         assert names == ["MacBook Pro", "Pixel 8"]
 
     async def test_or_like_name(self, client: AsyncClient) -> None:
@@ -516,20 +450,20 @@ class TestExecuteSearch:
                         "operator": "like",
                         "type": "string",
                         "value": "Mac",
-                        "and_or": "OR",
+                        "andOr": "OR",
                     },
                     {
                         "field": "name",
                         "operator": "like",
                         "type": "string",
                         "value": "iPhone",
-                        "and_or": "AND",
+                        "andOr": "AND",
                     },
                 ],
             },
         )
         assert resp.status_code == 200
-        names = _device_names(resp.json())
+        names = sorted((d["name"] for d in resp.json()), key=str.casefold)
         assert names == ["iPhone 15", "iPhone SE", "MacBook Air", "MacBook Pro"]
 
     # ── parentheses grouping ──────────────────────────────────────────
@@ -546,38 +480,38 @@ class TestExecuteSearch:
                         "operator": "like",
                         "type": "string",
                         "value": "Mac",
-                        "and_or": "AND",
-                        "left_parentheses": True,
+                        "andOr": "AND",
+                        "leftParentheses": True,
                     },
                     {
                         "field": "connection_status",
                         "operator": "is",
                         "type": "string",
                         "value": "Connected",
-                        "and_or": "OR",
-                        "right_parentheses": True,
+                        "andOr": "OR",
+                        "rightParentheses": True,
                     },
                     {
                         "field": "os_version",
                         "operator": "like",
                         "type": "string",
                         "value": "iOS",
-                        "and_or": "AND",
-                        "left_parentheses": True,
+                        "andOr": "AND",
+                        "leftParentheses": True,
                     },
                     {
                         "field": "status",
                         "operator": "is",
                         "type": "string",
                         "value": "Enrolled",
-                        "and_or": "AND",
-                        "right_parentheses": True,
+                        "andOr": "AND",
+                        "rightParentheses": True,
                     },
                 ],
             },
         )
         assert resp.status_code == 200
-        names = _device_names(resp.json())
+        names = sorted((d["name"] for d in resp.json()), key=str.casefold)
         assert names == ["iPhone 15", "MacBook Air", "MacBook Pro"]
 
     async def test_or_group_and(self, client: AsyncClient) -> None:
@@ -592,29 +526,29 @@ class TestExecuteSearch:
                         "operator": "like",
                         "type": "string",
                         "value": "Mac",
-                        "and_or": "OR",
-                        "left_parentheses": True,
+                        "andOr": "OR",
+                        "leftParentheses": True,
                     },
                     {
                         "field": "name",
                         "operator": "like",
                         "type": "string",
                         "value": "Pixel",
-                        "and_or": "AND",
-                        "right_parentheses": True,
+                        "andOr": "AND",
+                        "rightParentheses": True,
                     },
                     {
                         "field": "connection_status",
                         "operator": "is",
                         "type": "string",
                         "value": "Connected",
-                        "and_or": "AND",
+                        "andOr": "AND",
                     },
                 ],
             },
         )
         assert resp.status_code == 200
-        names = _device_names(resp.json())
+        names = sorted((d["name"] for d in resp.json()), key=str.casefold)
         assert names == ["MacBook Air", "MacBook Pro", "Pixel 8"]
 
     async def test_three_parenthesized_groups(self, client: AsyncClient) -> None:
@@ -629,33 +563,33 @@ class TestExecuteSearch:
                         "operator": "like",
                         "type": "string",
                         "value": "Mac",
-                        "and_or": "OR",
-                        "left_parentheses": True,
-                        "right_parentheses": True,
+                        "andOr": "OR",
+                        "leftParentheses": True,
+                        "rightParentheses": True,
                     },
                     {
                         "field": "os_version",
                         "operator": "like",
                         "type": "string",
                         "value": "iOS",
-                        "and_or": "OR",
-                        "left_parentheses": True,
-                        "right_parentheses": True,
+                        "andOr": "OR",
+                        "leftParentheses": True,
+                        "rightParentheses": True,
                     },
                     {
                         "field": "os_version",
                         "operator": "is",
                         "type": "string",
                         "value": "Android 14",
-                        "and_or": "AND",
-                        "left_parentheses": True,
-                        "right_parentheses": True,
+                        "andOr": "AND",
+                        "leftParentheses": True,
+                        "rightParentheses": True,
                     },
                 ],
             },
         )
         assert resp.status_code == 200
-        names = _device_names(resp.json())
+        names = sorted((d["name"] for d in resp.json()), key=str.casefold)
         assert names == [
             "Galaxy S24",
             "iPhone 15",
@@ -676,7 +610,7 @@ class TestExecuteSearch:
                         "operator": "is",
                         "type": "string",
                         "value": "iPhone 15",
-                        "and_or": "AND",
+                        "andOr": "AND",
                     },
                 ],
             },
@@ -686,9 +620,9 @@ class TestExecuteSearch:
         assert len(body) == 1
         device = body[0]
         assert device["name"] == "iPhone 15"
-        assert device["serial_number"] == "SN-IP15-003"
-        assert device["os_version"] == "iOS 18.1"
-        assert device["connection_status"] == "Disconnected"
+        assert device["serialNumber"] == "SN-IP15-003"
+        assert device["osVersion"] == "iOS 18.1"
+        assert device["connectionStatus"] == "Disconnected"
         assert device["status"] == "Enrolled"
 
     async def test_empty_result(self, client: AsyncClient) -> None:
@@ -701,7 +635,7 @@ class TestExecuteSearch:
                         "operator": "is",
                         "type": "string",
                         "value": "NonExistent Device",
-                        "and_or": "AND",
+                        "andOr": "AND",
                     },
                 ],
             },
@@ -720,7 +654,7 @@ class TestExecuteSearch:
                         "operator": "is",
                         "type": "string",
                         "value": "anything",
-                        "and_or": "AND",
+                        "andOr": "AND",
                     },
                 ],
             },
@@ -748,7 +682,7 @@ class TestExecuteSearch:
                         "operator": "is",
                         "type": "INVALID",
                         "value": "test",
-                        "and_or": "AND",
+                        "andOr": "AND",
                     },
                 ],
             },

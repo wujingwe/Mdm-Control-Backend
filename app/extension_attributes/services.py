@@ -11,15 +11,15 @@ class ExtensionAttributeService:
         self.repo = repo
 
     async def list_attributes(self, skip: int = 0, limit: int = 100) -> tuple[list[ExtensionAttribute], int]:
-        items = await self.repo.list_all(skip=skip, limit=limit)
+        items = await self.repo.list(skip=skip, limit=limit)
         total = await self.repo.count()
         return items, total
 
     async def get_attribute(self, attribute_id: int) -> ExtensionAttribute | None:
         return await self.repo.get_by_id(attribute_id)
 
-    async def create_attribute(self, data: ExtensionAttributeCreate) -> ExtensionAttribute:
-        return await self.repo.create(data)
+    async def create_attribute(self, data: ExtensionAttributeCreate, created_by: int) -> ExtensionAttribute:
+        return await self.repo.create(data, created_by)
 
     async def update_attribute(self, attribute_id: int, data: ExtensionAttributeUpdate) -> ExtensionAttribute | None:
         return await self.repo.update(attribute_id, data)

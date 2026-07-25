@@ -9,7 +9,10 @@ from sqlalchemy import event
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 
 from app.main import app
-from app.dependencies import get_db
+from app.dependencies import get_db, get_current_user
+from app.users.models import User
+from app.users.schemas import UserCreate
+from app.users.repositories import UserRepository
 from app.base import Base
 
 TEST_DB_URL = "sqlite+aiosqlite:///:memory:"
@@ -52,6 +55,23 @@ async def db_session() -> AsyncGenerator[AsyncSession, None]:
 @pytest_asyncio.fixture
 async def client() -> AsyncGenerator[AsyncClient, None]:
     app.dependency_overrides[get_db] = override_get_db
+
+    async def _override_current_user() -> User:
+        async with test_async_session() as session:
+            repo = UserRepository(session)
+            user = await repo.get_by_email("test@example.com")
+            if not user:
+                user = await repo.create(
+                    UserCreate(
+                        email="test@example.com",
+                        name="Test User",
+                        permissions=frozenset({"admin"}),
+                    )
+                )
+            return user
+
+    app.dependency_overrides[get_current_user] = _override_current_user
+
     transport = ASGITransport(app=app)
     token = jwt.encode(
         {"sub": "test@example.com", "email": "test@example.com", "roles": ["admin"]},

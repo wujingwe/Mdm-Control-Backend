@@ -14,7 +14,7 @@ class ExtensionAttributeRepository:
     def __init__(self, db: AsyncSession) -> None:
         self.db = db
 
-    async def list_all(self, skip: int = 0, limit: int = 100) -> list[ExtensionAttribute]:
+    async def list(self, skip: int = 0, limit: int = 100) -> list[ExtensionAttribute]:
         stmt = select(ExtensionAttribute).order_by(ExtensionAttribute.id).offset(skip).limit(limit)
         result = await self.db.execute(stmt)
         return list(result.scalars().all())
@@ -24,8 +24,8 @@ class ExtensionAttributeRepository:
         result = await self.db.execute(stmt)
         return result.scalar_one_or_none()
 
-    async def create(self, data: ExtensionAttributeCreate) -> ExtensionAttribute:
-        instance = ExtensionAttribute(**data.model_dump())
+    async def create(self, data: ExtensionAttributeCreate, created_by: int) -> ExtensionAttribute:
+        instance = ExtensionAttribute(**data.model_dump(), created_by=created_by)
         self.db.add(instance)
         try:
             await self.db.commit()

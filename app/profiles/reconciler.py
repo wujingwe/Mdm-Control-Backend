@@ -3,7 +3,7 @@ import logging
 from sqlalchemy import select
 
 from app.common.enums import AssignmentDesiredState, AssignmentStatus, DeviceStatus
-from app.common.schemas import Exclusion, Scope, ScopeType, Target
+from app.common.schemas import ScopeExclusion, Scope, ScopeType, ScopeTarget
 from app.criteria import build_device_query
 from app.criteria.schemas import Criteria
 from app.devices.models import Device
@@ -217,7 +217,7 @@ class ProfileAssignmentReconciler:
 
         return result
 
-    async def _resolve_target(self, target: Target) -> set[int]:
+    async def _resolve_target(self, target: ScopeTarget) -> set[int]:
         db = self.repo.db
 
         if target.scope_type == ScopeType.ALL_DEVICES:
@@ -255,7 +255,7 @@ class ProfileAssignmentReconciler:
 
         return set()
 
-    async def _resolve_exclusion(self, exclusion: Exclusion) -> set[int]:
+    async def _resolve_exclusion(self, exclusion: ScopeExclusion) -> set[int]:
         db = self.repo.db
 
         if exclusion.scope_type == ScopeType.DEVICE and exclusion.exclude_id:

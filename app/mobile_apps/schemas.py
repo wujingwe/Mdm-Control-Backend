@@ -1,20 +1,21 @@
-from pydantic import BaseModel, ConfigDict
+from datetime import datetime
 
-from app.common.schemas import Scope
+from app.common.schemas import CamelModel, Scope
 
 
-class MobileAppResponse(BaseModel):
+class MobileAppResponse(CamelModel):
     id: int
     name: str
     enabled: bool
     version: str
     package_name: str
     scope: Scope
+    created_by: int
+    created_at: datetime
+    updated_at: datetime
 
-    model_config = ConfigDict(from_attributes=True)
 
-
-class MobileAppCreate(BaseModel):
+class MobileAppCreate(CamelModel):
     name: str
     enabled: bool
     version: str
@@ -22,7 +23,7 @@ class MobileAppCreate(BaseModel):
     scope: Scope
 
 
-class MobileAppUpdate(BaseModel):
+class MobileAppUpdate(CamelModel):
     name: str | None = None
     enabled: bool | None = None
     version: str | None = None

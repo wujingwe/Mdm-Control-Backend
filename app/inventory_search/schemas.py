@@ -1,18 +1,18 @@
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import Field, model_validator
 
+from app.common.schemas import CamelModel
 from app.criteria.schemas import Criteria
 
 
-class InventorySearchCreate(BaseModel):
+class InventorySearchCreate(CamelModel):
     name: str
     description: str | None = None
     criteria: list[Criteria] = Field(min_length=1)
-    created_by: int
 
 
-class InventorySearchUpdate(BaseModel):
+class InventorySearchUpdate(CamelModel):
     name: str | None = None
     description: str | None = None
     criteria: list[Criteria] | None = None
@@ -24,17 +24,15 @@ class InventorySearchUpdate(BaseModel):
         return self
 
 
-class InventorySearchResponse(BaseModel):
+class InventorySearchResponse(CamelModel):
     id: int
     name: str
     description: str | None = None
     criteria: list[Criteria] = []
-    created_at: datetime
     created_by: int
+    created_at: datetime
     updated_at: datetime
 
-    model_config = ConfigDict(from_attributes=True)
 
-
-class InventorySearchExecuteRequest(BaseModel):
+class InventorySearchExecuteRequest(CamelModel):
     criteria: list[Criteria] = Field(min_length=1)

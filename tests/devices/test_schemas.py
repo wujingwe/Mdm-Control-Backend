@@ -166,7 +166,7 @@ class TestDeviceUpdateSchema:
             available_memory=8,
             network=Network(wifi=Wifi(ssid="Home")),
             certificates=[Certificate(common_name="test.com")],
-            extension_attributes=[
+            extension_attribute_values=[
                 {
                     "extension_attribute_id": 1,
                     "extension_attribute_name": "custom_field",
@@ -179,7 +179,7 @@ class TestDeviceUpdateSchema:
         assert data.battery_status == 50
         assert data.network.wifi.ssid == "Home"
         assert len(data.certificates) == 1
-        assert len(data.extension_attributes) == 1
+        assert len(data.extension_attribute_values) == 1
 
     def test_update_partial(self) -> None:
         data = DeviceUpdate(connection_status="Connected")
@@ -192,15 +192,15 @@ class TestDeviceUpdateSchema:
 
     def test_update_ext_attrs_optional(self) -> None:
         data = DeviceUpdate()
-        assert data.extension_attributes is None
+        assert data.extension_attribute_values is None
 
     def test_update_ext_attrs_empty_list(self) -> None:
-        data = DeviceUpdate(extension_attributes=[])
-        assert data.extension_attributes == []
+        data = DeviceUpdate(extension_attribute_values=[])
+        assert data.extension_attribute_values == []
 
     def test_update_ext_attrs_missing_name(self) -> None:
         with pytest.raises(ValidationError):
-            DeviceUpdate(extension_attributes=[{"extension_attribute_id": 1, "value": "test"}])
+            DeviceUpdate(extension_attribute_values=[{"extension_attribute_id": 1, "value": "test"}])
 
     def test_update_invalid_connection_status(self) -> None:
         with pytest.raises(ValidationError):

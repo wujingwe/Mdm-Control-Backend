@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app.common.schemas import PaginatedResponse
-from app.dependencies import get_reconciler, get_smart_group_service
+from app.dependencies import get_reconciler, get_smart_group_service, require_permission
 from app.profiles.reconciler import ProfileAssignmentReconciler
 from app.smart_groups.schemas import (
     SmartGroupCreate,
@@ -9,6 +9,7 @@ from app.smart_groups.schemas import (
     SmartGroupUpdate,
 )
 from app.smart_groups.services import SmartGroupService
+from app.users.models import User
 from app.webhook_client import revalidate
 
 router = APIRouter(prefix="/smart-groups", tags=["Smart Groups"])
@@ -45,8 +46,9 @@ async def create_smart_group(
     data: SmartGroupCreate,
     service: SmartGroupService = Depends(get_smart_group_service),
     reconciler: ProfileAssignmentReconciler = Depends(get_reconciler),
+    current_user: User = Depends(require_permission("editor")),
 ) -> SmartGroupResponse:
-    group = await service.create_group(data)
+    group = await service.create_group(data, current_user.id)
     await reconciler.recalculate_for_smart_group(group.id)
     await revalidate(["smart-groups"])
     return SmartGroupResponse.model_validate(group)
@@ -58,6 +60,7 @@ async def update_smart_group(
     data: SmartGroupUpdate,
     service: SmartGroupService = Depends(get_smart_group_service),
     reconciler: ProfileAssignmentReconciler = Depends(get_reconciler),
+    _current_user: User = Depends(require_permission("editor")),
 ) -> SmartGroupResponse:
     updated = await service.update_group(group_id, data)
     if not updated:
@@ -72,6 +75,7 @@ async def delete_smart_group(
     group_id: int,
     service: SmartGroupService = Depends(get_smart_group_service),
     reconciler: ProfileAssignmentReconciler = Depends(get_reconciler),
+    _current_user: User = Depends(require_permission("editor")),
 ) -> None:
     deleted = await service.delete_group(group_id)
     if not deleted:

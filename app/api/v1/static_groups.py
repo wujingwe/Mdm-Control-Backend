@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app.common.schemas import PaginatedResponse
-from app.dependencies import get_reconciler, get_static_group_service
+from app.dependencies import get_reconciler, get_static_group_service, require_permission
 from app.profiles.reconciler import ProfileAssignmentReconciler
 from app.static_groups.schemas import (
     StaticGroupCreate,
@@ -9,6 +9,7 @@ from app.static_groups.schemas import (
     StaticGroupUpdate,
 )
 from app.static_groups.services import StaticGroupService
+from app.users.models import User
 from app.webhook_client import revalidate
 
 router = APIRouter(prefix="/static-groups", tags=["Static Groups"])
@@ -46,8 +47,9 @@ async def create_static_group(
     data: StaticGroupCreate,
     service: StaticGroupService = Depends(get_static_group_service),
     reconciler: ProfileAssignmentReconciler = Depends(get_reconciler),
+    current_user: User = Depends(require_permission("editor")),
 ) -> StaticGroupResponse:
-    group = await service.create_group(data)
+    group = await service.create_group(data, current_user.id)
     if group:
         await reconciler.recalculate_for_static_group(group.id)
     await revalidate(["static-groups"])
@@ -60,6 +62,7 @@ async def update_static_group(
     data: StaticGroupUpdate,
     service: StaticGroupService = Depends(get_static_group_service),
     reconciler: ProfileAssignmentReconciler = Depends(get_reconciler),
+    _current_user: User = Depends(require_permission("editor")),
 ) -> StaticGroupResponse:
     updated = await service.update_group(group_id, data)
     if not updated:
@@ -74,6 +77,7 @@ async def delete_static_group(
     group_id: int,
     service: StaticGroupService = Depends(get_static_group_service),
     reconciler: ProfileAssignmentReconciler = Depends(get_reconciler),
+    _current_user: User = Depends(require_permission("editor")),
 ) -> None:
     deleted = await service.delete_group(group_id)
     if not deleted:

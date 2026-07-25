@@ -17,8 +17,8 @@ class TestExtensionAttributeRepository:
                 name="ext1",
                 data_type=ExtensionDataType.STRING,
                 input_type=ExtensionInputType.TEXT_FIELD,
-                created_by=1,
-            )
+            ),
+            created_by=1,
         )
         assert created.id is not None
         assert created.name == "ext1"
@@ -29,22 +29,20 @@ class TestExtensionAttributeRepository:
             name="ext1",
             data_type=ExtensionDataType.STRING,
             input_type=ExtensionInputType.TEXT_FIELD,
-            created_by=1,
         )
-        await repo.create(data)
+        await repo.create(data, created_by=1)
         with pytest.raises(ConflictError):
-            await repo.create(data)
+            await repo.create(data, created_by=1)
 
     async def test_list(self, db_session: AsyncSession) -> None:
         repo = ExtensionAttributeRepository(db_session)
         base = dict(
             data_type=ExtensionDataType.STRING,
             input_type=ExtensionInputType.TEXT_FIELD,
-            created_by=1,
         )
-        await repo.create(ExtensionAttributeCreate(name="ext1", **base))
-        await repo.create(ExtensionAttributeCreate(name="ext2", **base))
-        items = await repo.list_all()
+        await repo.create(ExtensionAttributeCreate(name="ext1", **base), created_by=1)
+        await repo.create(ExtensionAttributeCreate(name="ext2", **base), created_by=1)
+        items = await repo.list()
         assert len(items) == 2
 
     async def test_list_pagination(self, db_session: AsyncSession) -> None:
@@ -52,11 +50,10 @@ class TestExtensionAttributeRepository:
         base = dict(
             data_type=ExtensionDataType.STRING,
             input_type=ExtensionInputType.TEXT_FIELD,
-            created_by=1,
         )
         for i in range(5):
-            await repo.create(ExtensionAttributeCreate(name=f"ext{i}", **base))
-        items = await repo.list_all(skip=1, limit=2)
+            await repo.create(ExtensionAttributeCreate(name=f"ext{i}", **base), created_by=1)
+        items = await repo.list(skip=1, limit=2)
         assert len(items) == 2
 
     async def test_get_by_id(self, db_session: AsyncSession) -> None:
@@ -66,8 +63,8 @@ class TestExtensionAttributeRepository:
                 name="ext1",
                 data_type=ExtensionDataType.STRING,
                 input_type=ExtensionInputType.TEXT_FIELD,
-                created_by=1,
-            )
+            ),
+            created_by=1,
         )
         found = await repo.get_by_id(created.id)
         assert found is not None
@@ -84,8 +81,8 @@ class TestExtensionAttributeRepository:
                 name="ext1",
                 data_type=ExtensionDataType.STRING,
                 input_type=ExtensionInputType.TEXT_FIELD,
-                created_by=1,
-            )
+            ),
+            created_by=1,
         )
         updated = await repo.update(created.id, ExtensionAttributeUpdate(name="ext2"))
         assert updated is not None
@@ -102,8 +99,8 @@ class TestExtensionAttributeRepository:
                 name="ext1",
                 data_type=ExtensionDataType.STRING,
                 input_type=ExtensionInputType.TEXT_FIELD,
-                created_by=1,
-            )
+            ),
+            created_by=1,
         )
         assert await repo.delete(created.id) is True
         assert await repo.get_by_id(created.id) is None
@@ -120,7 +117,7 @@ class TestExtensionAttributeRepository:
                 name="ext1",
                 data_type=ExtensionDataType.STRING,
                 input_type=ExtensionInputType.TEXT_FIELD,
-                created_by=1,
-            )
+            ),
+            created_by=1,
         )
         assert await repo.count() == 1

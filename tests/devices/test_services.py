@@ -10,7 +10,7 @@ class TestDeviceService:
     @pytest.fixture
     def repo(self) -> MagicMock:
         m = MagicMock()
-        m.list_all = AsyncMock(return_value=[])
+        m.list = AsyncMock(return_value=[])
         m.count = AsyncMock(return_value=0)
         m.get_by_id = AsyncMock(return_value=None)
         m.update = AsyncMock(return_value=None)
@@ -22,13 +22,13 @@ class TestDeviceService:
         items, total = await svc.list_devices()
         assert items == []
         assert total == 0
-        repo.list_all.assert_called_once_with(skip=0, limit=100)
+        repo.list.assert_called_once_with(skip=0, limit=100)
         repo.count.assert_called_once()
 
     async def test_list_devices_paginated(self, repo: MagicMock) -> None:
         svc = DeviceService(repo)
         await svc.list_devices(skip=10, limit=20)
-        repo.list_all.assert_called_once_with(skip=10, limit=20)
+        repo.list.assert_called_once_with(skip=10, limit=20)
 
     async def test_get_device_found(self, repo: MagicMock) -> None:
         fake = MagicMock()

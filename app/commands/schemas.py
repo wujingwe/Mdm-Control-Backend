@@ -1,24 +1,22 @@
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict
 
 from app.common.enums import CommandType, CommandStatus
+from app.common.schemas import CamelModel
 
 
-class CommandCreate(BaseModel):
+class CommandCreate(CamelModel):
     command_type: CommandType
 
 
-class CommandResponse(BaseModel):
+class CommandResponse(CamelModel):
     id: int
     device_id: int
     command_type: CommandType
     status: CommandStatus
     result_message: str | None = None
-    created_by: int | None = None
+    created_by: int
     created_at: datetime
     sent_at: datetime | None = None
     acknowledged_at: datetime | None = None
     completed_at: datetime | None = None
-
-    model_config = ConfigDict(from_attributes=True)

@@ -1,13 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app.common.schemas import PaginatedResponse
-from app.dependencies import get_extension_attribute_service
+from app.dependencies import get_extension_attribute_service, require_permission
 from app.extension_attributes.schemas import (
     ExtensionAttributeCreate,
     ExtensionAttributeResponse,
     ExtensionAttributeUpdate,
 )
 from app.extension_attributes.services import ExtensionAttributeService
+from app.users.models import User
 from app.webhook_client import revalidate
 
 router = APIRouter(prefix="/extension-attributes", tags=["Extension Attributes"])
@@ -46,8 +47,9 @@ async def get_extension_attribute(
 async def create_extension_attribute(
     data: ExtensionAttributeCreate,
     service: ExtensionAttributeService = Depends(get_extension_attribute_service),
+    current_user: User = Depends(require_permission("editor")),
 ) -> ExtensionAttributeResponse:
-    attr = await service.create_attribute(data)
+    attr = await service.create_attribute(data, current_user.id)
     await revalidate(["extension-attributes"])
     return ExtensionAttributeResponse.model_validate(attr)
 
@@ -57,6 +59,7 @@ async def update_extension_attribute(
     attribute_id: int,
     data: ExtensionAttributeUpdate,
     service: ExtensionAttributeService = Depends(get_extension_attribute_service),
+    _current_user: User = Depends(require_permission("editor")),
 ) -> ExtensionAttributeResponse:
     updated = await service.update_attribute(attribute_id, data)
     if not updated:
@@ -73,6 +76,7 @@ async def update_extension_attribute(
 async def delete_extension_attribute(
     attribute_id: int,
     service: ExtensionAttributeService = Depends(get_extension_attribute_service),
+    _current_user: User = Depends(require_permission("editor")),
 ) -> None:
     deleted = await service.delete_attribute(attribute_id)
     if not deleted:

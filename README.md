@@ -81,7 +81,7 @@ The migration script reads `DB_URL` from `.env` automatically.
 ## Seed Data
 
 ```sh
-venv/bin/python seed.py
+python -m app.mock.seed
 ```
 
 Populates the database with sample roles, users, devices, groups, policies, and assignments.
@@ -157,7 +157,7 @@ Tests use an in-memory SQLite database with `aiosqlite`. Kafka is not required t
 │   ├── env.py
 │   └── versions/
 ├── tests/                      # Async test suite (SQLite in-memory)
-├── seed.py                     # Database seeder
+├── app/mock/seed.py            # Database seeder
 ├── API.md                      # Public endpoint reference
 ├── requirements.txt
 └── pyproject.toml              # Pytest & mypy config

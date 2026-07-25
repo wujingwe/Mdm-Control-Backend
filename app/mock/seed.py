@@ -5,9 +5,8 @@ from passlib.context import CryptContext
 from sqlalchemy import text
 
 from app.base import Base
-from app.common.schemas import Scope, Target, ScopeType
+from app.common.schemas import Scope, ScopeTarget, ScopeType
 from app.database import engine, async_session
-from app.commands.models import Command
 from app.devices.models import Device
 from app.devices.schemas import Network, Wifi
 from app.extension_attributes.models import ExtensionAttribute
@@ -374,14 +373,16 @@ MOBILE_APPS = [
         enabled=True,
         version="4.75.0",
         package_name="com.microsoft.office.outlook",
-        scope=Scope(targets=[Target(scope_type=ScopeType.ALL_DEVICES)]).model_dump(),
+        scope=Scope(targets=[ScopeTarget(scope_type=ScopeType.ALL_DEVICES)]).model_dump(),
+        created_by=1,
     ),
     MobileApp(
         name="Microsoft Teams",
         enabled=True,
         version="24.12.0",
         package_name="com.microsoft.teams",
-        scope=Scope(targets=[Target(scope_type=ScopeType.ALL_DEVICES)]).model_dump(),
+        scope=Scope(targets=[ScopeTarget(scope_type=ScopeType.ALL_DEVICES)]).model_dump(),
+        created_by=1,
     ),
 ]
 
@@ -402,13 +403,11 @@ async def seed_database() -> None:
             logger.info("Mock database already seeded, skipping.")
             return
 
-        hash_pw = pwd_context.hash("password")
         now = datetime.now(timezone.utc)
         users = [
             User(
                 email="admin@example.com",
                 name="Admin User",
-                password_hash=hash_pw,
                 permissions=["admin"],
                 created_at=now,
                 last_login=now,
@@ -416,14 +415,12 @@ async def seed_database() -> None:
             User(
                 email="jane@example.com",
                 name="Jane Editor",
-                password_hash=hash_pw,
                 permissions=["editor"],
                 created_at=now,
             ),
             User(
                 email="bob@example.com",
                 name="Bob Viewer",
-                password_hash=hash_pw,
                 permissions=["viewer"],
                 created_at=now,
             ),
@@ -461,15 +458,15 @@ async def seed_database() -> None:
         profile_ids = [p.id for p in PROFILES]
 
         if profile_ids:
-            from app.common.schemas import Scope, Target, ScopeType
+            from app.common.schemas import Scope, ScopeTarget, ScopeType
             from sqlalchemy import update as sa_update
             from app.profiles.models import Profile
 
-            scope0 = Scope(targets=[Target(scope_type=ScopeType.ALL_DEVICES)])
+            scope0 = Scope(targets=[ScopeTarget(scope_type=ScopeType.ALL_DEVICES)])
             scope1 = (
                 Scope(
                     targets=[
-                        Target(
+                        ScopeTarget(
                             scope_type=ScopeType.SMART_GROUP, target_id=smart_group_ids[0] if smart_group_ids else None
                         )
                     ]
@@ -490,3 +487,9 @@ async def seed_database() -> None:
     logger.info(
         "Mock database seeded with 3 users, 15 devices, 3 smart groups, 2 static groups, 2 inventory searches, 3 extension attributes, 2 mobile apps, 2 profiles"
     )
+
+
+if __name__ == "__main__":
+    import asyncio
+
+    asyncio.run(seed_database())

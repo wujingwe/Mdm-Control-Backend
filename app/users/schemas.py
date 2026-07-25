@@ -1,42 +1,26 @@
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict
+from app.common.enums import Permission
+from app.common.schemas import CamelModel
 
 
-class UserCreate(BaseModel):
+class UserCreate(CamelModel):
     email: str
     name: str
-    password: str
-    permissions: frozenset[str] = frozenset({"viewer"})
+    permissions: frozenset[Permission] = frozenset({"viewer"})
 
 
-class UserUpdate(BaseModel):
+class UserUpdate(CamelModel):
     email: str | None = None
     name: str | None = None
-    password: str | None = None
-    permissions: frozenset[str] | None = None
+    permissions: frozenset[Permission] | None = None
 
 
-class UserCreateDB(BaseModel):
-    email: str
-    name: str
-    password_hash: str
-    permissions: frozenset[str] = frozenset({"viewer"})
-
-
-class UserUpdateDB(BaseModel):
-    email: str | None = None
-    name: str | None = None
-    password_hash: str | None = None
-    permissions: frozenset[str] | None = None
-
-
-class UserResponse(BaseModel):
+class UserResponse(CamelModel):
     id: int
     email: str
     name: str
-    permissions: frozenset[str]
+    permissions: frozenset[Permission]
     created_at: datetime
-    last_login: datetime | None = None
-
-    model_config = ConfigDict(from_attributes=True)
+    updated_at: datetime
+    last_login_at: datetime | None = None

@@ -12,7 +12,7 @@ class StaticGroupRepository:
     def __init__(self, db: AsyncSession) -> None:
         self.db = db
 
-    async def list_all(self, skip: int = 0, limit: int = 100) -> list[StaticGroup]:
+    async def list(self, skip: int = 0, limit: int = 100) -> list[StaticGroup]:
         stmt = (
             select(StaticGroup)
             .options(selectinload(StaticGroup.devices))
@@ -28,18 +28,18 @@ class StaticGroupRepository:
         result = await self.db.execute(stmt)
         return result.scalar_one_or_none()
 
-    async def create(self, data: StaticGroupCreate) -> StaticGroup | None:
+    async def create(self, data: StaticGroupCreate, created_by: int) -> StaticGroup | None:
         instance = StaticGroup(
             name=data.name,
             description=data.description,
-            created_by=data.created_by,
+            created_by=created_by,
         )
         self.db.add(instance)
         try:
             await self.db.flush()
         except IntegrityError as err:
             await self.db.rollback()
-            raise ConflictError("Resource already exists") from err
+            raise ConflictError("Static group name already exists") from err
 
         for serial in data.device_serial_numbers:
             self.db.add(
@@ -48,15 +48,13 @@ class StaticGroupRepository:
                     device_serial_number=serial,
                 )
             )
-
         try:
             await self.db.commit()
         except IntegrityError as err:
             await self.db.rollback()
-            raise ConflictError("Resource already exists") from err
-        group_id = instance.id
-        self.db.expire(instance)
-        return await self.get_by_id(group_id)
+            raise ConflictError("Invalid device or duplicate device in group") from err
+
+        return await self.get_by_id(instance.id)
 
     async def update(self, record_id: int, data: StaticGroupUpdate) -> StaticGroup | None:
         has_changes = False

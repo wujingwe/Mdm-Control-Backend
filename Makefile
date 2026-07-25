@@ -13,16 +13,7 @@ dev:
 	uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
 lint:
-	ruff check .
-
-lint-fix:
-	ruff check --fix .
-
-format:
-	ruff format .
-
-format-check:
-	ruff format --check .
+	ruff check --fix . && ruff format .
 
 test:
 	pytest -v
@@ -30,4 +21,4 @@ test:
 test-coverage:
 	pytest --cov=app --cov-report=term-missing
 
-check: lint format-check test
+check: lint test

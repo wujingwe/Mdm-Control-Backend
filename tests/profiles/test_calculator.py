@@ -1,4 +1,4 @@
-from app.common.schemas import Scope, Target, Exclusion, ScopeType
+from app.common.schemas import Scope, ScopeTarget, ScopeExclusion, ScopeType
 from app.profiles.reconciler import ProfileAssignmentReconciler
 
 
@@ -11,7 +11,7 @@ class TestAssignmentCalculator:
         assert result == []
 
     def test_all_devices_target(self) -> None:
-        scope = Scope(targets=[Target(scope_type=ScopeType.ALL_DEVICES)])
+        scope = Scope(targets=[ScopeTarget(scope_type=ScopeType.ALL_DEVICES)])
         resolved = {(ScopeType.ALL_DEVICES.value, 0): {1, 2, 3}}
         result = ProfileAssignmentReconciler.compute(
             profile_id=1, profile_version=1, scope=scope, resolved_device_ids=resolved
@@ -21,7 +21,7 @@ class TestAssignmentCalculator:
         assert device_ids == {1, 2, 3}
 
     def test_smart_group_target(self) -> None:
-        scope = Scope(targets=[Target(scope_type=ScopeType.SMART_GROUP, target_id=5)])
+        scope = Scope(targets=[ScopeTarget(scope_type=ScopeType.SMART_GROUP, target_id=5)])
         resolved = {(ScopeType.SMART_GROUP.value, 5): {10, 20}}
         result = ProfileAssignmentReconciler.compute(
             profile_id=1, profile_version=1, scope=scope, resolved_device_ids=resolved
@@ -30,7 +30,7 @@ class TestAssignmentCalculator:
         assert result[0].profile_version == 1
 
     def test_static_group_target(self) -> None:
-        scope = Scope(targets=[Target(scope_type=ScopeType.STATIC_GROUP, target_id=3)])
+        scope = Scope(targets=[ScopeTarget(scope_type=ScopeType.STATIC_GROUP, target_id=3)])
         resolved = {(ScopeType.STATIC_GROUP.value, 3): {101, 102}}
         result = ProfileAssignmentReconciler.compute(
             profile_id=1, profile_version=1, scope=scope, resolved_device_ids=resolved
@@ -38,7 +38,7 @@ class TestAssignmentCalculator:
         assert len(result) == 2
 
     def test_device_target(self) -> None:
-        scope = Scope(targets=[Target(scope_type=ScopeType.DEVICE, target_id=42)])
+        scope = Scope(targets=[ScopeTarget(scope_type=ScopeType.DEVICE, target_id=42)])
         resolved = {(ScopeType.DEVICE.value, 42): {42}}
         result = ProfileAssignmentReconciler.compute(
             profile_id=1, profile_version=1, scope=scope, resolved_device_ids=resolved
@@ -49,8 +49,8 @@ class TestAssignmentCalculator:
     def test_multiple_targets(self) -> None:
         scope = Scope(
             targets=[
-                Target(scope_type=ScopeType.SMART_GROUP, target_id=1),
-                Target(scope_type=ScopeType.STATIC_GROUP, target_id=2),
+                ScopeTarget(scope_type=ScopeType.SMART_GROUP, target_id=1),
+                ScopeTarget(scope_type=ScopeType.STATIC_GROUP, target_id=2),
             ]
         )
         resolved = {
@@ -65,8 +65,8 @@ class TestAssignmentCalculator:
 
     def test_exclusion_filters_devices(self) -> None:
         scope = Scope(
-            targets=[Target(scope_type=ScopeType.ALL_DEVICES)],
-            exclusions=[Exclusion(scope_type=ScopeType.DEVICE, exclude_id=2)],
+            targets=[ScopeTarget(scope_type=ScopeType.ALL_DEVICES)],
+            exclusions=[ScopeExclusion(scope_type=ScopeType.DEVICE, exclude_id=2)],
         )
         resolved = {
             (ScopeType.ALL_DEVICES.value, 0): {1, 2, 3},
@@ -80,8 +80,8 @@ class TestAssignmentCalculator:
 
     def test_exclusion_from_resolved_not_in_targets(self) -> None:
         scope = Scope(
-            targets=[Target(scope_type=ScopeType.SMART_GROUP, target_id=1)],
-            exclusions=[Exclusion(scope_type=ScopeType.SMART_GROUP, exclude_id=2)],
+            targets=[ScopeTarget(scope_type=ScopeType.SMART_GROUP, target_id=1)],
+            exclusions=[ScopeExclusion(scope_type=ScopeType.SMART_GROUP, exclude_id=2)],
         )
         resolved = {
             (ScopeType.SMART_GROUP.value, 1): {10, 20, 30},
@@ -94,14 +94,14 @@ class TestAssignmentCalculator:
         assert device_ids == {10}
 
     def test_no_resolved_ids_for_target(self) -> None:
-        scope = Scope(targets=[Target(scope_type=ScopeType.SMART_GROUP, target_id=99)])
+        scope = Scope(targets=[ScopeTarget(scope_type=ScopeType.SMART_GROUP, target_id=99)])
         result = ProfileAssignmentReconciler.compute(
             profile_id=1, profile_version=1, scope=scope, resolved_device_ids={}
         )
         assert result == []
 
     def test_assignment_fields(self) -> None:
-        scope = Scope(targets=[Target(scope_type=ScopeType.ALL_DEVICES)])
+        scope = Scope(targets=[ScopeTarget(scope_type=ScopeType.ALL_DEVICES)])
         resolved = {(ScopeType.ALL_DEVICES.value, 0): {1}}
         result = ProfileAssignmentReconciler.compute(
             profile_id=7, profile_version=3, scope=scope, resolved_device_ids=resolved
@@ -115,8 +115,8 @@ class TestAssignmentCalculator:
     def test_deduplication_across_targets(self) -> None:
         scope = Scope(
             targets=[
-                Target(scope_type=ScopeType.SMART_GROUP, target_id=1),
-                Target(scope_type=ScopeType.SMART_GROUP, target_id=2),
+                ScopeTarget(scope_type=ScopeType.SMART_GROUP, target_id=1),
+                ScopeTarget(scope_type=ScopeType.SMART_GROUP, target_id=2),
             ]
         )
         resolved = {

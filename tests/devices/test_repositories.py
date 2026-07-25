@@ -65,7 +65,8 @@ class TestDeviceRepository:
 
         ea_repo = ExtensionAttributeRepository(db_session)
         ea = await ea_repo.create(
-            ExtensionAttributeCreate(name="field1", data_type="string", input_type="Text field", created_by=1)
+            ExtensionAttributeCreate(name="field1", data_type="string", input_type="Text field"),
+            created_by=1,
         )
 
         repo = DeviceRepository(db_session)
@@ -73,7 +74,7 @@ class TestDeviceRepository:
         await repo.update(
             device.id,
             DeviceUpdate(
-                extension_attributes=[
+                extension_attribute_values=[
                     {
                         "extension_attribute_id": ea.id,
                         "extension_attribute_name": "field1",
@@ -85,31 +86,31 @@ class TestDeviceRepository:
 
         found = await repo.get_by_id(device.id)
         assert found is not None
-        assert len(found.extension_attributes) == 1
-        assert found.extension_attributes[0].value == "v1"
+        assert len(found.extension_attribute_values) == 1
+        assert found.extension_attribute_values[0].value == "v1"
 
-    async def test_list_all(self, db_session: AsyncSession) -> None:
+    async def test_list(self, db_session: AsyncSession) -> None:
         repo = DeviceRepository(db_session)
         await repo.create(_make_device_data(serial="SN001"))
         await repo.create(_make_device_data(serial="SN002"))
         await repo.create(_make_device_data(serial="SN003"))
-        items = await repo.list_all()
+        items = await repo.list()
         assert len(items) == 3
 
-    async def test_list_all_pagination(self, db_session: AsyncSession) -> None:
+    async def test_list_pagination(self, db_session: AsyncSession) -> None:
         repo = DeviceRepository(db_session)
         for i in range(5):
             await repo.create(_make_device_data(serial=f"SN{i:03d}"))
-        page1 = await repo.list_all(skip=0, limit=2)
+        page1 = await repo.list(skip=0, limit=2)
         assert len(page1) == 2
-        page2 = await repo.list_all(skip=2, limit=2)
+        page2 = await repo.list(skip=2, limit=2)
         assert len(page2) == 2
-        page3 = await repo.list_all(skip=4, limit=2)
+        page3 = await repo.list(skip=4, limit=2)
         assert len(page3) == 1
 
-    async def test_list_all_empty(self, db_session: AsyncSession) -> None:
+    async def test_list_empty(self, db_session: AsyncSession) -> None:
         repo = DeviceRepository(db_session)
-        items = await repo.list_all()
+        items = await repo.list()
         assert items == []
 
     async def test_update(self, db_session: AsyncSession) -> None:
@@ -201,7 +202,8 @@ class TestDeviceRepository:
 
         ea_repo = ExtensionAttributeRepository(db_session)
         ea1 = await ea_repo.create(
-            ExtensionAttributeCreate(name="field1", data_type="string", input_type="Text field", created_by=1)
+            ExtensionAttributeCreate(name="field1", data_type="string", input_type="Text field"),
+            created_by=1,
         )
 
         repo = DeviceRepository(db_session)
@@ -210,7 +212,7 @@ class TestDeviceRepository:
         updated = await repo.update(
             device.id,
             DeviceUpdate(
-                extension_attributes=[
+                extension_attribute_values=[
                     {
                         "extension_attribute_id": ea1.id,
                         "extension_attribute_name": "field1",
@@ -219,8 +221,8 @@ class TestDeviceRepository:
                 ],
             ),
         )
-        assert len(updated.extension_attributes) == 1
-        assert updated.extension_attributes[0].value == "val1"
+        assert len(updated.extension_attribute_values) == 1
+        assert updated.extension_attribute_values[0].value == "val1"
 
     async def test_update_ext_attributes_clear(self, db_session: AsyncSession) -> None:
         from app.extension_attributes.repositories import ExtensionAttributeRepository
@@ -228,7 +230,8 @@ class TestDeviceRepository:
 
         ea_repo = ExtensionAttributeRepository(db_session)
         ea1 = await ea_repo.create(
-            ExtensionAttributeCreate(name="field1", data_type="string", input_type="Text field", created_by=1)
+            ExtensionAttributeCreate(name="field1", data_type="string", input_type="Text field"),
+            created_by=1,
         )
 
         repo = DeviceRepository(db_session)
@@ -236,7 +239,7 @@ class TestDeviceRepository:
         await repo.update(
             device.id,
             DeviceUpdate(
-                extension_attributes=[
+                extension_attribute_values=[
                     {
                         "extension_attribute_id": ea1.id,
                         "extension_attribute_name": "field1",
@@ -248,9 +251,9 @@ class TestDeviceRepository:
 
         updated = await repo.update(
             device.id,
-            DeviceUpdate(extension_attributes=[]),
+            DeviceUpdate(extension_attribute_values=[]),
         )
-        assert updated.extension_attributes == []
+        assert updated.extension_attribute_values == []
 
     async def test_update_ext_attrs_and_scalar_together(self, db_session: AsyncSession) -> None:
         from app.extension_attributes.repositories import ExtensionAttributeRepository
@@ -258,7 +261,8 @@ class TestDeviceRepository:
 
         ea_repo = ExtensionAttributeRepository(db_session)
         ea = await ea_repo.create(
-            ExtensionAttributeCreate(name="field1", data_type="string", input_type="Text field", created_by=1)
+            ExtensionAttributeCreate(name="field1", data_type="string", input_type="Text field"),
+            created_by=1,
         )
 
         repo = DeviceRepository(db_session)
@@ -268,7 +272,7 @@ class TestDeviceRepository:
             device.id,
             DeviceUpdate(
                 battery_status=99,
-                extension_attributes=[
+                extension_attribute_values=[
                     {
                         "extension_attribute_id": ea.id,
                         "extension_attribute_name": "field1",
@@ -278,8 +282,8 @@ class TestDeviceRepository:
             ),
         )
         assert updated.battery_status == 99
-        assert len(updated.extension_attributes) == 1
-        assert updated.extension_attributes[0].value == "val1"
+        assert len(updated.extension_attribute_values) == 1
+        assert updated.extension_attribute_values[0].value == "val1"
 
     async def test_update_ext_attrs_replace_multiple(self, db_session: AsyncSession) -> None:
         from app.extension_attributes.repositories import ExtensionAttributeRepository
@@ -287,15 +291,16 @@ class TestDeviceRepository:
 
         ea_repo = ExtensionAttributeRepository(db_session)
         ea1 = await ea_repo.create(
-            ExtensionAttributeCreate(name="field1", data_type="string", input_type="Text field", created_by=1)
+            ExtensionAttributeCreate(name="field1", data_type="string", input_type="Text field"),
+            created_by=1,
         )
         ea2 = await ea_repo.create(
             ExtensionAttributeCreate(
                 name="field2",
                 data_type="integer",
                 input_type="Text field",
-                created_by=1,
-            )
+            ),
+            created_by=1,
         )
 
         repo = DeviceRepository(db_session)
@@ -303,7 +308,7 @@ class TestDeviceRepository:
         await repo.update(
             device.id,
             DeviceUpdate(
-                extension_attributes=[
+                extension_attribute_values=[
                     {
                         "extension_attribute_id": ea1.id,
                         "extension_attribute_name": "field1",
@@ -316,7 +321,7 @@ class TestDeviceRepository:
         updated = await repo.update(
             device.id,
             DeviceUpdate(
-                extension_attributes=[
+                extension_attribute_values=[
                     {
                         "extension_attribute_id": ea2.id,
                         "extension_attribute_name": "field2",
@@ -330,8 +335,8 @@ class TestDeviceRepository:
                 ],
             ),
         )
-        assert len(updated.extension_attributes) == 2
-        values = {a.extension_attribute_name: a.value for a in updated.extension_attributes}
+        assert len(updated.extension_attribute_values) == 2
+        values = {a.extension_attribute_name: a.value for a in updated.extension_attribute_values}
         assert values == {"field1": "v1-new", "field2": "v2"}
 
     async def test_update_no_change(self, db_session: AsyncSession) -> None:
@@ -357,7 +362,8 @@ class TestDeviceRepository:
 
         ea_repo = ExtensionAttributeRepository(db_session)
         ea = await ea_repo.create(
-            ExtensionAttributeCreate(name="field1", data_type="string", input_type="Text field", created_by=1)
+            ExtensionAttributeCreate(name="field1", data_type="string", input_type="Text field"),
+            created_by=1,
         )
 
         repo = DeviceRepository(db_session)
@@ -365,7 +371,7 @@ class TestDeviceRepository:
         await repo.update(
             device.id,
             DeviceUpdate(
-                extension_attributes=[
+                extension_attribute_values=[
                     {
                         "extension_attribute_id": ea.id,
                         "extension_attribute_name": "field1",

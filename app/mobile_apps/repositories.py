@@ -21,8 +21,8 @@ class MobileAppRepository:
         result = await self.db.execute(stmt)
         return result.scalar_one_or_none()
 
-    async def create(self, data: MobileAppCreate) -> MobileApp:
-        instance = MobileApp(**data.model_dump())
+    async def create(self, data: MobileAppCreate, created_by: int) -> MobileApp:
+        instance = MobileApp(**data.model_dump(), created_by=created_by)
         self.db.add(instance)
         try:
             await self.db.commit()

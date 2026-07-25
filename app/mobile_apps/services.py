@@ -15,8 +15,8 @@ class MobileAppService:
     async def get_mobile_app(self, mobile_app_id: int) -> MobileApp | None:
         return await self.repo.get_by_id(mobile_app_id)
 
-    async def create_mobile_app(self, data: MobileAppCreate) -> MobileApp:
-        return await self.repo.create(data)
+    async def create_mobile_app(self, data: MobileAppCreate, created_by: int) -> MobileApp:
+        return await self.repo.create(data, created_by)
 
     async def update_mobile_app(self, mobile_app_id: int, data: MobileAppUpdate) -> MobileApp | None:
         return await self.repo.update(mobile_app_id, data)

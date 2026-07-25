@@ -8,15 +8,15 @@ class StaticGroupService:
         self.repo = repo
 
     async def list_groups(self, skip: int = 0, limit: int = 100) -> tuple[list[StaticGroup], int]:
-        items = await self.repo.list_all(skip=skip, limit=limit)
+        items = await self.repo.list(skip=skip, limit=limit)
         total = await self.repo.count()
         return items, total
 
     async def get_group(self, group_id: int) -> StaticGroup | None:
         return await self.repo.get_by_id(group_id)
 
-    async def create_group(self, data: StaticGroupCreate) -> StaticGroup | None:
-        return await self.repo.create(data)
+    async def create_group(self, data: StaticGroupCreate, created_by: int) -> StaticGroup | None:
+        return await self.repo.create(data, created_by)
 
     async def update_group(self, group_id: int, data: StaticGroupUpdate) -> StaticGroup | None:
         return await self.repo.update(group_id, data)

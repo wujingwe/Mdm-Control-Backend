@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
-from app.common.schemas import PaginatedResponse, Scope
-from app.dependencies import get_profile_service, get_reconciler
+from app.common.schemas import PaginatedResponse
+from app.dependencies import get_profile_service, get_reconciler, require_permission
 from app.profiles.reconciler import ProfileAssignmentReconciler
 from app.profiles.schemas.profile import (
     AssignmentResponse,
@@ -11,6 +11,7 @@ from app.profiles.schemas.profile import (
     StatusUpdate,
 )
 from app.profiles.services import ProfileService
+from app.users.models import User
 from app.webhook_client import revalidate
 
 router = APIRouter(prefix="/profiles", tags=["Profiles"])
@@ -47,8 +48,9 @@ async def create_profile(
     data: ProfileCreate,
     service: ProfileService = Depends(get_profile_service),
     reconciler: ProfileAssignmentReconciler = Depends(get_reconciler),
+    current_user: User = Depends(require_permission("editor")),
 ) -> ProfileResponse:
-    profile = await service.create_profile(data)
+    profile = await service.create_profile(data, current_user.id)
     if data.scope.targets:
         await reconciler.recalculate_profile(profile.id)
     await revalidate(["profiles"])
@@ -83,32 +85,6 @@ async def delete_profile(
     if not deleted:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Profile not found")
     await revalidate(["profiles"])
-
-
-@router.get("/{profile_id}/scope", response_model=Scope)
-async def get_profile_scope(
-    profile_id: int,
-    service: ProfileService = Depends(get_profile_service),
-) -> Scope:
-    profile = await service.get_profile(profile_id)
-    if not profile:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Profile not found")
-    return profile.scope
-
-
-@router.put("/{profile_id}/scope", response_model=Scope)
-async def set_profile_scope(
-    profile_id: int,
-    scope: Scope,
-    service: ProfileService = Depends(get_profile_service),
-    reconciler: ProfileAssignmentReconciler = Depends(get_reconciler),
-) -> Scope:
-    updated = await service.update_profile(profile_id, ProfileUpdate(scope=scope))
-    if not updated:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Profile not found")
-    await reconciler.recalculate_profile(profile_id)
-    await revalidate(["profiles"])
-    return updated.scope
 
 
 @router.get("/{profile_id}/assignments", response_model=list[AssignmentResponse])

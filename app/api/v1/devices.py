@@ -3,10 +3,11 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from app.commands.schemas import CommandCreate, CommandResponse
 from app.commands.services import CommandService
 from app.common.schemas import PaginatedResponse
-from app.dependencies import get_command_service, get_device_service, get_reconciler
+from app.dependencies import get_command_service, get_device_service, get_reconciler, require_permission
 from app.devices.schemas import DeviceResponse, DeviceUpdate
 from app.devices.services import DeviceService
 from app.profiles.reconciler import ProfileAssignmentReconciler
+from app.users.models import User
 
 router = APIRouter(prefix="/devices", tags=["Devices"])
 
@@ -14,7 +15,7 @@ router = APIRouter(prefix="/devices", tags=["Devices"])
 @router.get("", response_model=PaginatedResponse[DeviceResponse])
 async def list_devices(
     skip: int = Query(0, ge=0),
-    limit: int = Query(100, ge=1, le=5000),
+    limit: int = Query(100, ge=1, le=1000),
     service: DeviceService = Depends(get_device_service),
 ) -> PaginatedResponse[DeviceResponse]:
     items, total = await service.list_devices(skip=skip, limit=limit)
@@ -70,7 +71,7 @@ async def device_check_in(
 async def list_device_commands(
     device_id: int,
     skip: int = Query(0, ge=0),
-    limit: int = Query(50, ge=1, le=1000),
+    limit: int = Query(100, ge=1, le=1000),
     service: CommandService = Depends(get_command_service),
 ) -> PaginatedResponse[CommandResponse]:
     items, total = await service.list_device_commands(device_id, skip=skip, limit=limit)
@@ -99,7 +100,8 @@ async def execute_command(
     device_id: int,
     data: CommandCreate,
     service: CommandService = Depends(get_command_service),
+    current_user: User = Depends(require_permission("editor")),
 ) -> CommandResponse:
-    result = await service.trigger_command(device_id, data)
+    result = await service.trigger_command(device_id, data, current_user.id)
     command = result["command"]
     return CommandResponse.model_validate(command)

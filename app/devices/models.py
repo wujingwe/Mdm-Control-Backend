@@ -33,8 +33,6 @@ class Device(Base):
     os_version: Mapped[str] = mapped_column(String(20))
     connection_status: Mapped[ConnectionStatus] = mapped_column(Enum(ConnectionStatus, native_enum=False, length=20))
     status: Mapped[DeviceStatus] = mapped_column(Enum(DeviceStatus, native_enum=False, length=20))
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, onupdate=utcnow)
     last_enrolled_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
     battery_status: Mapped[int | None] = mapped_column(Integer, nullable=True)
     total_storage: Mapped[int | None] = mapped_column(Integer, nullable=True)
@@ -43,10 +41,11 @@ class Device(Base):
     available_memory: Mapped[int | None] = mapped_column(Integer, nullable=True)
     network: Mapped[Network | None] = mapped_column(NetworkInfoType, nullable=True)
     certificates: Mapped[list[Certificate] | None] = mapped_column(CertificateListType, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, onupdate=utcnow)
 
-    extension_attributes: Mapped[list["DeviceExtensionAttribute"]] = relationship(
-        primaryjoin="Device.id == DeviceExtensionAttribute.device_id",
-        viewonly=True,
+    extension_attribute_values: Mapped[list["DeviceExtensionAttributeValue"]] = relationship(
+        primaryjoin="Device.id == DeviceExtensionAttributeValue.device_id",
         lazy="noload",
     )
 
@@ -58,7 +57,7 @@ class Device(Base):
     )
 
 
-class DeviceExtensionAttribute(Base):
+class DeviceExtensionAttributeValue(Base):
     __tablename__ = "device_extension_attribute_values"
     __table_args__ = (
         UniqueConstraint("device_id", "extension_attribute_id"),

@@ -1,38 +1,18 @@
 from datetime import datetime, timezone
 
 from sqlalchemy import select, func, update
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.commands.models import Command
 from app.commands.schemas import CommandCreate
 from app.common.enums import CommandStatus
+from app.core.exceptions import ConflictError
 
 
 class CommandRepository:
     def __init__(self, db: AsyncSession) -> None:
         self.db = db
-
-    async def create(
-        self,
-        device_id: int,
-        data: CommandCreate,
-        created_by: int | None = None,
-    ) -> Command:
-        instance = Command(
-            device_id=device_id,
-            command_type=data.command_type,
-            status=CommandStatus.PENDING,
-            created_by=created_by,
-        )
-        self.db.add(instance)
-        await self.db.commit()
-        await self.db.refresh(instance)
-        return instance
-
-    async def get_by_id(self, command_id: int) -> Command | None:
-        stmt = select(Command).where(Command.id == command_id)
-        result = await self.db.execute(stmt)
-        return result.scalar_one_or_none()
 
     async def list_for_device(
         self,
@@ -47,17 +27,38 @@ class CommandRepository:
         result = await self.db.execute(stmt)
         return list(result.scalars().all())
 
+    async def get_by_id(self, command_id: int) -> Command | None:
+        stmt = select(Command).where(Command.id == command_id)
+        result = await self.db.execute(stmt)
+        return result.scalar_one_or_none()
+
+    async def create(
+        self,
+        device_id: int,
+        data: CommandCreate,
+        created_by: int,
+    ) -> Command:
+        instance = Command(**data.model_dump(), device_id=device_id, created_by=created_by)
+        self.db.add(instance)
+        try:
+            await self.db.commit()
+            await self.db.refresh(instance)
+        except IntegrityError as err:
+            await self.db.rollback()
+            raise ConflictError("Command integrity error") from err
+        return instance
+
     async def count_for_device(self, device_id: int) -> int:
         stmt = select(func.count()).select_from(Command).where(Command.device_id == device_id)
         result = await self.db.execute(stmt)
         return result.scalar_one()
 
-    async def list_all(self, *, skip: int = 0, limit: int = 100) -> list[Command]:
+    async def list(self, *, skip: int = 0, limit: int = 100) -> list[Command]:
         stmt = select(Command).order_by(Command.id.desc()).offset(skip).limit(limit)
         result = await self.db.execute(stmt)
         return list(result.scalars().all())
 
-    async def count_all(self) -> int:
+    async def count(self) -> int:
         stmt = select(func.count()).select_from(Command)
         result = await self.db.execute(stmt)
         return result.scalar_one()

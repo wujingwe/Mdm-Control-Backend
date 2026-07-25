@@ -11,7 +11,7 @@ class TestExtensionAttributeService:
     @pytest.fixture
     def repo(self) -> None:
         m = MagicMock()
-        m.list_all = AsyncMock(return_value=[])
+        m.list = AsyncMock(return_value=[])
         m.get_by_id = AsyncMock(return_value=None)
         m.create = AsyncMock()
         m.update = AsyncMock()
@@ -24,13 +24,13 @@ class TestExtensionAttributeService:
         items, total = await svc.list_attributes()
         assert items == []
         assert total == 0
-        repo.list_all.assert_called_once_with(skip=0, limit=100)
+        repo.list.assert_called_once_with(skip=0, limit=100)
         repo.count.assert_called_once()
 
     async def test_list_attributes_paginated(self, repo: MagicMock) -> None:
         svc = ExtensionAttributeService(repo)
         await svc.list_attributes(skip=5, limit=15)
-        repo.list_all.assert_called_once_with(skip=5, limit=15)
+        repo.list.assert_called_once_with(skip=5, limit=15)
 
     async def test_get_attribute_found(self, repo: MagicMock) -> None:
         fake = MagicMock()
@@ -49,7 +49,8 @@ class TestExtensionAttributeService:
         repo.create = AsyncMock(return_value=fake)
         svc = ExtensionAttributeService(repo)
         result = await svc.create_attribute(
-            ExtensionAttributeCreate(name="ext1", data_type="string", input_type="Text field", created_by=1)
+            ExtensionAttributeCreate(name="ext1", data_type="string", input_type="Text field"),
+            created_by=1,
         )
         assert result is fake
 

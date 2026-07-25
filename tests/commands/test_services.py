@@ -11,8 +11,8 @@ class TestCommandService:
         m = MagicMock()
         m.create = AsyncMock(return_value=MagicMock(id=1, device_id=1, command_type=CommandType.LOCK))
         m.get_by_id = AsyncMock(return_value=None)
-        m.list_all = AsyncMock(return_value=[])
-        m.count_all = AsyncMock(return_value=0)
+        m.list = AsyncMock(return_value=[])
+        m.count = AsyncMock(return_value=0)
         m.list_for_device = AsyncMock(return_value=[])
         m.count_for_device = AsyncMock(return_value=0)
         m.mark_sent = AsyncMock(return_value=MagicMock(id=1))
@@ -35,7 +35,7 @@ class TestCommandService:
         data = CommandCreate(command_type=CommandType.LOCK)
         with patch("app.commands.services.rabbitmq_producer") as mock_producer:
             mock_producer.publish_device_command = AsyncMock(side_effect=RuntimeError("MQ down"))
-            result = await svc.trigger_command(device_id=1, data=data)
+            result = await svc.trigger_command(device_id=1, data=data, created_by=1)
             assert result["message_id"] is None
             repo.mark_sent.assert_not_called()
 
@@ -51,7 +51,7 @@ class TestCommandService:
         items, total = await svc.list_commands()
         assert items == []
         assert total == 0
-        repo.list_all.assert_called_once_with(skip=0, limit=100)
+        repo.list.assert_called_once_with(skip=0, limit=100)
 
     async def test_list_device_commands(self, repo: MagicMock) -> None:
         svc = CommandService(repo)

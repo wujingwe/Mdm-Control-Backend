@@ -1,16 +1,23 @@
+from app.common.enums import CriteriaType
+from app.criteria import Criteria
 from app.smart_groups.repositories import SmartGroupRepository
 from app.smart_groups.schemas import SmartGroupCreate, SmartGroupUpdate
 from sqlalchemy.ext.asyncio import AsyncSession
 
 _CRITERIA = [
-    {"field": "os_version", "operator": "is", "type": "string", "value": "Android 14"},
+    Criteria(
+        field="os_version",
+        operator="is",
+        type=CriteriaType.STRING,
+        value="Android 14",
+    ),
 ]
 
 
 class TestSmartGroupRepository:
     async def test_crud(self, db_session: AsyncSession) -> None:
         repo = SmartGroupRepository(db_session)
-        created = await repo.create(SmartGroupCreate(name="Group A", criteria=_CRITERIA, created_by=1))
+        created = await repo.create(SmartGroupCreate(name="Group A", criteria=_CRITERIA), created_by=1)
         assert created.id is not None
 
         found = await repo.get_by_id(created.id)
@@ -23,7 +30,7 @@ class TestSmartGroupRepository:
 
     async def test_delete(self, db_session: AsyncSession) -> None:
         repo = SmartGroupRepository(db_session)
-        created = await repo.create(SmartGroupCreate(name="G", criteria=_CRITERIA, created_by=1))
+        created = await repo.create(SmartGroupCreate(name="G", criteria=_CRITERIA), created_by=1)
         assert await repo.delete(created.id) is True
         assert await repo.get_by_id(created.id) is None
 
@@ -40,16 +47,16 @@ class TestSmartGroupRepository:
         created = await repo.create(
             SmartGroupCreate(
                 name="Android Group",
-                created_by=1,
                 criteria=[
-                    {
-                        "field": "os_version",
-                        "operator": "is",
-                        "type": "string",
-                        "value": "Android 14",
-                    },
+                    Criteria(
+                        field="os_version",
+                        operator="is",
+                        type=CriteriaType.STRING,
+                        value="Android 14",
+                    ),
                 ],
-            )
+            ),
+            created_by=1,
         )
         assert created.id is not None
         found = await repo.get_by_id(created.id)
@@ -62,23 +69,23 @@ class TestSmartGroupRepository:
         created = await repo.create(
             SmartGroupCreate(
                 name="Complex Group",
-                created_by=1,
                 criteria=[
-                    {
-                        "field": "os_version",
-                        "operator": "is",
-                        "type": "string",
-                        "value": "Android 14",
-                    },
-                    {
-                        "field": "battery_status",
-                        "operator": "lessThan",
-                        "type": "number",
-                        "value": "20",
-                        "left_parentheses": True,
-                    },
+                    Criteria(
+                        field="os_version",
+                        operator="is",
+                        type=CriteriaType.STRING,
+                        value="Android 14",
+                    ),
+                    Criteria(
+                        field="battery_status",
+                        operator="lessThan",
+                        type=CriteriaType.NUMBER,
+                        value="20",
+                        left_parentheses=True,
+                    ),
                 ],
-            )
+            ),
+            created_by=1,
         )
         found = await repo.get_by_id(created.id)
         assert len(found.criteria) == 2
@@ -91,27 +98,27 @@ class TestSmartGroupRepository:
         created = await repo.create(
             SmartGroupCreate(
                 name="Test Group",
-                created_by=1,
                 criteria=[
-                    {
-                        "field": "os_version",
-                        "operator": "is",
-                        "type": "string",
-                        "value": "Android 14",
-                    },
+                    Criteria(
+                        field="os_version",
+                        operator="is",
+                        type=CriteriaType.STRING,
+                        value="Android 14",
+                    ),
                 ],
-            )
+            ),
+            created_by=1,
         )
         updated = await repo.update(
             created.id,
             SmartGroupUpdate(
                 criteria=[
-                    {
-                        "field": "battery_status",
-                        "operator": "lessThan",
-                        "type": "number",
-                        "value": "15",
-                    },
+                    Criteria(
+                        field="battery_status",
+                        operator="lessThan",
+                        type=CriteriaType.NUMBER,
+                        value="15",
+                    ),
                 ],
             ),
         )
@@ -119,28 +126,40 @@ class TestSmartGroupRepository:
         assert len(updated.criteria) == 1
         assert updated.criteria[0]["field"] == "battery_status"
 
-    async def test_update_criteria_empty_list_rejected(self, db_session: AsyncSession) -> None:
-        from pydantic import ValidationError
-        import pytest
-
-        with pytest.raises(ValidationError):
-            SmartGroupUpdate(criteria=[])
+    async def test_update_criteria_empty_list_accepted(self, db_session: AsyncSession) -> None:
+        repo = SmartGroupRepository(db_session)
+        created = await repo.create(
+            SmartGroupCreate(
+                name="Test Group",
+                criteria=[
+                    Criteria(
+                        field="os_version",
+                        operator="is",
+                        type=CriteriaType.STRING,
+                        value="Android 14",
+                    ),
+                ],
+            ),
+            created_by=1,
+        )
+        updated = await repo.update(created.id, SmartGroupUpdate(criteria=[]))
+        assert updated.criteria == []
 
     async def test_update_name_preserves_criteria(self, db_session: AsyncSession) -> None:
         repo = SmartGroupRepository(db_session)
         created = await repo.create(
             SmartGroupCreate(
                 name="Original Name",
-                created_by=1,
                 criteria=[
-                    {
-                        "field": "os_version",
-                        "operator": "is",
-                        "type": "string",
-                        "value": "Android 14",
-                    },
+                    Criteria(
+                        field="os_version",
+                        operator="is",
+                        type=CriteriaType.STRING,
+                        value="Android 14",
+                    ),
                 ],
-            )
+            ),
+            created_by=1,
         )
         updated = await repo.update(created.id, SmartGroupUpdate(name="New Name"))
         assert updated.name == "New Name"

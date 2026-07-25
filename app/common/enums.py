@@ -1,4 +1,7 @@
 from enum import Enum
+from typing import Literal
+
+Permission = Literal["admin", "editor", "viewer"]
 
 
 class AssignmentStatus(str, Enum):

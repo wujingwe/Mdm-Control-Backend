@@ -8,7 +8,7 @@ class DeviceService:
         self.repo = repo
 
     async def list_devices(self, skip: int = 0, limit: int = 100) -> tuple[list[Device], int]:
-        items = await self.repo.list_all(skip=skip, limit=limit)
+        items = await self.repo.list(skip=skip, limit=limit)
         total = await self.repo.count()
         return items, total
 

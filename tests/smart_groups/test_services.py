@@ -1,5 +1,8 @@
 from unittest.mock import AsyncMock, MagicMock
 import pytest
+
+from app.common.enums import CriteriaType
+from app.criteria import Criteria
 from app.smart_groups.services import SmartGroupService
 from app.smart_groups.schemas import SmartGroupCreate, SmartGroupUpdate
 
@@ -8,7 +11,7 @@ class TestSmartGroupService:
     @pytest.fixture
     def repo(self) -> None:
         m = MagicMock()
-        m.list_all = AsyncMock(return_value=[])
+        m.list = AsyncMock(return_value=[])
         m.get_by_id = AsyncMock(return_value=None)
         m.create = AsyncMock()
         m.update = AsyncMock()
@@ -20,7 +23,7 @@ class TestSmartGroupService:
     async def test_list_groups(self, repo: MagicMock) -> None:
         svc = SmartGroupService(repo)
         await svc.list_groups()
-        repo.list_all.assert_called_once_with(skip=0, limit=100)
+        repo.list.assert_called_once_with(skip=0, limit=100)
 
     async def test_get_group(self, repo: MagicMock) -> None:
         fake = MagicMock()
@@ -37,15 +40,15 @@ class TestSmartGroupService:
             SmartGroupCreate(
                 name="G",
                 criteria=[
-                    {
-                        "field": "os_version",
-                        "operator": "is",
-                        "type": "string",
-                        "value": "Android 14",
-                    }
+                    Criteria(
+                        field="os_version",
+                        operator="is",
+                        type=CriteriaType.STRING,
+                        value="Android 14",
+                    ),
                 ],
-                created_by=1,
-            )
+            ),
+            created_by=1,
         )
         assert result is fake
 

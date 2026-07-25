@@ -16,8 +16,8 @@ class ProfileService:
     async def get_profile(self, profile_id: int) -> Profile | None:
         return await self.repo.get_by_id(profile_id)
 
-    async def create_profile(self, data: ProfileCreate) -> Profile:
-        return await self.repo.create(data)
+    async def create_profile(self, data: ProfileCreate, created_by: int) -> Profile:
+        return await self.repo.create(data, created_by)
 
     async def update_profile(self, profile_id: int, data: ProfileUpdate) -> Profile | None:
         return await self.repo.update(profile_id, data)

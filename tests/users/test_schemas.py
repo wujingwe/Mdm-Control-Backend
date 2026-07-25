@@ -10,8 +10,9 @@ class TestUserSchemas:
             id=1,
             name="jdoe",
             email="j@example.com",
-            permissions=["admin"],
+            permissions=frozenset({"admin"}),
             created_at=now,
+            updated_at=now,
         )
         assert data.name == "jdoe"
 
@@ -21,7 +22,8 @@ class TestUserSchemas:
             id=1,
             name="test",
             email="bad@example.com",
-            permissions=["editor"],
+            permissions=frozenset({"editor"}),
             created_at=now,
+            updated_at=now,
         )
         assert data.email == "bad@example.com"

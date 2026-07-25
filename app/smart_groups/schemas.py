@@ -1,36 +1,28 @@
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import Field
 
+from app.common.schemas import CamelModel
 from app.criteria.schemas import Criteria
 
 
-class SmartGroupCreate(BaseModel):
+class SmartGroupCreate(CamelModel):
     name: str
     description: str | None = None
     criteria: list[Criteria] = Field(min_length=1)
-    created_by: int = 1
 
 
-class SmartGroupUpdate(BaseModel):
+class SmartGroupUpdate(CamelModel):
     name: str | None = None
     description: str | None = None
     criteria: list[Criteria] | None = None
 
-    @model_validator(mode="after")
-    def _validate_criteria(self) -> "SmartGroupUpdate":
-        if self.criteria is not None and len(self.criteria) == 0:
-            raise ValueError("criteria must not be empty when provided")
-        return self
 
-
-class SmartGroupResponse(BaseModel):
+class SmartGroupResponse(CamelModel):
     id: int
     name: str
     description: str | None = None
-    criteria: list[Criteria] | None = None
-    created_at: datetime
+    criteria: list[Criteria]
     created_by: int
-    updated_at: datetime | None = None
-
-    model_config = ConfigDict(from_attributes=True)
+    created_at: datetime
+    updated_at: datetime

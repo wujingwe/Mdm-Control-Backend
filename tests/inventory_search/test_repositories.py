@@ -1,7 +1,8 @@
 from app.common.enums import CriteriaType
 from app.criteria import Criteria
+from app.inventory_search.models import InventorySearch
 from app.inventory_search.repositories import InventorySearchRepository
-from app.inventory_search.schemas import InventorySearchCreate, InventorySearchUpdate
+from app.inventory_search.schemas import InventorySearchUpdate
 from sqlalchemy.ext.asyncio import AsyncSession
 
 _CRITERIA = [
@@ -14,30 +15,46 @@ _CRITERIA = [
 ]
 
 
+async def _seed(db: AsyncSession, **kwargs) -> InventorySearch:
+    defaults = dict(name="search1", criteria=_CRITERIA, created_by=1)
+    defaults.update(kwargs)
+    if (
+        isinstance(defaults["criteria"], list)
+        and defaults["criteria"]
+        and hasattr(defaults["criteria"][0], "model_dump")
+    ):
+        defaults["criteria"] = [c.model_dump() for c in defaults["criteria"]]
+    item = InventorySearch(**defaults)
+    db.add(item)
+    await db.commit()
+    await db.refresh(item)
+    return item
+
+
 class TestInventorySearchRepository:
     async def test_create(self, db_session: AsyncSession) -> None:
-        repo = InventorySearchRepository(db_session)
-        created = await repo.create(InventorySearchCreate(name="search1", criteria=_CRITERIA, created_by=1))
+        created = await _seed(db_session, name="search1")
         assert created.id is not None
         assert created.name == "search1"
+        assert created.created_by == 1
 
     async def test_list(self, db_session: AsyncSession) -> None:
+        await _seed(db_session, name="s1")
+        await _seed(db_session, name="s2")
         repo = InventorySearchRepository(db_session)
-        await repo.create(InventorySearchCreate(name="s1", criteria=_CRITERIA, created_by=1))
-        await repo.create(InventorySearchCreate(name="s2", criteria=_CRITERIA, created_by=1))
-        items = await repo.list_all()
+        items = await repo.list()
         assert len(items) == 2
 
     async def test_list_pagination(self, db_session: AsyncSession) -> None:
-        repo = InventorySearchRepository(db_session)
         for i in range(5):
-            await repo.create(InventorySearchCreate(name=f"s{i}", criteria=_CRITERIA, created_by=1))
-        items = await repo.list_all(skip=1, limit=2)
+            await _seed(db_session, name=f"s{i}")
+        repo = InventorySearchRepository(db_session)
+        items = await repo.list(skip=1, limit=2)
         assert len(items) == 2
 
     async def test_get_by_id(self, db_session: AsyncSession) -> None:
+        created = await _seed(db_session, name="s1")
         repo = InventorySearchRepository(db_session)
-        created = await repo.create(InventorySearchCreate(name="s1", criteria=_CRITERIA, created_by=1))
         found = await repo.get_by_id(created.id)
         assert found is not None
         assert found.name == "s1"
@@ -47,8 +64,8 @@ class TestInventorySearchRepository:
         assert await repo.get_by_id(999) is None
 
     async def test_update(self, db_session: AsyncSession) -> None:
+        created = await _seed(db_session, name="s1")
         repo = InventorySearchRepository(db_session)
-        created = await repo.create(InventorySearchCreate(name="s1", criteria=_CRITERIA, created_by=1))
         updated = await repo.update(created.id, InventorySearchUpdate(name="s2"))
         assert updated is not None
         assert updated.name == "s2"
@@ -58,8 +75,8 @@ class TestInventorySearchRepository:
         assert await repo.update(999, InventorySearchUpdate(name="x")) is None
 
     async def test_delete(self, db_session: AsyncSession) -> None:
+        created = await _seed(db_session, name="s1")
         repo = InventorySearchRepository(db_session)
-        created = await repo.create(InventorySearchCreate(name="s1", criteria=_CRITERIA, created_by=1))
         assert await repo.delete(created.id) is True
         assert await repo.get_by_id(created.id) is None
 
@@ -70,32 +87,27 @@ class TestInventorySearchRepository:
     async def test_count(self, db_session: AsyncSession) -> None:
         repo = InventorySearchRepository(db_session)
         assert await repo.count() == 0
-        await repo.create(InventorySearchCreate(name="s1", criteria=_CRITERIA, created_by=1))
+        await _seed(db_session, name="s1")
         assert await repo.count() == 1
 
     async def test_create_with_criteria(self, db_session: AsyncSession) -> None:
-        repo = InventorySearchRepository(db_session)
-        created = await repo.create(
-            InventorySearchCreate(
-                name="Online Android",
-                created_by=1,
-                criteria=[
-                    Criteria(
-                        field="connection_status",
-                        operator="is",
-                        type=CriteriaType.STRING,
-                        value="Connected",
-                    ),
-                    Criteria(
-                        field="os_version",
-                        operator="is",
-                        type=CriteriaType.STRING,
-                        value="Android 14",
-                    ),
-                ],
-            )
-        )
+        criteria = [
+            Criteria(
+                field="connection_status",
+                operator="is",
+                type=CriteriaType.STRING,
+                value="Connected",
+            ),
+            Criteria(
+                field="os_version",
+                operator="is",
+                type=CriteriaType.STRING,
+                value="Android 14",
+            ),
+        ]
+        created = await _seed(db_session, name="Online Android", criteria=criteria)
         assert created.id is not None
+        repo = InventorySearchRepository(db_session)
         found = await repo.get_by_id(created.id)
         assert found.criteria is not None
         assert len(found.criteria) == 2
@@ -103,21 +115,16 @@ class TestInventorySearchRepository:
         assert found.criteria[1]["field"] == "os_version"
 
     async def test_update_criteria(self, db_session: AsyncSession) -> None:
+        criteria = [
+            Criteria(
+                field="os_version",
+                operator="is",
+                type=CriteriaType.STRING,
+                value="Android 14",
+            ),
+        ]
+        created = await _seed(db_session, name="Test Search", criteria=criteria)
         repo = InventorySearchRepository(db_session)
-        created = await repo.create(
-            InventorySearchCreate(
-                name="Test Search",
-                created_by=1,
-                criteria=[
-                    Criteria(
-                        field="os_version",
-                        operator="is",
-                        type=CriteriaType.STRING,
-                        value="Android 14",
-                    ),
-                ],
-            )
-        )
         updated = await repo.update(
             created.id,
             InventorySearchUpdate(
@@ -143,21 +150,16 @@ class TestInventorySearchRepository:
             InventorySearchUpdate(criteria=[])
 
     async def test_update_name_preserves_criteria(self, db_session: AsyncSession) -> None:
+        criteria = [
+            Criteria(
+                field="os_version",
+                operator="is",
+                type=CriteriaType.STRING,
+                value="Android 14",
+            ),
+        ]
+        created = await _seed(db_session, name="Original Name", criteria=criteria)
         repo = InventorySearchRepository(db_session)
-        created = await repo.create(
-            InventorySearchCreate(
-                name="Original Name",
-                created_by=1,
-                criteria=[
-                    Criteria(
-                        field="os_version",
-                        operator="is",
-                        type=CriteriaType.STRING,
-                        value="Android 14",
-                    ),
-                ],
-            )
-        )
         updated = await repo.update(created.id, InventorySearchUpdate(name="New Name"))
         assert updated.name == "New Name"
         found = await repo.get_by_id(created.id)

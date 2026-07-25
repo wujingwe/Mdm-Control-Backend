@@ -1,42 +1,38 @@
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict
 
 from app.common.enums import AssignmentDesiredState, AssignmentStatus
-from app.common.schemas import Scope
+from app.common.schemas import CamelModel, Scope
 from app.profiles.schemas.policy import Policy
 
 
-class ProfileCreate(BaseModel):
+class ProfileCreate(CamelModel):
     name: str
     description: str | None = None
     policy: Policy
     scope: Scope
-    created_by: int = 1
 
 
-class ProfileUpdate(BaseModel):
+class ProfileUpdate(CamelModel):
     name: str | None = None
     description: str | None = None
     policy: Policy | None = None
     scope: Scope | None = None
 
 
-class ProfileResponse(BaseModel):
+class ProfileResponse(CamelModel):
     id: int
     name: str
     description: str | None = None
     version: int
     policy: Policy
     scope: Scope
+    created_by: int
     created_at: datetime
-    created_by: int | None = None
-    updated_at: datetime | None = None
-
-    model_config = ConfigDict(from_attributes=True)
+    updated_at: datetime
 
 
-class AssignmentResponse(BaseModel):
+class AssignmentResponse(CamelModel):
     id: int
     profile_id: int
     device_id: int
@@ -52,14 +48,12 @@ class AssignmentResponse(BaseModel):
     message_id: str | None = None
     updated_at: datetime | None = None
 
-    model_config = ConfigDict(from_attributes=True)
 
-
-class StatusUpdate(BaseModel):
+class StatusUpdate(CamelModel):
     status: AssignmentStatus
 
 
-class AssignmentUpsert(BaseModel):
+class AssignmentUpsert(CamelModel):
     profile_id: int
     device_id: int
     status: AssignmentStatus

@@ -33,7 +33,7 @@ class TestCommandsAPI:
         create = await client.post(
             f"{self.BASE}/{device.id}/commands",
             json={
-                "command_type": "LOCK",
+                "commandType": "LOCK",
             },
         )
         assert create.status_code == 201
@@ -42,7 +42,7 @@ class TestCommandsAPI:
 
         get = await client.get(f"{self.BASE}/{device.id}/commands/{cid}")
         assert get.status_code == 200
-        assert get.json()["device_id"] == device.id
+        assert get.json()["deviceId"] == device.id
 
         list_resp = await client.get(f"{self.BASE}/{device.id}/commands")
         assert list_resp.status_code == 200

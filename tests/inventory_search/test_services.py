@@ -11,7 +11,7 @@ class TestInventorySearchService:
     @pytest.fixture
     def repo(self) -> None:
         m = MagicMock()
-        m.list_all = AsyncMock(return_value=[])
+        m.list = AsyncMock(return_value=[])
         m.get_by_id = AsyncMock(return_value=None)
         m.create = AsyncMock()
         m.update = AsyncMock()
@@ -28,7 +28,7 @@ class TestInventorySearchService:
     async def test_list_searches_paginated(self, repo: MagicMock) -> None:
         svc = InventorySearchService(repo)
         await svc.list_searches(skip=5, limit=15)
-        repo.list_all.assert_called_once_with(skip=5, limit=15)
+        repo.list.assert_called_once_with(skip=5, limit=15)
 
     async def test_get_search_found(self, repo: MagicMock) -> None:
         fake = MagicMock()
@@ -57,8 +57,8 @@ class TestInventorySearchService:
                         value="Android 14",
                     ),
                 ],
-                created_by=1,
-            )
+            ),
+            create_by=1,
         )
         assert result is fake
 

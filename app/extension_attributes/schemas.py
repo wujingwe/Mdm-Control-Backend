@@ -1,20 +1,19 @@
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict
 
 from app.common.enums import ExtensionDataType, ExtensionInputType
+from app.common.schemas import CamelModel
 
 
-class ExtensionAttributeCreate(BaseModel):
+class ExtensionAttributeCreate(CamelModel):
     name: str
     description: str | None = None
     data_type: ExtensionDataType
     input_type: ExtensionInputType
     popup_choices: list[str] | None = None
-    created_by: int = 1
 
 
-class ExtensionAttributeUpdate(BaseModel):
+class ExtensionAttributeUpdate(CamelModel):
     name: str | None = None
     description: str | None = None
     data_type: ExtensionDataType | None = None
@@ -22,7 +21,7 @@ class ExtensionAttributeUpdate(BaseModel):
     popup_choices: list[str] | None = None
 
 
-class ExtensionAttributeResponse(BaseModel):
+class ExtensionAttributeResponse(CamelModel):
     id: int
     name: str
     description: str | None = None
@@ -32,5 +31,3 @@ class ExtensionAttributeResponse(BaseModel):
     created_at: datetime
     created_by: int
     updated_at: datetime | None = None
-
-    model_config = ConfigDict(from_attributes=True)
