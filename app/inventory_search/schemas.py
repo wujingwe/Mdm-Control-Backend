@@ -3,13 +3,22 @@ from datetime import datetime
 from pydantic import Field, model_validator
 
 from app.common.schemas import CamelModel
-from app.criteria.schemas import Criteria
+from app.criteria.schemas import Criteria, VALID_CRITERIA_FIELDS
 
 
 class InventorySearchCreate(CamelModel):
     name: str
     description: str | None = None
     criteria: list[Criteria] = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def _validate_criteria_fields(self) -> "InventorySearchCreate":
+        for c in self.criteria:
+            if c.extension_attribute_id is not None:
+                continue
+            if c.field not in VALID_CRITERIA_FIELDS:
+                raise ValueError(f"Unknown criteria field: {c.field}")
+        return self
 
 
 class InventorySearchUpdate(CamelModel):
@@ -19,8 +28,14 @@ class InventorySearchUpdate(CamelModel):
 
     @model_validator(mode="after")
     def _validate_criteria(self) -> "InventorySearchUpdate":
-        if self.criteria is not None and len(self.criteria) == 0:
-            raise ValueError("criteria must not be empty when provided")
+        if self.criteria is not None:
+            if len(self.criteria) == 0:
+                raise ValueError("criteria must not be empty when provided")
+            for c in self.criteria:
+                if c.extension_attribute_id is not None:
+                    continue
+                if c.field not in VALID_CRITERIA_FIELDS:
+                    raise ValueError(f"Unknown criteria field: {c.field}")
         return self
 
 
