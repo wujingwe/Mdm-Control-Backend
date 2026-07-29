@@ -11,7 +11,6 @@ class AssignmentStatus(str, Enum):
     FAILED = "FAILED"
     REVOKE_PENDING = "REVOKE_PENDING"
     REVOKED = "REVOKED"
-    REMOVED = "REMOVED"
 
 
 class AssignmentDesiredState(str, Enum):
