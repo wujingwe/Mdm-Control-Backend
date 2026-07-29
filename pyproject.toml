@@ -30,4 +30,9 @@ ignore = [
     "S101",  # assert in tests — pytest convention
 ]
 
+[dependency-groups]
+dev = [
+    "pytest-cov>=7.1.0",
+]
+
 

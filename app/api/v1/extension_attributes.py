@@ -1,14 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
-from app.common.schemas import PaginatedResponse
+from app.infra.common.schemas import PaginatedResponse
 from app.dependencies import get_extension_attribute_service, require_permission
-from app.extension_attributes.schemas import (
+from app.domains.extension_attributes.schemas import (
     ExtensionAttributeCreate,
     ExtensionAttributeResponse,
     ExtensionAttributeUpdate,
 )
-from app.extension_attributes.services import ExtensionAttributeService
-from app.users.models import User
+from app.domains.extension_attributes.services import ExtensionAttributeService
+from app.domains.users.models import User
 from app.webhook_client import revalidate
 
 router = APIRouter(prefix="/extension-attributes", tags=["Extension Attributes"])

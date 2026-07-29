@@ -1,17 +1,17 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
-from app.common.schemas import PaginatedResponse
+from app.infra.common.schemas import PaginatedResponse
 from app.dependencies import get_profile_service, get_reconciler, require_permission
-from app.profiles.reconciler import ProfileAssignmentReconciler
-from app.profiles.schemas.profile import (
+from app.infra.reconciler.reconciler import AssignmentReconciler
+from app.domains.profiles.schemas.profile import (
     AssignmentResponse,
     ProfileCreate,
     ProfileResponse,
     ProfileUpdate,
     StatusUpdate,
 )
-from app.profiles.services import ProfileService
-from app.users.models import User
+from app.domains.profiles.services import ProfileService
+from app.domains.users.models import User
 from app.webhook_client import revalidate
 
 router = APIRouter(prefix="/profiles", tags=["Profiles"])
@@ -47,7 +47,7 @@ async def get_profile(
 async def create_profile(
     data: ProfileCreate,
     service: ProfileService = Depends(get_profile_service),
-    reconciler: ProfileAssignmentReconciler = Depends(get_reconciler),
+    reconciler: AssignmentReconciler = Depends(get_reconciler),
     current_user: User = Depends(require_permission("editor")),
 ) -> ProfileResponse:
     profile = await service.create_profile(data, current_user.id)
@@ -62,7 +62,7 @@ async def update_profile(
     profile_id: int,
     data: ProfileUpdate,
     service: ProfileService = Depends(get_profile_service),
-    reconciler: ProfileAssignmentReconciler = Depends(get_reconciler),
+    reconciler: AssignmentReconciler = Depends(get_reconciler),
 ) -> ProfileResponse:
     updated = await service.update_profile(profile_id, data)
     if not updated:

@@ -1,14 +1,17 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
-from app.common.schemas import PaginatedResponse
-from app.dependencies import get_mobile_app_service, require_permission
-from app.mobile_apps.schemas import (
+from app.infra.common.schemas import PaginatedResponse
+from app.dependencies import get_mobile_app_service, get_reconciler, require_permission
+from app.infra.reconciler.reconciler import AssignmentReconciler
+from app.domains.mobile_apps.schemas import (
+    MobileAppAssignmentResponse,
     MobileAppCreate,
     MobileAppResponse,
+    MobileAppStatusUpdate,
     MobileAppUpdate,
 )
-from app.mobile_apps.services import MobileAppService
-from app.users.models import User
+from app.domains.mobile_apps.services import MobileAppService
+from app.domains.users.models import User
 from app.webhook_client import revalidate
 
 router = APIRouter(prefix="/mobile-apps", tags=["MobileApps"])
@@ -44,9 +47,12 @@ async def get_mobile_app(
 async def create_mobile_app(
     data: MobileAppCreate,
     service: MobileAppService = Depends(get_mobile_app_service),
+    reconciler: AssignmentReconciler = Depends(get_reconciler),
     current_user: User = Depends(require_permission("editor")),
 ) -> MobileAppResponse:
     app = await service.create_mobile_app(data, current_user.id)
+    if data.scope.targets:
+        await reconciler.recalculate_mobile_app(app.id)
     await revalidate(["mobile-apps"])
     return MobileAppResponse.model_validate(app)
 
@@ -56,11 +62,14 @@ async def update_mobile_app(
     mobile_app_id: int,
     data: MobileAppUpdate,
     service: MobileAppService = Depends(get_mobile_app_service),
+    reconciler: AssignmentReconciler = Depends(get_reconciler),
     _current_user: User = Depends(require_permission("editor")),
 ) -> MobileAppResponse:
     updated = await service.update_mobile_app(mobile_app_id, data)
     if not updated:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Mobile app not found")
+    if data.scope is not None:
+        await reconciler.recalculate_mobile_app(mobile_app_id)
     await revalidate(["mobile-apps"])
     return MobileAppResponse.model_validate(updated)
 
@@ -69,9 +78,39 @@ async def update_mobile_app(
 async def delete_mobile_app(
     mobile_app_id: int,
     service: MobileAppService = Depends(get_mobile_app_service),
+    reconciler: AssignmentReconciler = Depends(get_reconciler),
     _current_user: User = Depends(require_permission("editor")),
 ) -> None:
-    deleted = await service.delete_mobile_app(mobile_app_id)
-    if not deleted:
+    app = await service.get_mobile_app(mobile_app_id)
+    if not app:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Mobile app not found")
+    for target in app.scope.targets:
+        if target.scope_type == "SMART_GROUP" and target.target_id:
+            await reconciler.recalculate_mobile_apps_for_smart_group(target.target_id)
+        elif target.scope_type == "STATIC_GROUP" and target.target_id:
+            await reconciler.recalculate_mobile_apps_for_static_group(target.target_id)
+    await service.delete_mobile_app(mobile_app_id)
     await revalidate(["mobile-apps"])
+
+
+@router.get("/{mobile_app_id}/assignments", response_model=list[MobileAppAssignmentResponse])
+async def list_mobile_app_assignments(
+    mobile_app_id: int,
+    service: MobileAppService = Depends(get_mobile_app_service),
+) -> list[MobileAppAssignmentResponse]:
+    assignments = await service.get_assignments(mobile_app_id)
+    return [MobileAppAssignmentResponse.model_validate(a) for a in assignments]
+
+
+@router.put("/{mobile_app_id}/assignments/{device_id}/status", response_model=MobileAppAssignmentResponse)
+async def update_mobile_app_assignment_status(
+    mobile_app_id: int,
+    device_id: int,
+    data: MobileAppStatusUpdate,
+    service: MobileAppService = Depends(get_mobile_app_service),
+) -> MobileAppAssignmentResponse:
+    assignment = await service.update_assignment_status(mobile_app_id, device_id, data.status.value)
+    if not assignment:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Assignment not found")
+    await revalidate(["mobile-apps"])
+    return MobileAppAssignmentResponse.model_validate(assignment)

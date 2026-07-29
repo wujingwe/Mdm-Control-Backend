@@ -1,7 +1,7 @@
 import asyncio
 import logging
 
-from app.config.settings import settings
+from app.infra.config.settings import settings
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +21,7 @@ class Lifecycle:
 
     @staticmethod
     async def _start_rabbitmq() -> None:
-        from app.messaging.producer import rabbitmq_producer
+        from app.infra.messaging.producer import rabbitmq_producer
 
         # noinspection PyBroadException
         try:
@@ -31,7 +31,7 @@ class Lifecycle:
 
     @staticmethod
     async def _stop_rabbitmq() -> None:
-        from app.messaging.producer import rabbitmq_producer
+        from app.infra.messaging.producer import rabbitmq_producer
 
         # noinspection PyBroadException
         try:
@@ -41,7 +41,7 @@ class Lifecycle:
 
     @staticmethod
     async def _start_consumer() -> asyncio.Task:
-        from app.messaging.consumer import rabbitmq_consumer
+        from app.infra.messaging.consumer import rabbitmq_consumer
 
         async def run_consumer() -> None:
             # noinspection PyBroadException
@@ -55,7 +55,7 @@ class Lifecycle:
         return asyncio.create_task(run_consumer())
 
     async def _stop_consumer(self) -> None:
-        from app.messaging.consumer import rabbitmq_consumer
+        from app.infra.messaging.consumer import rabbitmq_consumer
 
         await rabbitmq_consumer.stop()
         if self._consumer_task is None:

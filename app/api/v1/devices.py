@@ -1,13 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
-from app.commands.schemas import CommandCreate, CommandResponse
-from app.commands.services import CommandService
-from app.common.schemas import PaginatedResponse
+from app.domains.commands.schemas import CommandCreate, CommandResponse
+from app.domains.commands.services import CommandService
+from app.infra.common.schemas import PaginatedResponse
 from app.dependencies import get_command_service, get_device_service, get_reconciler, require_permission
-from app.devices.schemas import DeviceResponse, DeviceUpdate
-from app.devices.services import DeviceService
-from app.profiles.reconciler import ProfileAssignmentReconciler
-from app.users.models import User
+from app.domains.devices.schemas import DeviceResponse, DeviceUpdate
+from app.domains.devices.services import DeviceService
+from app.infra.reconciler.reconciler import AssignmentReconciler
+from app.domains.users.models import User
 
 router = APIRouter(prefix="/devices", tags=["Devices"])
 
@@ -57,7 +57,7 @@ async def update_device(
     device_id: int,
     data: DeviceUpdate,
     service: DeviceService = Depends(get_device_service),
-    reconciler: ProfileAssignmentReconciler = Depends(get_reconciler),
+    reconciler: AssignmentReconciler = Depends(get_reconciler),
 ) -> DeviceResponse:
     device = await service.update_device(device_id, data)
     if not device:
@@ -65,6 +65,7 @@ async def update_device(
     changed_fields = data.model_fields_set
     if changed_fields & RECONCILER_TRIGGER_FIELDS:
         await reconciler.recalculate_profiles_for_device(device_id)
+        await reconciler.recalculate_mobile_apps_for_device(device_id)
     return DeviceResponse.model_validate(device)
 
 
@@ -72,14 +73,16 @@ async def update_device(
 async def device_check_in(
     device_id: int,
     service: DeviceService = Depends(get_device_service),
-    reconciler: ProfileAssignmentReconciler = Depends(get_reconciler),
+    reconciler: AssignmentReconciler = Depends(get_reconciler),
 ) -> dict[str, str]:
     device = await service.get_device(device_id)
     if not device:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Device not found")
     # Recalculate desired state first, then send one consolidated latest revision.
     await reconciler.recalculate_profiles_for_device(device_id, publish=False)
+    await reconciler.recalculate_mobile_apps_for_device(device_id, publish=False)
     await reconciler.dispatch_device_assignments(device_id)
+    await reconciler.dispatch_device_mobile_app_assignments(device_id)
     return {"status": "ok"}
 
 

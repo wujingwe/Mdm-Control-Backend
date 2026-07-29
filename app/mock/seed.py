@@ -4,19 +4,19 @@ from datetime import datetime, timezone
 from passlib.context import CryptContext
 from sqlalchemy import text
 
-from app.base import Base
-from app.common.schemas import Scope, ScopeTarget, ScopeType
-from app.database import engine, async_session
-from app.devices.models import Device
-from app.devices.schemas import Network, Wifi
-from app.extension_attributes.models import ExtensionAttribute
-from app.inventory_search.models import InventorySearch
-from app.mobile_apps.models import MobileApp
-from app.profiles.models import Profile
-from app.smart_groups.models import SmartGroup
-from app.static_groups.models import StaticGroup
-from app.static_groups.models import StaticGroupDevice
-from app.users.models import User
+from app.infra.core.base import Base
+from app.infra.common.schemas import Scope, ScopeTarget, ScopeType
+from app.infra.core.database import engine, async_session
+from app.domains.devices.models import Device
+from app.domains.devices.schemas import Network, Wifi
+from app.domains.extension_attributes.models import ExtensionAttribute
+from app.domains.inventory_search.models import InventorySearch
+from app.domains.mobile_apps.models import MobileApp
+from app.domains.profiles.models import Profile
+from app.domains.smart_groups.models import SmartGroup
+from app.domains.static_groups.models import StaticGroup
+from app.domains.static_groups.models import StaticGroupDevice
+from app.domains.users.models import User
 
 logger = logging.getLogger(__name__)
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -371,7 +371,7 @@ MOBILE_APPS = [
     MobileApp(
         name="Microsoft Outlook",
         enabled=True,
-        version="4.75.0",
+        package_version="4.75.0",
         package_name="com.microsoft.office.outlook",
         scope=Scope(targets=[ScopeTarget(scope_type=ScopeType.ALL_DEVICES)]).model_dump(),
         created_by=1,
@@ -379,7 +379,7 @@ MOBILE_APPS = [
     MobileApp(
         name="Microsoft Teams",
         enabled=True,
-        version="24.12.0",
+        package_version="24.12.0",
         package_name="com.microsoft.teams",
         scope=Scope(targets=[ScopeTarget(scope_type=ScopeType.ALL_DEVICES)]).model_dump(),
         created_by=1,
@@ -458,9 +458,9 @@ async def seed_database() -> None:
         profile_ids = [p.id for p in PROFILES]
 
         if profile_ids:
-            from app.common.schemas import Scope, ScopeTarget, ScopeType
+            from app.infra.common.schemas import Scope, ScopeTarget, ScopeType
             from sqlalchemy import update as sa_update
-            from app.profiles.models import Profile
+            from app.domains.profiles.models import Profile
 
             scope0 = Scope(targets=[ScopeTarget(scope_type=ScopeType.ALL_DEVICES)])
             scope1 = (

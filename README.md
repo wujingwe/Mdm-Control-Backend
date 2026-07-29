@@ -1,6 +1,8 @@
-# MdM Control Backend
+# MDM Control Backend
 
-Backend service for MDM (Mobile Device Management) control plane. Built with FastAPI, async SQLAlchemy, MariaDB, and optional Kafka.
+Backend service for a Mobile Device Management (MDM) control plane. Manages device enrollment, configuration profiles, group scoping, and command dispatch.
+
+Built with FastAPI, async SQLAlchemy, MariaDB, and optional RabbitMQ.
 
 ## Architecture
 
@@ -12,21 +14,31 @@ Backend service for MDM (Mobile Device Management) control plane. Built with Fas
                            │
                            ▼
                      ┌──────────┐     ┌──────────────┐
-                     │  MariaDB │────▶│  Kafka (opt) │
-                     └──────────┘     └──────────────┘
+                     │  MariaDB │     │  RabbitMQ    │
+                     └──────────┘     │  (optional)  │
+                                      └──────────────┘
 ```
 
 - **API** — FastAPI async endpoints at `/api/v1/*` (see [API.md](API.md))
 - **Database** — MariaDB via `aiomysql` + SQLAlchemy 2.0 async ORM
-- **Messaging** — Kafka (`aiokafka`) optional, for async policy push to devices
-- **SSE Notification** — API calls an external SSE server directly when policies are assigned to groups
+- **Messaging** — RabbitMQ (`aio_pika`) optional, for async profile/command push to devices
+- **SSE Notification** — API calls an external SSE server directly when profiles are assigned
 - **Webhook** — Mutations notify Next.js for ISR cache revalidation
+
+## Language
+
+See [CONTEXT.md](CONTEXT.md) for the domain glossary. Key terms:
+
+- **Profile** — a versioned, scoppable configuration entity. *Not* "Policy".
+- **Policy** — the configuration payload *inside* a Profile.
+- **SmartGroup** / **StaticGroup** — dynamic and static device groups.
+- **ProfileAssignment** — versioned record linking a Profile to a Device.
 
 ## Prerequisites
 
 - Python 3.12+
 - MariaDB running on `localhost:3306` with database `mdm_control`
-- Kafka broker on `localhost:9092` (optional — the app runs without it)
+- RabbitMQ on `localhost:5672` (optional — the app runs without it)
 
 ## Setup
 
@@ -45,13 +57,24 @@ All settings via `.env` file or environment variables:
 | Variable | Default | Description |
 |---|---|---|
 | `DB_URL` | `mysql+aiomysql://jing-weiwu:mdm@localhost:3306/mdm_control` | Database connection string |
-| `KAFKA_BOOTSTRAP_SERVERS` | `localhost:9092` | Kafka broker address |
-| `KAFKA_TOPIC` | `policy-assignments` | Kafka topic for policy events |
-| `KAFKA_GROUP_ID` | `mdm-control-group` | Consumer group ID |
+| `RABBITMQ_URL` | `amqp://guest:guest@localhost:5672/` | AMQP connection URL |
+| `RABBITMQ_EXCHANGE` | `mdm.device.commands` | Exchange name for device messages |
+| `RABBITMQ_EXCHANGE_TYPE` | `topic` | Exchange type |
+| `RABBITMQ_DEVICE_ROUTING_KEY_PREFIX` | `device` | Routing key prefix (`device.<id>`) |
+| `RABBITMQ_CONSUMER_QUEUE` | `sse.commands.local` | Consumer queue name |
+| `RABBITMQ_CONSUMER_BINDING_KEYS` | `[]` | Routing key patterns to bind |
+| `RABBITMQ_PREFETCH_COUNT` | `10` | Max unacknowledged prefetched messages |
+| `RABBITMQ_REQUEUE_ON_ERROR` | `false` | Requeue on handler error |
+| `RABBITMQ_CONSUMER_ENABLED` | `false` | Start consumer on app startup |
 | `WEBHOOK_URL` | `http://localhost:3000/api/v1/revalidate` | Next.js revalidation endpoint |
+| `REVALIDATION_SECRET` | — | Shared webhook secret |
 | `SSE_SERVER_URL` | `http://0.0.0.0:8080/notify` | External SSE server endpoint |
 | `SSO_ENABLED` | `False` | Enable SSO authentication |
-| `CORS_ORIGINS` | `*` | Allowed CORS origins |
+| `SSO_JWKS_URL` | — | JWKS URL for JWT verification |
+| `SSO_ISSUER` | — | Expected JWT issuer |
+| `SSO_AUDIENCE` | — | Expected JWT audience |
+| `CORS_ORIGINS` | `["*"]` | Allowed CORS origins |
+| `MOCK_DB` | `false` | Use in-memory SQLite instead of MariaDB |
 
 ## Run
 
@@ -84,7 +107,7 @@ The migration script reads `DB_URL` from `.env` automatically.
 python -m app.mock.seed
 ```
 
-Populates the database with sample roles, users, devices, groups, policies, and assignments.
+Populates the database with sample roles, users, devices, groups, profiles, and assignments.
 
 ## Type Checking
 
@@ -98,74 +121,125 @@ mypy app/
 python -m pytest tests/ -v
 ```
 
-Tests use an in-memory SQLite database with `aiosqlite`. Kafka is not required to run tests.
+Tests use an in-memory SQLite database with `aiosqlite`. RabbitMQ is not required to run tests.
 
 ## Project Structure
 
 ```
 ├── app/
 │   ├── main.py                 # FastAPI app, lifespan, middleware, health check
-│   ├── config.py               # Pydantic settings from .env
-│   ├── database.py             # Async engine & session factory
+│   ├── database.py             # Async SQLAlchemy engine & session factory
+│   ├── dependencies.py         # FastAPI dependency injection
+│   ├── lifecycle.py            # App lifecycle (start/stop RabbitMQ, etc.)
 │   ├── webhook_client.py       # Next.js ISR revalidation helper
+│   ├── base.py                 # SQLAlchemy declarative base & utcnow helper
+│   ├── types.py                # Custom SQLAlchemy type decorators
+│   ├── config/
+│   │   └── settings.py         # Pydantic settings from .env
 │   ├── core/
 │   │   ├── exceptions.py       # Custom exception classes
 │   │   └── security.py         # Auth / JWT utilities
-│   ├── models/                 # SQLAlchemy ORM models
-│   │   ├── base.py             # Declarative base & utcnow helper
-│   │   ├── device.py           # Device model
-│   │   ├── device_policy.py    # Device <-> Policy association
-│   │   ├── group.py            # Group model (smart/static)
-│   │   ├── group_policy.py     # Group <-> Policy association
-│   │   ├── policy.py           # Policy model with JSON settings
-│   │   ├── role.py             # Role model
-│   │   ├── user.py             # User model
-│   │   └── types.py            # Custom SQLAlchemy type decorators
-│   ├── schemas/                # Pydantic request/response schemas
-│   │   ├── common.py           # PaginatedResponse, Message
-│   │   ├── device.py           # Device schemas
-│   │   ├── group.py            # Group schemas
-│   │   ├── policy.py           # Policy schemas
-│   │   ├── role.py             # Role schemas
-│   │   └── user.py             # User schemas
-│   ├── repositories/           # Data access layer
-│   │   ├── base.py             # Generic CRUD base repository
-│   │   ├── device.py
-│   │   ├── group.py
-│   │   ├── policy.py
-│   │   ├── role.py
-│   │   └── user.py
-│   ├── services/               # Business logic layer
-│   │   ├── device.py           # Device service (search, assign policy)
-│   │   ├── group.py            # Group service (CRUD, assign policy)
-│   │   ├── policy.py           # Policy service (CRUD)
-│   │   ├── role.py             # Role service
-│   │   ├── user.py             # User service
-│   │   ├── kafka_producer.py   # Producer singleton (optional)
-│   │   ├── kafka_consumer.py   # Background consumer task (optional)
-│   │   ├── sse_notify.py       # SSE server notification helpers
-│   │   ├── webhook.py          # Webhook dispatch logic
-│   └── api/v1/                 # Route handlers
-│       ├── router.py           # Router aggregation
-│       ├── devices.py          # Device endpoints
-│       ├── groups.py           # Group endpoints
-│       ├── policies.py         # Policy endpoints
-│       ├── roles.py            # Role endpoints
-│       ├── users.py            # User endpoints
-│       └── metrics.py          # Fleet metrics endpoint
-├── alembic/                    # Database migrations
+│   ├── common/
+│   │   ├── enums.py            # Shared enumerations
+│   │   └── schemas.py          # PaginatedResponse, Scope, Message
+│   ├── profiles/               # Configuration profiles
+│   │   ├── models.py           # Profile, ProfileAssignment ORM models
+│   │   ├── schemas/            # Pydantic request/response schemas
+│   │   ├── repositories.py     # Data access layer
+│   │   ├── services.py         # Business logic
+│   │   └── reconciler.py       # ProfileAssignment calculation engine
+│   ├── smart_groups/           # Dynamic device groups (criteria-based)
+│   │   ├── models.py
+│   │   ├── schemas.py
+│   │   ├── repositories.py
+│   │   └── services.py
+│   ├── static_groups/          # Explicit device groups
+│   │   ├── models.py
+│   │   ├── schemas.py
+│   │   ├── repositories.py
+│   │   └── services.py
+│   ├── devices/                # Device management
+│   │   ├── models.py
+│   │   ├── schemas.py
+│   │   ├── repositories.py
+│   │   └── services.py
+│   ├── commands/               # Device commands (lock, wipe, restart, etc.)
+│   │   ├── models.py
+│   │   ├── schemas.py
+│   │   ├── repositories.py
+│   │   └── services.py
+│   ├── mobile_apps/            # Mobile application distribution
+│   │   ├── models.py
+│   │   ├── schemas.py
+│   │   ├── repositories.py
+│   │   └── services.py
+│   ├── extension_attributes/   # Custom device metadata fields
+│   │   ├── models.py
+│   │   ├── schemas.py
+│   │   ├── repositories.py
+│   │   └── services.py
+│   ├── inventory_search/       # Saved device search queries
+│   │   ├── models.py
+│   │   ├── schemas.py
+│   │   ├── repositories.py
+│   │   └── services.py
+│   ├── users/                  # User management
+│   │   ├── models.py
+│   │   ├── schemas.py
+│   │   ├── repositories.py
+│   │   └── services.py
+│   ├── messaging/              # RabbitMQ producer & consumer
+│   │   ├── producer.py         # Publisher (profile push/revoke, commands)
+│   │   └── consumer.py         # Background consumer for device status
+│   ├── notification/           # SSE server notification helpers
+│   ├── criteria/               # Smart group criteria evaluation
+│   │   └── schemas.py
+│   ├── mock/
+│   │   └── seed.py             # Database seeder
+│   ├── api/v1/                 # Route handlers
+│   │   ├── router.py           # Router aggregation
+│   │   ├── profiles.py         # Profile endpoints
+│   │   ├── smart_groups.py     # Smart group endpoints
+│   │   ├── static_groups.py    # Static group endpoints
+│   │   ├── devices.py          # Device + check-in + command endpoints
+│   │   ├── mobile_apps.py      # Mobile app endpoints
+│   │   ├── extension_attributes.py
+│   │   ├── inventory_search.py # Saved search endpoints
+│   │   └── users.py            # User endpoints
+│   └── worker.py               # Standalone RabbitMQ consumer process
+├── alembic/
 │   ├── env.py
 │   └── versions/
 ├── tests/                      # Async test suite (SQLite in-memory)
-├── app/mock/seed.py            # Database seeder
-├── API.md                      # Public endpoint reference
+├── docs/
+│   └── adr/                    # Architecture decision records
+├── API.md
+├── CONTEXT.md                  # Domain glossary
+├── DATABASE.md
+├── Models.md
 ├── requirements.txt
-└── pyproject.toml              # Pytest & mypy config
+├── Makefile
+├── pyproject.toml
+├── mypy.ini
+├── ruff.toml
+└── skills-lock.json
 ```
 
 ## API Endpoints
 
 Full reference at [API.md](API.md).
+
+### Profiles
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/profiles` | List all profiles |
+| `GET` | `/profiles/{id}` | Get profile by ID |
+| `POST` | `/profiles` | Create a profile |
+| `PUT` | `/profiles/{id}` | Update a profile |
+| `DELETE` | `/profiles/{id}` | Delete a profile |
+| `GET` | `/profiles/{id}/assignments` | List profile assignments |
+| `PUT` | `/profiles/{id}/assignments/{device_id}/status` | Update assignment status |
 
 ### Smart Groups
 
@@ -176,7 +250,6 @@ Full reference at [API.md](API.md).
 | `POST` | `/smart-groups` | Create a smart group |
 | `PUT` | `/smart-groups/{id}` | Update a group |
 | `DELETE` | `/smart-groups/{id}` | Delete a group |
-| `POST` | `/smart-groups/{id}/policies` | Assign a policy to a group |
 
 ### Static Groups
 
@@ -187,17 +260,6 @@ Full reference at [API.md](API.md).
 | `POST` | `/static-groups` | Create a static group |
 | `PUT` | `/static-groups/{id}` | Update a group |
 | `DELETE` | `/static-groups/{id}` | Delete a group |
-| `POST` | `/static-groups/{id}/policies` | Assign a policy to a group |
-
-### Policies
-
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/policies` | List all policies |
-| `GET` | `/policies/{id}` | Get policy by ID |
-| `POST` | `/policies` | Create a policy |
-| `PUT` | `/policies/{id}` | Update a policy |
-| `POST` | `/policies/{id}/push` | Push policy via Kafka |
 
 ### Devices
 
@@ -205,65 +267,114 @@ Full reference at [API.md](API.md).
 |--------|------|-------------|
 | `GET` | `/devices` | List all devices |
 | `GET` | `/devices/{id}` | Get device by ID |
-| `POST` | `/devices/search` | Search devices by criteria |
-| `POST` | `/devices/{id}/policy` | Assign policy to device |
+| `PUT` | `/devices/{id}` | Update a device |
+| `POST` | `/devices/{id}/check-in` | Device check-in (recalculate + dispatch) |
+| `GET` | `/devices/{id}/commands` | List device commands |
+| `GET` | `/devices/{id}/commands/{command_id}` | Get command |
+| `POST` | `/devices/{id}/commands` | Execute a command on a device |
+
+### Mobile Apps
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/mobile-apps` | List all mobile apps |
+| `GET` | `/mobile-apps/{id}` | Get app by ID |
+| `POST` | `/mobile-apps` | Create a mobile app |
+| `PUT` | `/mobile-apps/{id}` | Update a mobile app |
+| `DELETE` | `/mobile-apps/{id}` | Delete a mobile app |
+
+### Extension Attributes
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/extension-attributes` | List all extension attributes |
+| `GET` | `/extension-attributes/{id}` | Get attribute by ID |
+| `POST` | `/extension-attributes` | Create an extension attribute |
+| `PUT` | `/extension-attributes/{id}` | Update an extension attribute |
+| `DELETE` | `/extension-attributes/{id}` | Delete an extension attribute |
+
+### Inventory Search
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/inventory-search` | List saved searches |
+| `GET` | `/inventory-search/{id}` | Get search by ID |
+| `POST` | `/inventory-search` | Create a saved search |
+| `PUT` | `/inventory-search/{id}` | Update a saved search |
+| `DELETE` | `/inventory-search/{id}` | Delete a saved search |
+| `POST` | `/inventory-search/{id}/execute` | Execute a search |
 
 ### Other
 
 | Method | Path | Description |
 |--------|------|-------------|
 | `GET` | `/users` | List all users |
-| `GET` | `/roles` | List all roles |
-| `GET` | `/metrics/fleet` | Fleet overview metrics |
+| `GET` | `/users/{id}` | Get user by ID |
+| `POST` | `/users` | Create a user |
+| `PUT` | `/users/{id}` | Update a user |
+| `DELETE` | `/users/{id}` | Delete a user |
+| `GET` | `/users/by-email/{email}` | Lookup user by email |
 | `GET` | `/health` | Health check |
 
-## Flow: Assign Policy to Group
+## Flow: Profile Assignment
+
+Group scope changes and device updates trigger the `ProfileAssignmentReconciler`, which:
+
+1. Recalculates desired state (PRESENT/ABSENT) for all affected (profile, device) pairs
+2. Writes new assignment revision rows (append-only)
+3. Publishes profile push/revoke events to RabbitMQ (`mdm.device.commands` exchange)
+4. Optionally dispatches the latest revision via SSE during device check-in
+
+### Group scope change
 
 ```
-Web UI ──POST──▶ FastAPI ──INSERT──▶ group_policies table
-                         │
-                         └──POST──▶ SSE Server (http://0.0.0.0:8080/notify)
-                                      { group_id, group_name, policy: { id, name } }
+Web UI ──PUT──▶ FastAPI (update scope)
+                  │
+                  ├── Reconcile → ProfileAssignment rows
+                  │
+                  └── RabbitMQ ──▶ Device (profile.push.requested)
+                  │
+                  └── SSE ──────▶ SSE Server (external)
 ```
 
-1. User selects a policy in the group detail page and clicks **Assign**
-2. `POST /api/v1/groups/{id}/policies?policy_id=X` creates the association in `group_policies`
-3. Backend sends an SSE notification to the external SSE server with group + policy info
-4. The SSE server can then push real-time updates to connected clients
-5. If the SSE server is unreachable, the assignment still succeeds (failure is logged)
-
-## Flow: Assign Policy to Device
+### Device check-in
 
 ```
-Web UI ──POST──▶ FastAPI ──INSERT──▶ device_policies table
-                         │
-                         ├──KAFKA──▶ Consumer ──SSE──▶ Device
-                         │
-                         └──SSE────▶ SSE Server (external)
+Device ──POST──▶ /devices/{id}/check-in
+                   │
+                   ├── Recalculate assignments
+                   ├── Dispatch latest revision (SSE push)
+                   └── Return { "status": "ok" }
 ```
 
-Kafka is optional. When unavailable, the app starts and operates without messaging.
+## RabbitMQ Exchange
+
+- **Exchange**: `mdm.device.commands` (topic)
+- **Routing key**: `device.<device_id>`
+- **Events**: `profile.push.requested`, `profile.revoke.requested`, device commands
+
+The consumer processes device-reported status updates (acknowledgement, completion, etc.).
 
 ## SSE Notification Payloads
 
-**Group policy assignment:**
+**Profile assignment (group scope):**
 ```json
 {
   "group_id": 1,
   "group_name": "Engineering",
-  "policy": {
+  "profile": {
     "id": 1,
-    "name": "Base Security Policy"
+    "name": "Base Security Profile"
   }
 }
 ```
 
-**Device policy assignment:**
+**Profile push to device:**
 ```json
 {
   "device_serial_number": "SN001",
   "device_name": "Device 1",
-  "policy": {
+  "profile": {
     "id": 1,
     "name": "Enforce Encryption",
     "config": { "key": "value" }

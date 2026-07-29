@@ -10,10 +10,10 @@ from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, Asyn
 
 from app.main import app
 from app.dependencies import get_db, get_current_user
-from app.users.models import User
-from app.users.schemas import UserCreate
-from app.users.repositories import UserRepository
-from app.base import Base
+from app.domains.users.models import User
+from app.domains.users.schemas import UserCreate
+from app.domains.users.repositories import UserRepository
+from app.infra.core.base import Base
 
 TEST_DB_URL = "sqlite+aiosqlite:///:memory:"
 

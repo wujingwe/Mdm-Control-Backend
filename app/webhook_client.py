@@ -3,7 +3,7 @@ from functools import lru_cache
 
 import httpx
 
-from app.config.settings import settings
+from app.infra.config.settings import settings
 
 logger = logging.getLogger(__name__)
 

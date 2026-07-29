@@ -21,8 +21,18 @@ def upgrade() -> None:
     # Backfill NULL created_by with admin user (id=1)
     op.execute("UPDATE commands SET created_by = 1 WHERE created_by IS NULL")
 
-    # Drop the SET NULL FK, recreate as CASCADE
-    op.execute("ALTER TABLE commands DROP FOREIGN KEY IF EXISTS fk_commands_created_by_users")
+    # Drop ALL existing FK constraints on commands.created_by referencing users
+    conn = op.get_bind()
+    result = conn.execute(
+        sa.text(
+            "SELECT CONSTRAINT_NAME FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE "
+            "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'commands' "
+            "AND COLUMN_NAME = 'created_by' AND REFERENCED_TABLE_NAME = 'users'"
+        )
+    )
+    for row in result:
+        op.execute(f"ALTER TABLE commands DROP FOREIGN KEY `{row[0]}`")
+
     op.execute(
         "ALTER TABLE commands ADD CONSTRAINT fk_commands_created_by_users "
         "FOREIGN KEY (created_by) REFERENCES users (id) ON DELETE CASCADE"

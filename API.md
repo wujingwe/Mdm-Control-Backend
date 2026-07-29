@@ -8,100 +8,13 @@ Base URL: `/api/v1`
 |---|---|---|
 | `GET` | `/devices` | List all devices (paginated) |
 | `GET` | `/devices/{device_id}` | Get device by ID |
-| `POST` | `/devices/search` | Search devices by criteria |
-| `POST` | `/devices/{device_id}/policy` | Assign policy to device (Kafka event) |
+| `PUT` | `/devices/{device_id}` | Update a device (triggers reconciler) |
+| `POST` | `/devices/{device_id}/check-in` | Device check-in (recalculate + dispatch) |
+| `GET` | `/devices/{device_id}/commands` | List device commands |
+| `GET` | `/devices/{device_id}/commands/{command_id}` | Get a command |
+| `POST` | `/devices/{device_id}/commands` | Execute a command on a device |
 
 ### `GET /devices`
-
-**Query parameters:**
-
-| Param | Type | Default | Description |
-|---|---|---|---|
-| `skip` | int | `0` | Number of items to skip (min 0) |
-| `limit` | int | `100` | Max items to return (max 5000) |
-
-**Response `200`:**
-
-```json
-{
-  "items": [
-    {
-      "id": 1,
-      "name": "MacBook Pro",
-      "serial": "SN001",
-      "owner": "Alice",
-      "os_version": "15.0",
-      "status": "Online",
-      "compliance": "Compliant",
-      "last_seen": "2025-01-01T00:00:00Z",
-      "battery_level": 85,
-      "total_storage": 512,
-      "available_storage": 200,
-      "total_memory": 16,
-      "available_memory": 8,
-      "cpu_usage": 45.2,
-      "last_boot": "2025-01-01T00:00:00Z",
-      "signal_strength": -65,
-      "policies": ["Enforce Encryption"]
-    }
-  ],
-  "total": 42,
-  "skip": 0,
-  "limit": 100
-}
-```
-
-### `GET /devices/{device_id}`
-
-**Path parameters:** `device_id` (int)
-
-**Response `200`:** Single `DeviceResponse` object (see above)
-
-**Response `404`:** `{"detail": "Device not found"}
-
-### `POST /inventory-search/execute`
-
-**Request body (`InventorySearchExecuteRequest`):**
-
-```json
-{
-  "conjunction": "AND",
-  "criteria": [
-    {"field": "connection_status", "operator": "is", "type": "STRING", "value": "Online"},
-    {"field": "battery_status", "operator": "greaterThan", "type": "NUMBER", "value": "50"}
-  ]
-}
-```
-
-| Field | Type | Required | Description |
-|---|---|---|---|
-| `conjunction` | string | No | `"AND"` (default) or `"OR"` |
-| `criteria` | list | Yes | Non-empty list of `Criteria` objects |
-
-**Response `200`:** Array of `DeviceResponse` objects.
-
-### `POST /devices/{device_id}/policy`
-
-**Path parameters:** `device_id` (int)
-
-**Query parameters:**
-
-| Param | Type | Required | Description |
-|---|---|---|---|
-| `policy_id` | int | Yes | Policy ID to assign |
-
-**Response `200`:** Updated `DeviceResponse` object.
-
-**Response `404`:** `{"detail": "Device not found"}`
-
-## Policies
-
-| Method | Path | Description |
-|---|---|---|
-| `GET` | `/policies` | List all policies (paginated) |
-| `GET` | `/policies/{policy_id}` | Get policy by ID |
-
-### `GET /policies`
 
 **Query parameters:**
 
@@ -117,10 +30,170 @@ Base URL: `/api/v1`
   "items": [
     {
       "id": 1,
-      "name": "Enforce Encryption",
-      "description": "Requires disk encryption",
-      "config": {},
-      "rollout_state": "Active"
+      "name": "Device 1",
+      "serialNumber": "SN001",
+      "osVersion": "15.0",
+      "connectionStatus": "Connected",
+      "status": "Enrolled",
+      "batteryStatus": 85,
+      "totalStorage": 512,
+      "availableStorage": 200,
+      "totalMemory": 16,
+      "availableMemory": 8,
+      "network": null,
+      "certificates": null,
+      "extensionAttributeValues": null,
+      "lastEnrolledAt": "2025-01-01T00:00:00Z",
+      "createdAt": "2025-01-01T00:00:00Z",
+      "updatedAt": "2025-01-01T00:00:00Z"
+    }
+  ],
+  "total": 42,
+  "skip": 0,
+  "limit": 100
+}
+```
+
+### `GET /devices/{device_id}`
+
+**Path parameters:** `device_id` (int)
+
+**Response `200`:** Single `DeviceResponse` object (see list response)
+
+**Response `404`:** `{"detail": "Device not found"}`
+
+### `PUT /devices/{device_id}`
+
+**Path parameters:** `device_id` (int)
+
+**Request body** (partial — at least one field):
+
+```json
+{
+  "connectionStatus": "Disconnected",
+  "batteryStatus": 72,
+  "totalStorage": 512
+}
+```
+
+Triggers `ProfileAssignmentReconciler` recalculation when certain fields change (`connectionStatus`, `status`, `osVersion`, `serialNumber`, `name`, battery/storage/memory fields, `extensionAttributeValues`).
+
+**Response `200`:** Updated `DeviceResponse` object.
+
+**Response `404`:** `{"detail": "Device not found"}`
+
+### `POST /devices/{device_id}/check-in`
+
+**Path parameters:** `device_id` (int)
+
+Recalculates desired state for all profiles, then dispatches the consolidated latest revision to the device via RabbitMQ.
+
+**Response `200`:** `{"status": "ok"}`
+
+**Response `404`:** `{"detail": "Device not found"}`
+
+### `POST /devices/{device_id}/commands`
+
+**Path parameters:** `device_id` (int)
+
+**Request body:**
+
+```json
+{
+  "commandType": "LOCK"
+}
+```
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `commandType` | string | Yes | One of `CHECK_IN`, `LOCK`, `UNLOCK`, `WIPE`, `RESTART`, `SHUTDOWN` |
+
+**Response `201`:**
+
+```json
+{
+  "id": 1,
+  "deviceId": 1,
+  "commandType": "LOCK",
+  "status": "PENDING",
+  "createdBy": 1,
+  "createdAt": "2025-01-01T00:00:00Z",
+  "sentAt": null,
+  "acknowledgedAt": null,
+  "completedAt": null,
+  "resultMessage": null,
+  "rabbitmqMessageId": null
+}
+```
+
+**Response `404`:** `{"detail": "Device not found"}`
+
+### `GET /devices/{device_id}/commands`
+
+**Path parameters:** `device_id` (int)
+
+**Query parameters:**
+
+| Param | Type | Default | Description |
+|---|---|---|---|
+| `skip` | int | `0` | Number of items to skip |
+| `limit` | int | `50` | Max items to return (max 100) |
+
+**Response `200`:** Paginated list of `CommandResponse` objects.
+
+### `GET /devices/{device_id}/commands/{command_id}`
+
+**Path parameters:** `device_id` (int), `command_id` (int)
+
+**Response `200`:** Single `CommandResponse` object.
+
+**Response `404`:** `{"detail": "Command not found"}`
+
+## Profiles
+
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/profiles` | List all profiles (paginated) |
+| `GET` | `/profiles/{profile_id}` | Get profile by ID |
+| `POST` | `/profiles` | Create a profile |
+| `PUT` | `/profiles/{profile_id}` | Update a profile |
+| `DELETE` | `/profiles/{profile_id}` | Delete a profile (scope must be empty) |
+| `GET` | `/profiles/{profile_id}/assignments` | List profile assignments |
+| `PUT` | `/profiles/{profile_id}/assignments/{device_id}/status` | Update assignment status |
+
+### `GET /profiles`
+
+**Query parameters:**
+
+| Param | Type | Default | Description |
+|---|---|---|---|
+| `skip` | int | `0` | Number of items to skip (min 0) |
+| `limit` | int | `100` | Max items to return (max 1000) |
+
+**Response `200`:**
+
+```json
+{
+  "items": [
+    {
+      "id": 1,
+      "name": "Base Security Profile",
+      "description": "Standard security configuration",
+      "version": 1,
+      "policy": {
+        "cameraAccess": 2,
+        "locationMode": 1,
+        "bluetoothDisabled": false
+      },
+      "scope": {
+        "targets": [
+          {"scopeType": "ALL_DEVICES", "targetId": null}
+        ],
+        "exclusions": []
+      },
+      "createdBy": 1,
+      "createdAt": "2025-01-01T00:00:00Z",
+      "updatedAt": "2025-01-01T00:00:00Z"
     }
   ],
   "total": 5,
@@ -129,13 +202,129 @@ Base URL: `/api/v1`
 }
 ```
 
-### `GET /policies/{policy_id}`
+### `GET /profiles/{profile_id}`
 
-**Path parameters:** `policy_id` (int)
+**Path parameters:** `profile_id` (int)
 
-**Response `200`:** Single `PolicyResponse` object.
+**Response `200`:** Single `ProfileResponse` object.
 
-**Response `404`:** `{"detail": "Policy not found"}`
+**Response `404`:** `{"detail": "Profile not found"}`
+
+### `POST /profiles`
+
+**Request body:**
+
+```json
+{
+  "name": "Base Security Profile",
+  "description": "Standard security configuration",
+  "policy": {
+    "cameraAccess": 2,
+    "locationMode": 1
+  },
+  "scope": {
+    "targets": [
+      {"scopeType": "ALL_DEVICES", "targetId": null}
+    ],
+    "exclusions": []
+  }
+}
+```
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `name` | string | Yes | Unique profile name |
+| `description` | string | No | Optional description |
+| `policy` | object | Yes | Policy payload (Android Management API model) |
+| `scope` | object | Yes | Scope with `targets` and `exclusions` |
+
+Triggers `ProfileAssignmentReconciler` recalculation if scope has targets.
+
+**Response `201`:** Created `ProfileResponse` object.
+
+### `PUT /profiles/{profile_id}`
+
+**Path parameters:** `profile_id` (int)
+
+**Request body** (partial):
+
+```json
+{
+  "policy": {
+    "cameraAccess": 3,
+    "bluetoothDisabled": true
+  },
+  "scope": {
+    "targets": [
+      {"scopeType": "SMART_GROUP", "targetId": 1}
+    ],
+    "exclusions": []
+  }
+}
+```
+
+Triggers reconciler recalculation when `scope` or `policy` changes.
+
+**Response `200`:** Updated `ProfileResponse` object.
+
+**Response `404`:** `{"detail": "Profile not found"}`
+
+### `DELETE /profiles/{profile_id}`
+
+**Path parameters:** `profile_id` (int)
+
+Fails if the profile has scope targets defined — scope must be cleared first.
+
+**Response `204`:** No content.
+
+**Response `404`:** `{"detail": "Profile not found"}`
+
+### `GET /profiles/{profile_id}/assignments`
+
+**Path parameters:** `profile_id` (int)
+
+**Response `200`:**
+
+```json
+[
+  {
+    "id": 1,
+    "profileId": 1,
+    "deviceId": 1,
+    "status": "PENDING",
+    "desiredState": "PRESENT",
+    "profileVersion": 1,
+    "assignedAt": "2025-01-01T00:00:00Z",
+    "appliedAt": null,
+    "revokedAt": null,
+    "attemptCount": 0,
+    "lastAttemptAt": null,
+    "lastError": null,
+    "messageId": null,
+    "updatedAt": null
+  }
+]
+```
+
+### `PUT /profiles/{profile_id}/assignments/{device_id}/status`
+
+**Path parameters:** `profile_id` (int), `device_id` (int)
+
+**Request body:**
+
+```json
+{
+  "status": "APPLIED"
+}
+```
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `status` | string | Yes | One of `PENDING`, `SENT`, `APPLIED`, `FAILED`, `REVOKE_PENDING`, `REVOKED` |
+
+**Response `200`:** Updated `AssignmentResponse` object.
+
+**Response `404`:** `{"detail": "Assignment not found"}`
 
 ## Smart Groups
 
@@ -143,7 +332,7 @@ Base URL: `/api/v1`
 |---|---|---|
 | `GET` | `/smart-groups` | List all smart groups (paginated) |
 | `GET` | `/smart-groups/{group_id}` | Get group by ID |
-| `POST` | `/smart-groups` | Create a smart group (`is_smart=true`) |
+| `POST` | `/smart-groups` | Create a smart group |
 | `PUT` | `/smart-groups/{group_id}` | Update a group |
 | `DELETE` | `/smart-groups/{group_id}` | Delete a group |
 
@@ -165,9 +354,12 @@ Base URL: `/api/v1`
       "id": 1,
       "name": "Engineering",
       "description": "Engineering department",
-      "is_smart": true,
-      "criteria": { "os": "macOS" },
-      "display_columns": ["name", "os_version"]
+      "criteria": [
+        {"field": "connectionStatus", "operator": "is", "type": "STRING", "value": "Connected"}
+      ],
+      "createdBy": 1,
+      "createdAt": "2025-01-01T00:00:00Z",
+      "updatedAt": "2025-01-01T00:00:00Z"
     }
   ],
   "total": 3,
@@ -180,9 +372,9 @@ Base URL: `/api/v1`
 
 **Path parameters:** `group_id` (int)
 
-**Response `200`:** Single `GroupResponse` object.
+**Response `200`:** Single `SmartGroupResponse` object.
 
-**Response `404`:** `{"detail": "Group not found"}`
+**Response `404`:** `{"detail": "Smart group not found"}`
 
 ### `POST /smart-groups`
 
@@ -192,14 +384,15 @@ Base URL: `/api/v1`
 {
   "name": "Engineering",
   "description": "Engineering department",
-  "criteria": { "os": "macOS" },
-  "display_columns": ["name", "os_version"]
+  "criteria": [
+    {"field": "connectionStatus", "operator": "is", "type": "STRING", "value": "Connected"}
+  ]
 }
 ```
 
-`name` required, rest optional. `is_smart` is set to `true` automatically.
+`name` and `criteria` required, `description` optional. `criteria` must be a non-empty list of `Criteria` objects.
 
-**Response `201`:** Created `GroupResponse` object.
+**Response `201`:** Created `SmartGroupResponse` object.
 
 ### `PUT /smart-groups/{group_id}`
 
@@ -210,23 +403,27 @@ Base URL: `/api/v1`
 ```json
 {
   "name": "Engineering Team",
-  "description": "Updated description"
+  "criteria": [
+    {"field": "osVersion", "operator": "is", "type": "STRING", "value": "15.0"}
+  ]
 }
 ```
 
-**Response `200`:** Updated `GroupResponse` object.
+Triggers `ProfileAssignmentReconciler` recalculation on criteria change.
 
-**Response `400`:** `{"detail": "No fields to update"}`
+**Response `200`:** Updated `SmartGroupResponse` object.
 
-**Response `404`:** `{"detail": "Group not found"}`
+**Response `404`:** `{"detail": "Smart group not found"}`
 
 ### `DELETE /smart-groups/{group_id}`
 
 **Path parameters:** `group_id` (int)
 
-**Response `200`:** `{"detail": "Group deleted"}`
+Triggers reconciler cleanup (removes all scope references to this group).
 
-**Response `404`:** `{"detail": "Group not found"}`
+**Response `204`:** No content.
+
+**Response `404`:** `{"detail": "Smart group not found"}`
 
 ## Static Groups
 
@@ -234,7 +431,7 @@ Base URL: `/api/v1`
 |---|---|---|
 | `GET` | `/static-groups` | List all static groups (paginated) |
 | `GET` | `/static-groups/{group_id}` | Get group by ID |
-| `POST` | `/static-groups` | Create a static group (`is_smart=false`) |
+| `POST` | `/static-groups` | Create a static group |
 | `PUT` | `/static-groups/{group_id}` | Update a group |
 | `DELETE` | `/static-groups/{group_id}` | Delete a group |
 
@@ -256,7 +453,10 @@ Base URL: `/api/v1`
       "id": 2,
       "name": "Marketing",
       "description": "Marketing department",
-      "is_smart": false
+      "createdBy": 1,
+      "createdAt": "2025-01-01T00:00:00Z",
+      "updatedAt": "2025-01-01T00:00:00Z",
+      "devices": []
     }
   ],
   "total": 3,
@@ -269,9 +469,9 @@ Base URL: `/api/v1`
 
 **Path parameters:** `group_id` (int)
 
-**Response `200`:** Single `GroupResponse` object.
+**Response `200`:** Single `StaticGroupResponse` object.
 
-**Response `404`:** `{"detail": "Group not found"}`
+**Response `404`:** `{"detail": "Static group not found"}`
 
 ### `POST /static-groups`
 
@@ -280,13 +480,14 @@ Base URL: `/api/v1`
 ```json
 {
   "name": "Marketing",
-  "description": "Marketing department"
+  "description": "Marketing department",
+  "deviceSerialNumbers": ["SN001", "SN002"]
 }
 ```
 
-`name` required, `description` optional. `is_smart` is set to `false` automatically.
+`name` required, `description` and `deviceSerialNumbers` optional.
 
-**Response `201`:** Created `GroupResponse` object.
+**Response `201`:** Created `StaticGroupResponse` object.
 
 ### `PUT /static-groups/{group_id}`
 
@@ -297,39 +498,198 @@ Base URL: `/api/v1`
 ```json
 {
   "name": "Marketing Team",
-  "description": "Updated description"
+  "deviceSerialNumbers": ["SN001", "SN003"]
 }
 ```
 
-**Response `200`:** Updated `GroupResponse` object.
+Triggers reconciler when device membership changes.
 
-**Response `400`:** `{"detail": "No fields to update"}`
+**Response `200`:** Updated `StaticGroupResponse` object.
 
-**Response `404`:** `{"detail": "Group not found"}`
+**Response `404`:** `{"detail": "Static group not found"}`
 
 ### `DELETE /static-groups/{group_id}`
 
 **Path parameters:** `group_id` (int)
 
-**Response `200`:** `{"detail": "Group deleted"}`
+Triggers reconciler cleanup.
 
-**Response `404`:** `{"detail": "Group not found"}`
+**Response `204`:** No content.
 
-### Policy Assignment (both Smart and Static)
+**Response `404`:** `{"detail": "Static group not found"}`
+
+## Mobile Apps
 
 | Method | Path | Description |
 |---|---|---|
-| `POST` | `/{type}/groups/{group_id}/policies` | Assign a policy to a group |
+| `GET` | `/mobile-apps` | List all mobile apps (paginated) |
+| `GET` | `/mobile-apps/{mobile_app_id}` | Get app by ID |
+| `POST` | `/mobile-apps` | Create a mobile app |
+| `PUT` | `/mobile-apps/{mobile_app_id}` | Update a mobile app |
+| `DELETE` | `/mobile-apps/{mobile_app_id}` | Delete a mobile app |
+
+### `GET /mobile-apps`
 
 **Query parameters:**
 
-| Param | Type | Required | Description |
+| Param | Type | Default | Description |
 |---|---|---|---|
-| `policy_id` | int | Yes | Policy ID to assign |
+| `skip` | int | `0` | Number of items to skip |
+| `limit` | int | `100` | Max items to return |
 
-**Response `201`:** Updated `GroupResponse` object.
+**Response `200`:**
 
-**Response `404`:** `{"detail": "Group or policy not found"}`
+```json
+{
+  "items": [
+    {
+      "id": 1,
+      "name": "Zoom",
+      "enabled": true,
+      "version": "5.0",
+      "packageName": "us.zoom.videomeetings",
+      "scope": {
+        "targets": [],
+        "exclusions": []
+      },
+      "createdBy": 1,
+      "createdAt": "2025-01-01T00:00:00Z",
+      "updatedAt": "2025-01-01T00:00:00Z"
+    }
+  ],
+  "total": 3,
+  "skip": 0,
+  "limit": 100
+}
+```
+
+### `POST /mobile-apps`
+
+**Request body:**
+
+```json
+{
+  "name": "Zoom",
+  "enabled": true,
+  "version": "5.0",
+  "packageName": "us.zoom.videomeetings",
+  "scope": {
+    "targets": [],
+    "exclusions": []
+  }
+}
+```
+
+## Extension Attributes
+
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/extension-attributes` | List all extension attributes (paginated) |
+| `GET` | `/extension-attributes/{attribute_id}` | Get attribute by ID |
+| `POST` | `/extension-attributes` | Create an extension attribute |
+| `PUT` | `/extension-attributes/{attribute_id}` | Update an extension attribute |
+| `DELETE` | `/extension-attributes/{attribute_id}` | Delete an extension attribute |
+
+### `GET /extension-attributes`
+
+**Response `200`:**
+
+```json
+{
+  "items": [
+    {
+      "id": 1,
+      "name": "Department",
+      "description": "Employee department",
+      "dataType": "string",
+      "inputType": "Pop-up menu",
+      "popupChoices": ["Engineering", "Marketing", "Sales"],
+      "createdBy": 1,
+      "createdAt": "2025-01-01T00:00:00Z",
+      "updatedAt": null
+    }
+  ],
+  "total": 5,
+  "skip": 0,
+  "limit": 100
+}
+```
+
+### `POST /extension-attributes`
+
+**Request body:**
+
+```json
+{
+  "name": "Department",
+  "description": "Employee department",
+  "dataType": "string",
+  "inputType": "Pop-up menu",
+  "popupChoices": ["Engineering", "Marketing", "Sales"]
+}
+```
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `name` | string | Yes | Attribute name |
+| `description` | string | No | Optional description |
+| `dataType` | string | Yes | `string`, `integer`, or `date` |
+| `inputType` | string | Yes | `Text field` or `Pop-up menu` |
+| `popupChoices` | list[string] | No | Required if `inputType` is `Pop-up menu` |
+
+## Inventory Search
+
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/inventory-search` | List saved searches (paginated) |
+| `GET` | `/inventory-search/{search_id}` | Get search by ID |
+| `POST` | `/inventory-search` | Create a saved search |
+| `PUT` | `/inventory-search/{search_id}` | Update a saved search |
+| `DELETE` | `/inventory-search/{search_id}` | Delete a saved search |
+| `POST` | `/inventory-search/execute` | Execute a search with ad-hoc criteria |
+
+### `GET /inventory-search`
+
+**Response `200`:**
+
+```json
+{
+  "items": [
+    {
+      "id": 1,
+      "name": "Online Macs",
+      "description": "Macs currently connected",
+      "criteria": [
+        {"field": "connectionStatus", "operator": "is", "type": "STRING", "value": "Connected"}
+      ],
+      "createdBy": 1,
+      "createdAt": "2025-01-01T00:00:00Z",
+      "updatedAt": "2025-01-01T00:00:00Z"
+    }
+  ],
+  "total": 3,
+  "skip": 0,
+  "limit": 100
+}
+```
+
+### `POST /inventory-search/execute`
+
+Executes a search with ad-hoc criteria against the device inventory. Does not create or modify any saved search.
+
+**Request body:**
+
+```json
+{
+  "criteria": [
+    {"field": "connectionStatus", "operator": "is", "type": "STRING", "value": "Connected"}
+  ]
+}
+```
+
+`criteria` is a non-empty array of `Criteria` objects.
+
+**Response `200`:** Array of `DeviceResponse` objects.
 
 ## Users
 
@@ -338,7 +698,9 @@ Base URL: `/api/v1`
 | `GET` | `/users` | List all users (paginated) |
 | `GET` | `/users/{user_id}` | Get user by ID |
 | `GET` | `/users/by-email/{email}` | Get user by email |
-| `PUT` | `/users/{user_id}/role` | Update user role |
+| `POST` | `/users` | Create a user |
+| `PUT` | `/users/{user_id}` | Update a user |
+| `DELETE` | `/users/{user_id}` | Delete a user |
 
 ### `GET /users`
 
@@ -356,9 +718,12 @@ Base URL: `/api/v1`
   "items": [
     {
       "id": 1,
-      "username": "alice",
       "email": "alice@example.com",
-      "role_id": 1
+      "name": "Alice",
+      "permissions": ["admin"],
+      "createdAt": "2025-01-01T00:00:00Z",
+      "updatedAt": "2025-01-01T00:00:00Z",
+      "lastLoginAt": null
     }
   ],
   "total": 10,
@@ -383,84 +748,56 @@ Base URL: `/api/v1`
 
 **Response `404`:** `{"detail": "User not found"}`
 
-### `PUT /users/{user_id}/role`
+### `POST /users`
+
+**Request body:**
+
+```json
+{
+  "email": "bob@example.com",
+  "name": "Bob",
+  "permissions": ["viewer"]
+}
+```
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `email` | string | Yes | User email |
+| `name` | string | Yes | Display name |
+| `permissions` | list | No | One or more of `admin`, `editor`, `viewer` (default: `["viewer"]`) |
+
+**Response `201`:** Created `UserResponse` object.
+
+### `PUT /users/{user_id}`
 
 **Path parameters:** `user_id` (int)
 
-**Query parameters:**
+**Request body** (at least one field):
 
-| Param | Type | Required | Description |
-|---|---|---|---|
-| `role_id` | int | Yes | New role ID |
+```json
+{
+  "name": "Bob Smith",
+  "permissions": ["editor"]
+}
+```
 
 **Response `200`:** Updated `UserResponse` object.
 
 **Response `404`:** `{"detail": "User not found"}`
 
-## Roles
+### `DELETE /users/{user_id}`
 
-| Method | Path | Description |
-|---|---|---|
-| `GET` | `/roles` | List all roles (paginated) |
-| `GET` | `/roles/{role_id}` | Get role by ID |
+**Path parameters:** `user_id` (int)
 
-### `GET /roles`
+**Response `204`:** No content.
 
-**Query parameters:**
-
-| Param | Type | Default | Description |
-|---|---|---|---|
-| `skip` | int | `0` | Number of items to skip (min 0) |
-| `limit` | int | `100` | Max items to return (max 1000) |
-
-**Response `200`:**
-
-```json
-{
-  "items": [
-    {
-      "id": 1,
-      "name": "Admin",
-      "description": "Administrator role"
-    }
-  ],
-  "total": 2,
-  "skip": 0,
-  "limit": 100
-}
-```
-
-### `GET /roles/{role_id}`
-
-**Path parameters:** `role_id` (int)
-
-**Response `200`:** Single `RoleResponse` object.
-
-**Response `404`:** `{"detail": "Role not found"}`
-
-## Metrics
-
-| Method | Path | Description |
-|---|---|---|
-| `GET` | `/metrics/fleet` | Fleet overview metrics |
-
-### `GET /metrics/fleet`
-
-**Response `200`:**
-
-```json
-{
-  "total_devices": 42,
-  "online_devices": 38,
-  "pending_policies": 3
-}
-```
+**Response `404`:** `{"detail": "User not found"}`
 
 ## Health
 
 | Method | Path | Description |
 |---|---|---|
-| `GET` | `/health` | Database and Kafka health check |
+| `GET` | `/health` | Database and RabbitMQ health check |
 
 ### `GET /health`
 
@@ -470,7 +807,7 @@ Base URL: `/api/v1`
 {
   "status": "ok",
   "database": "ok",
-  "kafka": "ok"
+  "rabbitmq": "ok"
 }
 ```
 
@@ -480,7 +817,7 @@ Base URL: `/api/v1`
 {
   "status": "error",
   "database": "error",
-  "kafka": "disconnected"
+  "rabbitmq": "disconnected"
 }
 ```
 
@@ -498,7 +835,7 @@ All list endpoints return:
 ```
 
 - `skip` — number of records skipped (default 0)
-- `limit` — max records returned (capped at 1000, 5000 for devices)
+- `limit` — max records returned (capped at 1000)
 - `total` — total matching records in the database
 
 ## Common Responses
@@ -507,6 +844,7 @@ All list endpoints return:
 |---|---|
 | `200` | Success |
 | `201` | Created |
+| `204` | Deleted (no content) |
 | `400` | Bad request — missing or invalid parameters |
 | `404` | Resource not found |
 | `503` | Service unavailable (health check) |

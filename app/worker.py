@@ -6,7 +6,7 @@ import signal
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
-from app.messaging.consumer import rabbitmq_consumer
+from app.infra.messaging.consumer import rabbitmq_consumer
 
 logging.basicConfig(
     level=logging.INFO,

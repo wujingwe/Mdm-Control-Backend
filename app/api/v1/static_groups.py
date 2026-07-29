@@ -1,15 +1,15 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
-from app.common.schemas import PaginatedResponse
+from app.infra.common.schemas import PaginatedResponse
 from app.dependencies import get_reconciler, get_static_group_service, require_permission
-from app.profiles.reconciler import ProfileAssignmentReconciler
-from app.static_groups.schemas import (
+from app.infra.reconciler.reconciler import AssignmentReconciler
+from app.domains.static_groups.schemas import (
     StaticGroupCreate,
     StaticGroupResponse,
     StaticGroupUpdate,
 )
-from app.static_groups.services import StaticGroupService
-from app.users.models import User
+from app.domains.static_groups.services import StaticGroupService
+from app.domains.users.models import User
 from app.webhook_client import revalidate
 
 router = APIRouter(prefix="/static-groups", tags=["Static Groups"])
@@ -46,7 +46,7 @@ async def get_static_group(
 async def create_static_group(
     data: StaticGroupCreate,
     service: StaticGroupService = Depends(get_static_group_service),
-    reconciler: ProfileAssignmentReconciler = Depends(get_reconciler),
+    reconciler: AssignmentReconciler = Depends(get_reconciler),
     current_user: User = Depends(require_permission("editor")),
 ) -> StaticGroupResponse:
     group = await service.create_group(data, current_user.id)
@@ -61,7 +61,7 @@ async def update_static_group(
     group_id: int,
     data: StaticGroupUpdate,
     service: StaticGroupService = Depends(get_static_group_service),
-    reconciler: ProfileAssignmentReconciler = Depends(get_reconciler),
+    reconciler: AssignmentReconciler = Depends(get_reconciler),
     _current_user: User = Depends(require_permission("editor")),
 ) -> StaticGroupResponse:
     updated = await service.update_group(group_id, data)
@@ -76,7 +76,7 @@ async def update_static_group(
 async def delete_static_group(
     group_id: int,
     service: StaticGroupService = Depends(get_static_group_service),
-    reconciler: ProfileAssignmentReconciler = Depends(get_reconciler),
+    reconciler: AssignmentReconciler = Depends(get_reconciler),
     _current_user: User = Depends(require_permission("editor")),
 ) -> None:
     deleted = await service.delete_group(group_id)

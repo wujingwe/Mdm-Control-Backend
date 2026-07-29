@@ -4,28 +4,28 @@ from typing import Callable, Awaitable
 from fastapi import Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.commands.repositories import CommandRepository
-from app.commands.services import CommandService
-from app.core.security import verify_token
-from app.database import async_session
-from app.devices.repositories import DeviceRepository
-from app.devices.services import DeviceService
-from app.extension_attributes.repositories import ExtensionAttributeRepository
-from app.extension_attributes.services import ExtensionAttributeService
-from app.inventory_search.repositories import InventorySearchRepository
-from app.inventory_search.services import InventorySearchService
-from app.mobile_apps.repositories import MobileAppRepository
-from app.mobile_apps.services import MobileAppService
-from app.profiles.repositories import ProfileRepository
-from app.profiles.reconciler import ProfileAssignmentReconciler
-from app.profiles.services import ProfileService
-from app.smart_groups.repositories import SmartGroupRepository
-from app.smart_groups.services import SmartGroupService
-from app.static_groups.repositories import StaticGroupRepository
-from app.static_groups.services import StaticGroupService
-from app.users.models import User
-from app.users.repositories import UserRepository
-from app.users.services import UserService
+from app.domains.commands.repositories import CommandRepository
+from app.domains.commands.services import CommandService
+from app.infra.core.security import verify_token
+from app.infra.core.database import async_session
+from app.domains.devices.repositories import DeviceRepository
+from app.domains.devices.services import DeviceService
+from app.domains.extension_attributes.repositories import ExtensionAttributeRepository
+from app.domains.extension_attributes.services import ExtensionAttributeService
+from app.domains.inventory_search.repositories import InventorySearchRepository
+from app.domains.inventory_search.services import InventorySearchService
+from app.domains.mobile_apps.repositories import MobileAppRepository
+from app.domains.mobile_apps.services import MobileAppService
+from app.domains.profiles.repositories import ProfileRepository
+from app.infra.reconciler.reconciler import AssignmentReconciler
+from app.domains.profiles.services import ProfileService
+from app.domains.smart_groups.repositories import SmartGroupRepository
+from app.domains.smart_groups.services import SmartGroupService
+from app.domains.static_groups.repositories import StaticGroupRepository
+from app.domains.static_groups.services import StaticGroupService
+from app.domains.users.models import User
+from app.domains.users.repositories import UserRepository
+from app.domains.users.services import UserService
 
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
@@ -90,10 +90,14 @@ def get_profile_service(db: AsyncSession = Depends(get_db)) -> ProfileService:
     return ProfileService(ProfileRepository(db))
 
 
-def get_reconciler(db: AsyncSession = Depends(get_db)) -> ProfileAssignmentReconciler:
-    from app.messaging.producer import rabbitmq_producer
+def get_reconciler(db: AsyncSession = Depends(get_db)) -> AssignmentReconciler:
+    from app.infra.messaging.producer import rabbitmq_producer
 
-    return ProfileAssignmentReconciler(ProfileRepository(db), rabbitmq_producer)
+    return AssignmentReconciler(
+        ProfileRepository(db),
+        MobileAppRepository(db),
+        rabbitmq_producer,
+    )
 
 
 def get_command_service(db: AsyncSession = Depends(get_db)) -> CommandService:

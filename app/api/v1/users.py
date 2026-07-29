@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
-from app.common.schemas import PaginatedResponse
+from app.infra.common.schemas import PaginatedResponse
 from app.dependencies import get_user_service
-from app.users.schemas import UserCreate, UserResponse, UserUpdate
-from app.users.services import UserService
+from app.domains.users.schemas import UserCreate, UserResponse, UserUpdate
+from app.domains.users.services import UserService
 from app.webhook_client import revalidate
 
 router = APIRouter(prefix="/users", tags=["Users"])

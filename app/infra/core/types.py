@@ -1,0 +1,67 @@
+from abc import ABC, abstractmethod
+from typing import Generic, TypeVar
+
+from sqlalchemy import JSON, TypeDecorator
+from sqlalchemy.engine.interfaces import Dialect
+
+from app.domains.devices.schemas import Certificate, Network
+
+S = TypeVar("S")
+T = TypeVar("T")
+
+
+class JsonType(TypeDecorator[T], ABC, Generic[S, T]):
+    impl = JSON
+
+    def process_bind_param(self, value: T | None, dialect: Dialect) -> S | None:
+        if value is None:
+            return None
+        return self._bind(value)
+
+    def process_result_value(self, value: S | None, dialect: Dialect) -> T | None:
+        if value is None:
+            return None
+        return self._result(value)
+
+    @abstractmethod
+    def _bind(self, value: T) -> S: ...
+
+    @abstractmethod
+    def _result(self, value: S) -> T: ...
+
+
+class NetworkInfoType(JsonType[dict, Network]):
+    cache_ok = True
+
+    def _bind(self, value: Network | dict) -> dict:
+        if isinstance(value, dict):
+            return value
+        return value.model_dump()
+
+    def _result(self, value: dict) -> Network:
+        return Network.model_validate(value)
+
+
+class CertificateListType(JsonType[list[dict], list[Certificate]]):
+    cache_ok = True
+
+    def _bind(self, value: list[Certificate] | list[dict]) -> list[dict]:
+        return [c if isinstance(c, dict) else c.model_dump() for c in value]
+
+    def _result(self, value: list[dict]) -> list[Certificate]:
+        return [Certificate.model_validate(c) for c in value]
+
+
+class PermissionListType(JsonType[list[str], frozenset[str]]):
+    cache_ok = True
+    VALID_PERMISSIONS = frozenset({"admin", "editor", "viewer"})
+
+    def _bind(self, value: frozenset[str]) -> list[str]:
+        items = sorted(value)
+        for p in items:
+            if p not in self.VALID_PERMISSIONS:
+                raise ValueError(f"Invalid permission: {p!r}; must be one of {sorted(self.VALID_PERMISSIONS)}")
+        return items
+
+    def _result(self, value: list[str]) -> frozenset[str]:
+        return frozenset(value)

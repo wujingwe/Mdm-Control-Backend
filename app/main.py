@@ -1,5 +1,4 @@
 import logging
-import time
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
@@ -10,14 +9,13 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.router import router as v1_router
-from app.config.settings import settings
+from app.infra.config.settings import settings
 from app.dependencies import get_db
 from app.lifecycle import Lifecycle
-from app.messaging.producer import rabbitmq_producer
+from app.infra.messaging.producer import rabbitmq_producer
 from app.mock.seed import seed_database
 
 APP_VERSION = "1.0.0"
-_start_time = time.monotonic()
 
 logging.basicConfig(
     level=logging.INFO,
@@ -61,30 +59,19 @@ async def liveness() -> JSONResponse:
 
 @app.get("/health/ready")
 async def readiness(db: AsyncSession = Depends(get_db)) -> JSONResponse:
-    db_latency_ms: float | None = None
-    # noinspection PyBroadException
     try:
-        start = time.monotonic()
         await db.execute(select(1))
-        db_latency_ms = round((time.monotonic() - start) * 1000, 2)
         db_status = "ok"
-    except Exception:  # noqa: BLE001 — healthcheck should survive any DB error
+    except Exception:
         db_status = "error"
-    # noinspection PyBroadException
     try:
         rabbitmq_status = "ok" if rabbitmq_producer.healthy else "disconnected"
-    except Exception:  # noqa: BLE001
+    except Exception:
         rabbitmq_status = "error"
 
     overall = "ok" if db_status == "ok" else "error"
     return JSONResponse(
-        content={
-            "status": overall,
-            "version": APP_VERSION,
-            "uptime_seconds": int(time.monotonic() - _start_time),
-            "database": {"status": db_status, "latency_ms": db_latency_ms},
-            "rabbitmq": rabbitmq_status,
-        },
+        content={"status": overall, "database": db_status, "rabbitmq": rabbitmq_status},
         status_code=200 if overall == "ok" else 503,
     )
 

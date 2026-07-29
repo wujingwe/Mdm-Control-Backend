@@ -1,16 +1,16 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
-from app.common.schemas import PaginatedResponse
+from app.infra.common.schemas import PaginatedResponse
 from app.dependencies import get_inventory_search_service, require_permission
-from app.devices.schemas import DeviceResponse
-from app.inventory_search.schemas import (
+from app.domains.devices.schemas import DeviceResponse
+from app.domains.inventory_search.schemas import (
     InventorySearchCreate,
     InventorySearchExecuteRequest,
     InventorySearchResponse,
     InventorySearchUpdate,
 )
-from app.inventory_search.services import InventorySearchService
-from app.users.models import User
+from app.domains.inventory_search.services import InventorySearchService
+from app.domains.users.models import User
 from app.webhook_client import revalidate
 
 router = APIRouter(prefix="/inventory-search", tags=["InventorySearch"])

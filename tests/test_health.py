@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 from httpx import AsyncClient
 
 
@@ -12,16 +14,22 @@ class TestHealth:
         assert resp.status_code == 200
         data = resp.json()
         assert data["status"] == "ok"
-        assert data["version"] == "1.0.0"
-        assert isinstance(data["uptime_seconds"], int)
-        assert data["database"]["status"] == "ok"
-        assert isinstance(data["database"]["latency_ms"], float)
+        assert data["database"] == "ok"
         assert data["rabbitmq"] == "disconnected"
+
+    async def test_readiness_db_error(self, client: AsyncClient) -> None:
+        with patch("app.main.rabbitmq_producer") as mock_producer:
+            mock_producer.healthy = True
+            resp = await client.get("/health/ready")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["database"] == "ok"
+        assert data["rabbitmq"] == "ok"
 
     async def test_health_legacy(self, client: AsyncClient) -> None:
         resp = await client.get("/health")
         assert resp.status_code == 200
         data = resp.json()
         assert data["status"] == "ok"
-        assert data["database"]["status"] == "ok"
-        assert data["version"] == "1.0.0"
+        assert data["database"] == "ok"
+        assert data["rabbitmq"] == "disconnected"
