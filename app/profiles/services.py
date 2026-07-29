@@ -1,4 +1,5 @@
 from app.common.enums import AssignmentStatus
+from app.core.exceptions import ConflictError
 from app.profiles.models import Profile, ProfileAssignment
 from app.profiles.repositories import ProfileRepository
 from app.profiles.schemas.profile import ProfileCreate, ProfileUpdate, AssignmentUpsert
@@ -23,6 +24,11 @@ class ProfileService:
         return await self.repo.update(profile_id, data)
 
     async def delete_profile(self, profile_id: int) -> bool:
+        profile = await self.repo.get_by_id(profile_id)
+        if profile is None:
+            return False
+        if profile.scope.targets:
+            raise ConflictError("Cannot delete a profile with scope targets. Clear the scope first.")
         return await self.repo.delete(profile_id)
 
     async def get_assignments(self, profile_id: int) -> list[ProfileAssignment]:
