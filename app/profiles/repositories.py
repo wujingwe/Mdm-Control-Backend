@@ -2,6 +2,7 @@ from datetime import datetime, timezone
 
 from sqlalchemy import select, func, update, delete
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm.attributes import flag_modified
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import ConflictError
@@ -289,3 +290,35 @@ class ProfileRepository:
             assignment.last_attempt_at = datetime.now(timezone.utc)
             assignment.last_error = error[:2000]
             await self.db.commit()
+
+
+    async def remove_scope_references(self, scope_type: ScopeType, target_id: int) -> list[int]:
+        """Remove all scope targets and exclusions matching the given type and ID from every profile.
+
+        Returns the IDs of profiles whose scope was modified.
+        """
+        profiles = await self.list_all_profiles()
+        affected: list[int] = []
+        for profile in profiles:
+            modified = False
+            original_targets = list(profile.scope.targets)
+            original_exclusions = list(profile.scope.exclusions)
+            new_targets = [
+                t for t in original_targets if not (t.scope_type == scope_type and (t.target_id or 0) == target_id)
+            ]
+            new_exclusions = [
+                e for e in original_exclusions if not (e.scope_type == scope_type and (e.exclude_id or 0) == target_id)
+            ]
+            if len(new_targets) != len(original_targets):
+                profile.scope.targets = new_targets
+                modified = True
+            if len(new_exclusions) != len(original_exclusions):
+                profile.scope.exclusions = new_exclusions
+                modified = True
+            if modified:
+                flag_modified(profile, "scope")
+                affected.append(profile.id)
+        if affected:
+            await self.db.commit()
+        return affected
+
