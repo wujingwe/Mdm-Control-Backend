@@ -1,10 +1,11 @@
 from collections.abc import Callable
 from operator import and_, or_
 
+from sqlalchemy import select
 from sqlalchemy.sql.expression import BinaryExpression
 
 from app.criteria.schemas import Criteria
-from app.devices.models import Device
+from app.devices.models import Devicefrom app.devices.models import Device, DeviceExtensionAttributeValue
 
 __all__ = ["Criteria", "FILTER_BUILDERS", "build_device_query"]
 
@@ -22,11 +23,29 @@ FILTER_BUILDERS: dict[str, Callable] = {
 }
 
 
+def _build_ext_attr_filter(c: Criteria) -> BinaryExpression | None:
+    """Build an EXISTS subquery filter for an extension attribute criterion."""
+    builder = FILTER_BUILDERS.get(c.operator)
+    if builder is None:
+        return None
+    value_expr = builder(DeviceExtensionAttributeValue.value, c.value)
+    subq = (
+        select(DeviceExtensionAttributeValue.device_id)
+        .where(
+            DeviceExtensionAttributeValue.extension_attribute_id == c.extension_attribute_id,
+            DeviceExtensionAttributeValue.device_id == Device.id,
+            value_expr,
+        )
+        .exists()
+    )
+    return subq
+
+        
 def _build_filter(c: Criteria) -> BinaryExpression | None:
     """Build a single filter expression from a Criterion."""
     col = getattr(Device, c.field, None)
-    if col is None:
-        return None
+    if c.extension_attribute_id is not None:
+        return _build_ext_attr_filter(c)
     builder = FILTER_BUILDERS.get(c.operator)
     return builder(col, c.value) if builder else None
 
