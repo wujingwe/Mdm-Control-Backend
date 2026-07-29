@@ -11,7 +11,21 @@ from app.users.models import User
 
 router = APIRouter(prefix="/devices", tags=["Devices"])
 
+RECONCILER_TRIGGER_FIELDS = frozenset({
+    "name",
+    "serial_number",
+    "os_version",
+    "connection_status",
+    "status",
+    "battery_status",
+        "total_storage",
+    "available_storage",
+    "total_memory",
+    "available_memory",
+    "extension_attribute_values",
+})
 
+    
 @router.get("", response_model=PaginatedResponse[DeviceResponse])
 async def list_devices(
     skip: int = Query(0, ge=0),
@@ -48,7 +62,9 @@ async def update_device(
     device = await service.update_device(device_id, data)
     if not device:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Device not found")
-    await reconciler.recalculate_for_device(device_id)
+    changed_fields = data.model_fields_set
+    if changed_fields & RECONCILER_TRIGGER_FIELDS:
+        await reconciler.recalculate_profiles_for_device(device_id)
     return DeviceResponse.model_validate(device)
 
 
@@ -62,8 +78,8 @@ async def device_check_in(
     if not device:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Device not found")
     # Recalculate desired state first, then send one consolidated latest revision.
-    await reconciler.recalculate_for_device(device_id, publish=False)
-    await reconciler.reconcile_device(device_id)
+    await reconciler.recalculate_profiles_for_device(device_id, publish=False)
+    await reconciler.dispatch_device_assignments(device_id)
     return {"status": "ok"}
 
 
