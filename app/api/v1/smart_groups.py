@@ -49,7 +49,7 @@ async def create_smart_group(
     current_user: User = Depends(require_permission("editor")),
 ) -> SmartGroupResponse:
     group = await service.create_group(data, current_user.id)
-    await reconciler.recalculate_for_smart_group(group.id)
+    await reconciler.recalculate_profiles_for_smart_group(group.id)
     await revalidate(["smart-groups"])
     return SmartGroupResponse.model_validate(group)
 
@@ -65,7 +65,7 @@ async def update_smart_group(
     updated = await service.update_group(group_id, data)
     if not updated:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Smart group not found")
-    await reconciler.recalculate_for_smart_group(group_id)
+    await reconciler.recalculate_profiles_for_smart_group(group_id)
     await revalidate(["smart-groups"])
     return SmartGroupResponse.model_validate(updated)
 
@@ -80,5 +80,5 @@ async def delete_smart_group(
     deleted = await service.delete_group(group_id)
     if not deleted:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Smart group not found")
-    await reconciler.recalculate_for_smart_group(group_id)
+    await reconciler.purge_smart_group(group_id)
     await revalidate(["smart-groups"])
