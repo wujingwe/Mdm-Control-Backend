@@ -75,7 +75,7 @@ class ProfileAssignmentReconciler:
         """Create and optionally publish the next assignment revision.
 
         ``publish=False`` is used during device check-in: it updates desired
-        state first, while ``reconcile_device`` sends only the latest state once.
+        state first, while ``dispatch_device_assignments`` sends only the latest state once.
         """
         # Lock before reading assignments or resolving the scope. Two concurrent
         # recalculations must not both diff against the same stale assignment set.
@@ -142,12 +142,12 @@ class ProfileAssignmentReconciler:
                 version,
             )
 
-    async def recalculate_for_device(self, device_id: int, *, publish: bool = True) -> None:
+    async def recalculate_profiles_for_device(self, device_id: int, *, publish: bool = True) -> None:
         profiles = await self.repo.list_affected_profiles_for_device(device_id)
         for profile in profiles:
             await self.recalculate_profile(profile.id, publish=publish)
 
-    async def recalculate_for_smart_group(self, group_id: int) -> None:
+    async def recalculate_profiles_for_smart_group(self, group_id: int) -> None:
         for profile in await self.repo.list_all_profiles():
             scope = profile.scope
             if any(
@@ -158,7 +158,7 @@ class ProfileAssignmentReconciler:
             ):
                 await self.recalculate_profile(profile.id)
 
-    async def recalculate_for_static_group(self, group_id: int) -> None:
+    async def recalculate_profiles_for_static_group(self, group_id: int) -> None:
         for profile in await self.repo.list_all_profiles():
             scope = profile.scope
             if any(
@@ -169,7 +169,22 @@ class ProfileAssignmentReconciler:
             ):
                 await self.recalculate_profile(profile.id)
 
-    async def reconcile_device(self, device_id: int) -> None:
+    async def purge_smart_group(self, group_id: int) -> None:
+        await self.recalculate_profiles_for_smart_group(group_id)
+        await self.repo.remove_scope_references(ScopeType.SMART_GROUP, group_id)
+
+
+    async def purge_static_group(self, group_id: int) -> None:
+        await self.recalculate_profiles_for_static_group(group_id)
+        await self.repo.remove_scope_references(ScopeType.STATIC_GROUP, group_id)
+
+
+    async def purge_device(self, device_id: int) -> None:
+        await self.recalculate_profiles_for_device(device_id)
+        await self.repo.remove_scope_references(ScopeType.DEVICE, device_id)
+
+
+    async def dispatch_device_assignments(self, device_id: int) -> None:
         """Send the latest desired profile state to an enrolled device check-in."""
         device = await self.repo.db.get(Device, device_id)
         if device is None or device.status != DeviceStatus.ENROLLED:
