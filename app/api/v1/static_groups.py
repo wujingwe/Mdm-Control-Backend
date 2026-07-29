@@ -51,7 +51,7 @@ async def create_static_group(
 ) -> StaticGroupResponse:
     group = await service.create_group(data, current_user.id)
     if group:
-        await reconciler.recalculate_for_static_group(group.id)
+        await reconciler.recalculate_profiles_for_static_group(group.id)
     await revalidate(["static-groups"])
     return StaticGroupResponse.model_validate(group)
 
@@ -67,7 +67,7 @@ async def update_static_group(
     updated = await service.update_group(group_id, data)
     if not updated:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Static group not found")
-    await reconciler.recalculate_for_static_group(group_id)
+    await reconciler.recalculate_profiles_for_static_group(group_id)
     await revalidate(["static-groups"])
     return StaticGroupResponse.model_validate(updated)
 
@@ -82,5 +82,5 @@ async def delete_static_group(
     deleted = await service.delete_group(group_id)
     if not deleted:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Static group not found")
-    await reconciler.recalculate_for_static_group(group_id)
+    await reconciler.purge_static_group(group_id)
     await revalidate(["static-groups"])
