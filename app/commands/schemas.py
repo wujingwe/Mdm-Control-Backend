@@ -1,22 +1,56 @@
-from datetime import datetime
+from enum import Enum
+from typing import Generic, TypeVar
+
+from pydantic import BaseModel, ConfigDict, field_validator
+
+T = TypeVar("T")
 
 
-from app.common.enums import CommandType, CommandStatus
-from app.common.schemas import CamelModel
+def to_camel(s: str) -> str:
+    parts = s.split("_")
+    return parts[0] + "".join(word.capitalize() for word in parts[1:])
 
 
-class CommandCreate(CamelModel):
-    command_type: CommandType
+class CamelModel(BaseModel):
+    model_config = ConfigDict(from_attributes=True, alias_generator=to_camel, populate_by_name=True)
 
 
-class CommandResponse(CamelModel):
-    id: int
-    device_id: int
-    command_type: CommandType
-    status: CommandStatus
-    result_message: str | None = None
-    created_by: int
-    created_at: datetime
-    sent_at: datetime | None = None
-    acknowledged_at: datetime | None = None
-    completed_at: datetime | None = None
+class Message(BaseModel):
+    detail: str
+
+
+class PaginatedResponse(CamelModel, Generic[T]):
+    items: list[T]
+    total: int
+    skip: int
+    limit: int
+
+
+class ScopeType(str, Enum):
+    ALL_DEVICES = "ALL_DEVICES"
+    SMART_GROUP = "SMART_GROUP"
+    STATIC_GROUP = "STATIC_GROUP"
+    DEVICE = "DEVICE"
+
+
+class ScopeTarget(CamelModel):
+    scope_type: ScopeType
+    target_id: int | None = None
+
+
+class ScopeExclusion(CamelModel):
+    scope_type: ScopeType
+    exclude_id: int | None = None
+
+    @field_validator("scope_type")
+    @classmethod
+    def reject_all_devices(cls, v: ScopeType) -> ScopeType:
+        if v == ScopeType.ALL_DEVICES:
+            raise ValueError("ALL_DEVICES is not a valid exclusion type")
+        return v
+
+
+class Scope(CamelModel):
+    targets: list[ScopeTarget] = []
+    exclusions: list[ScopeExclusion] = []
+    
