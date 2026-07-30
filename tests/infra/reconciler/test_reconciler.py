@@ -1,5 +1,6 @@
 from unittest.mock import AsyncMock, MagicMock
 
+import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domains.shared.scope import ScopeExclusion, Scope, ScopeType, ScopeTarget
@@ -253,7 +254,7 @@ class TestRecalculateProfilesForSmartGroup:
             Scope(targets=[ScopeTarget(scope_type=ScopeType.SMART_GROUP, target_id=sg.id)]),
         )
 
-        await reconciler.recalculate_profiles_for_smart_group(sg.id)
+        await reconciler.recalculate_profile(profile.id)
 
         assignments = await repo.get_assignments(profile.id)
         assert len(assignments) == 1
@@ -282,7 +283,7 @@ class TestRecalculateProfilesForSmartGroup:
             ),
         )
 
-        await reconciler.recalculate_profiles_for_smart_group(sg.id)
+        await reconciler.recalculate_profile(profile.id)
 
         assignments = await repo.get_assignments(profile.id)
         device_ids = {a.device_id for a in assignments}
@@ -327,7 +328,7 @@ class TestRecalculateProfilesForStaticGroup:
             Scope(targets=[ScopeTarget(scope_type=ScopeType.STATIC_GROUP, target_id=sg.id)]),
         )
 
-        await reconciler.recalculate_profiles_for_static_group(sg.id)
+        await reconciler.recalculate_profile(profile.id)
 
         assignments = await repo.get_assignments(profile.id)
         assert len(assignments) == 1
@@ -354,7 +355,7 @@ class TestRecalculateProfilesForStaticGroup:
             ),
         )
 
-        await reconciler.recalculate_profiles_for_static_group(sg.id)
+        await reconciler.recalculate_profile(profile.id)
 
         assignments = await repo.get_assignments(profile.id)
         present_device_ids = {a.device_id for a in assignments if a.desired_state == AssignmentDesiredState.PRESENT}
@@ -520,7 +521,7 @@ class TestRecalculateMobileAppsForDevice:
             scope=Scope(targets=[ScopeTarget(scope_type=ScopeType.ALL_DEVICES)]),
         )
 
-        await reconciler.recalculate_mobile_apps_for_device(device.id)
+        await reconciler.recalculate_mobile_apps_for_device(device.id, publish=False)
 
         a1 = await repo.get_assignments(app1.id)
         a2 = await repo.get_assignments(app2.id)
@@ -535,7 +536,7 @@ class TestRecalculateMobileAppsForDevice:
         device = await _create_device(db_session, "Mac", "SN-1")
         await _create_mobile_app(db_session, "App1")
 
-        await reconciler.recalculate_mobile_apps_for_device(device.id)
+        await reconciler.recalculate_mobile_apps_for_device(device.id, publish=False)
         producer.publish_mobile_app_push.assert_not_awaited()
 
 
@@ -564,7 +565,7 @@ class TestRecalculateMobileAppsForSmartGroup:
             scope=Scope(targets=[ScopeTarget(scope_type=ScopeType.SMART_GROUP, target_id=sg.id)]),
         )
 
-        await reconciler.recalculate_mobile_apps_for_smart_group(sg.id)
+        await reconciler.recalculate_mobile_app(app.id)
 
         assignments = await repo.get_assignments(app.id)
         assert len(assignments) == 1
@@ -593,7 +594,7 @@ class TestRecalculateMobileAppsForSmartGroup:
             ),
         )
 
-        await reconciler.recalculate_mobile_apps_for_smart_group(sg.id)
+        await reconciler.recalculate_mobile_app(app.id)
 
         assignments = await repo.get_assignments(app.id)
         assert len(assignments) >= 0
@@ -637,7 +638,7 @@ class TestRecalculateMobileAppsForStaticGroup:
             scope=Scope(targets=[ScopeTarget(scope_type=ScopeType.STATIC_GROUP, target_id=sg.id)]),
         )
 
-        await reconciler.recalculate_mobile_apps_for_static_group(sg.id)
+        await reconciler.recalculate_mobile_app(app.id)
 
         assignments = await repo.get_assignments(app.id)
         assert len(assignments) == 1
@@ -664,7 +665,7 @@ class TestRecalculateMobileAppsForStaticGroup:
             ),
         )
 
-        await reconciler.recalculate_mobile_apps_for_static_group(sg.id)
+        await reconciler.recalculate_mobile_app(app.id)
 
         assignments = await repo.get_assignments(app.id)
         assert len(assignments) >= 0
@@ -689,7 +690,8 @@ class TestRecalculateMobileAppsForStaticGroup:
 
 
 class TestPurgeMethods:
-    async def test_purge_smart_group(self, db_session: AsyncSession) -> None:
+    async def test_purge_smart_group(self, db_session: AsyncSession, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setattr("app.infra.reconciler.reconciler.request_recalculation", AsyncMock())
         producer = _make_producer()
         profile_repo = ProfileRepository(db_session)
         app_repo = MobileAppRepository(db_session)
@@ -721,7 +723,8 @@ class TestPurgeMethods:
         assert reloaded_app is not None
         assert all(t.scope_type != ScopeType.SMART_GROUP for t in reloaded_app.scope.targets)
 
-    async def test_purge_static_group(self, db_session: AsyncSession) -> None:
+    async def test_purge_static_group(self, db_session: AsyncSession, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setattr("app.infra.reconciler.reconciler.request_recalculation", AsyncMock())
         producer = _make_producer()
         profile_repo = ProfileRepository(db_session)
         app_repo = MobileAppRepository(db_session)
@@ -753,7 +756,8 @@ class TestPurgeMethods:
         assert reloaded_app is not None
         assert all(t.scope_type != ScopeType.STATIC_GROUP for t in reloaded_app.scope.targets)
 
-    async def test_purge_device(self, db_session: AsyncSession) -> None:
+    async def test_purge_device(self, db_session: AsyncSession, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setattr("app.infra.reconciler.reconciler.request_recalculation", AsyncMock())
         producer = _make_producer()
         profile_repo = ProfileRepository(db_session)
         app_repo = MobileAppRepository(db_session)
@@ -1213,7 +1217,7 @@ class TestSendPushMessages:
         )
 
         producer.publish_profile_push.assert_awaited_once_with(
-            device_id=device.id,
+            serial_number=device.serial_number,
             profile_id=profile.id,
             profile_config=profile.policy,
             profile_version=1,
@@ -1256,7 +1260,7 @@ class TestSendRevokeMessages:
         )
 
         producer.publish_profile_revoke.assert_awaited_once_with(
-            device_id=device.id,
+            serial_number=device.serial_number,
             profile_id=profile.id,
             profile_version=1,
             assignment_id=None,
@@ -1336,7 +1340,7 @@ class TestSendMobileAppPushMessages:
         )
 
         producer.publish_mobile_app_push.assert_awaited_once_with(
-            device_id=device.id,
+            serial_number=device.serial_number,
             mobile_app_id=app.id,
             package_name=app.package_name,
             package_version=app.package_version,
@@ -1360,7 +1364,7 @@ class TestSendMobileAppPushMessages:
         )
 
         producer.publish_mobile_app_push.assert_awaited_once_with(
-            device_id=device.id,
+            serial_number=device.serial_number,
             mobile_app_id=app.id,
             package_name=app.package_name,
             package_version=app.package_version,
@@ -1440,7 +1444,7 @@ class TestSendMobileAppRevokeMessages:
         )
 
         producer.publish_mobile_app_revoke.assert_awaited_once_with(
-            device_id=device.id,
+            serial_number=device.serial_number,
             mobile_app_id=app.id,
             package_name=app.package_name,
             app_version=1,
@@ -1463,7 +1467,7 @@ class TestSendMobileAppRevokeMessages:
         )
 
         producer.publish_mobile_app_revoke.assert_awaited_once_with(
-            device_id=device.id,
+            serial_number=device.serial_number,
             mobile_app_id=app.id,
             package_name=app.package_name,
             app_version=1,
@@ -1537,7 +1541,7 @@ class TestRecalculateProfileGroupTriggers:
             Scope(exclusions=[ScopeExclusion(scope_type=ScopeType.SMART_GROUP, exclude_id=sg.id)]),
         )
 
-        await reconciler.recalculate_profiles_for_smart_group(sg.id)
+        await reconciler.recalculate_profile(profile.id)
 
         assert await profile_repo.get_assignments(profile.id) is not None
 
@@ -1557,9 +1561,57 @@ class TestRecalculateProfileGroupTriggers:
             Scope(exclusions=[ScopeExclusion(scope_type=ScopeType.STATIC_GROUP, exclude_id=sg.id)]),
         )
 
-        await reconciler.recalculate_profiles_for_static_group(sg.id)
+        await reconciler.recalculate_profile(profile.id)
 
         assert await profile_repo.get_assignments(profile.id) is not None
+
+    async def test_exclusion_matching_skips_resolved_devices(self, db_session: AsyncSession) -> None:
+        producer = _make_producer()
+        profile_repo = ProfileRepository(db_session)
+        reconciler = AssignmentReconciler(profile_repo, MagicMock(spec=MobileAppRepository), producer)
+
+        sg = SmartGroup(name="SG", criteria=[], created_by=1)
+        db_session.add(sg)
+        await db_session.commit()
+        await db_session.refresh(sg)
+
+        await _create_device(db_session, "Mac", "SN-1")
+
+        profile = await _create_profile(
+            db_session,
+            "P1",
+            Scope(
+                targets=[ScopeTarget(scope_type=ScopeType.ALL_DEVICES)],
+                exclusions=[ScopeExclusion(scope_type=ScopeType.SMART_GROUP, exclude_id=sg.id)],
+            ),
+        )
+
+        await reconciler.recalculate_profile(profile.id)
+
+        assignments = await profile_repo.get_assignments(profile.id)
+        assert len(assignments) == 0
+        assert await profile_repo.get_current_desired_device_ids(profile.id) == set()
+
+    async def test_exclusion_resolves_empty_with_targets(self, db_session: AsyncSession) -> None:
+        producer = _make_producer()
+        profile_repo = ProfileRepository(db_session)
+        reconciler = AssignmentReconciler(profile_repo, MagicMock(spec=MobileAppRepository), producer)
+
+        await _create_device(db_session, "Mac", "SN-1")
+
+        profile = await _create_profile(
+            db_session,
+            "P1",
+            Scope(
+                targets=[ScopeTarget(scope_type=ScopeType.ALL_DEVICES)],
+                exclusions=[ScopeExclusion(scope_type=ScopeType.SMART_GROUP, exclude_id=99999)],
+            ),
+        )
+
+        await reconciler.recalculate_profile(profile.id)
+
+        assignments = await profile_repo.get_assignments(profile.id)
+        assert len(assignments) == 1
 
 
 # ── edge: compute dedup ─────────────────────────────────────────────────
@@ -1698,3 +1750,57 @@ class TestSendRevokeMessagesExceptionWithAssignment:
         failed_assignment = await profile_repo.db.get(ProfileAssignment, assignments[0].id)
         assert failed_assignment is not None
         assert failed_assignment.status == AssignmentStatus.FAILED
+
+
+# ── edge: _resolve_serial_map empty ───────────────────────────────────────
+
+
+class TestResolveSerialMapEmpty:
+    async def test_profile_serial_map_empty(self, db_session: AsyncSession) -> None:
+        producer = _make_producer()
+        repo = ProfileRepository(db_session)
+        reconciler = AssignmentReconciler(repo, MagicMock(spec=MobileAppRepository), producer)
+        assert await reconciler._resolve_serial_map(set()) == {}
+
+    async def test_mobile_serial_map_empty(self, db_session: AsyncSession) -> None:
+        producer = _make_producer()
+        repo = MobileAppRepository(db_session)
+        reconciler = AssignmentReconciler(ProfileRepository(db_session), repo, producer)
+        assert await reconciler._resolve_serial_map_mobile(set()) == {}
+
+
+# ── edge: _send_*_messages with non-existent device ───────────────────────
+
+
+class TestSendMessagesMissingSerial:
+    async def test_send_push_skips_missing_serial(self, db_session: AsyncSession) -> None:
+        producer = _make_producer()
+        profile_repo = ProfileRepository(db_session)
+        reconciler = AssignmentReconciler(profile_repo, MagicMock(spec=MobileAppRepository), producer)
+        profile = await _create_profile(db_session, "P1")
+        await reconciler._send_push_messages(profile, {99999}, {}, version=1)
+        producer.publish_profile_push.assert_not_awaited()
+
+    async def test_send_revoke_skips_missing_serial(self, db_session: AsyncSession) -> None:
+        producer = _make_producer()
+        profile_repo = ProfileRepository(db_session)
+        reconciler = AssignmentReconciler(profile_repo, MagicMock(spec=MobileAppRepository), producer)
+        profile = await _create_profile(db_session, "P1")
+        await reconciler._send_revoke_messages(profile, {99999}, {}, version=1)
+        producer.publish_profile_revoke.assert_not_awaited()
+
+    async def test_send_mobile_push_skips_missing_serial(self, db_session: AsyncSession) -> None:
+        producer = _make_producer()
+        app_repo = MobileAppRepository(db_session)
+        reconciler = AssignmentReconciler(ProfileRepository(db_session), app_repo, producer)
+        app = await _create_mobile_app(db_session, "App1")
+        await reconciler._send_mobile_app_push_messages(app, {99999}, {}, version=1)
+        producer.publish_mobile_app_push.assert_not_awaited()
+
+    async def test_send_mobile_revoke_skips_missing_serial(self, db_session: AsyncSession) -> None:
+        producer = _make_producer()
+        app_repo = MobileAppRepository(db_session)
+        reconciler = AssignmentReconciler(ProfileRepository(db_session), app_repo, producer)
+        app = await _create_mobile_app(db_session, "App1")
+        await reconciler._send_mobile_app_revoke_messages(app, {99999}, {}, version=1)
+        producer.publish_mobile_app_revoke.assert_not_awaited()

@@ -62,17 +62,26 @@ class TestProfilesAPI:
             self.BASE, json={"name": "P", "policy": {}, "scope": {"targets": [], "exclusions": []}}
         )
         pid = create.json()["id"]
-        resp = await client.put(
-            f"{self.BASE}/{pid}",
-            json={
-                "scope": {
-                    "targets": [{"scope_type": "ALL_DEVICES"}],
-                    "exclusions": [],
+
+        reconciler = MagicMock()
+        reconciler.request_recalculate_profile = AsyncMock()
+        app.dependency_overrides[get_reconciler] = lambda: reconciler
+        try:
+            resp = await client.put(
+                f"{self.BASE}/{pid}",
+                json={
+                    "scope": {
+                        "targets": [{"scope_type": "ALL_DEVICES"}],
+                        "exclusions": [],
+                    },
                 },
-            },
-        )
+            )
+        finally:
+            app.dependency_overrides.pop(get_reconciler, None)
+
         assert resp.status_code == 200
         assert len(resp.json()["scope"]["targets"]) == 1
+        reconciler.request_recalculate_profile.assert_awaited_once_with(pid)
 
     async def test_settings_update_forces_recalculation_push(self, client: AsyncClient) -> None:
         create = await client.post(
@@ -81,7 +90,7 @@ class TestProfilesAPI:
         pid = create.json()["id"]
 
         reconciler = MagicMock()
-        reconciler.recalculate_profile = AsyncMock()
+        reconciler.request_recalculate_profile = AsyncMock()
         app.dependency_overrides[get_reconciler] = lambda: reconciler
         try:
             resp = await client.put(
@@ -92,7 +101,7 @@ class TestProfilesAPI:
             app.dependency_overrides.pop(get_reconciler, None)
 
         assert resp.status_code == 200
-        reconciler.recalculate_profile.assert_awaited_once_with(pid, force_push=True)
+        reconciler.request_recalculate_profile.assert_awaited_once_with(pid, force_push=True)
 
     async def test_scope_update_recalculates_without_force_push(self, client: AsyncClient) -> None:
         create = await client.post(
@@ -101,7 +110,7 @@ class TestProfilesAPI:
         pid = create.json()["id"]
 
         reconciler = MagicMock()
-        reconciler.recalculate_profile = AsyncMock()
+        reconciler.request_recalculate_profile = AsyncMock()
         app.dependency_overrides[get_reconciler] = lambda: reconciler
         try:
             resp = await client.put(
@@ -117,22 +126,28 @@ class TestProfilesAPI:
             app.dependency_overrides.pop(get_reconciler, None)
 
         assert resp.status_code == 200
-        reconciler.recalculate_profile.assert_awaited_once_with(pid)
+        reconciler.request_recalculate_profile.assert_awaited_once_with(pid)
 
     async def test_get_scope(self, client: AsyncClient) -> None:
-        create = await client.post(
-            self.BASE,
-            json={
-                "name": "P2",
-                "policy": {},
-                "scope": {
-                    "targets": [{"scope_type": "SMART_GROUP", "target_id": 1}],
-                    "exclusions": [],
+        reconciler = MagicMock()
+        reconciler.request_recalculate_profile = AsyncMock()
+        app.dependency_overrides[get_reconciler] = lambda: reconciler
+        try:
+            create = await client.post(
+                self.BASE,
+                json={
+                    "name": "P2",
+                    "policy": {},
+                    "scope": {
+                        "targets": [{"scope_type": "SMART_GROUP", "target_id": 1}],
+                        "exclusions": [],
+                    },
                 },
-            },
-        )
-        pid = create.json()["id"]
-        resp = await client.get(f"{self.BASE}/{pid}")
+            )
+            pid = create.json()["id"]
+            resp = await client.get(f"{self.BASE}/{pid}")
+        finally:
+            app.dependency_overrides.pop(get_reconciler, None)
         assert resp.status_code == 200
         assert len(resp.json()["scope"]["targets"]) == 1
 

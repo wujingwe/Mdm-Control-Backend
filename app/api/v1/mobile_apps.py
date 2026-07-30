@@ -52,7 +52,7 @@ async def create_mobile_app(
 ) -> MobileAppResponse:
     app = await service.create_mobile_app(data, current_user.id)
     if data.scope.targets:
-        await reconciler.recalculate_mobile_app(app.id)
+        await reconciler.request_recalculate_mobile_app(app.id)
     await revalidate(["mobile-apps"])
     return MobileAppResponse.model_validate(app)
 
@@ -69,7 +69,7 @@ async def update_mobile_app(
     if not updated:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Mobile app not found")
     if data.scope is not None:
-        await reconciler.recalculate_mobile_app(mobile_app_id)
+        await reconciler.request_recalculate_mobile_app(mobile_app_id)
     await revalidate(["mobile-apps"])
     return MobileAppResponse.model_validate(updated)
 

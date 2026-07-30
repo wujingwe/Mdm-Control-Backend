@@ -115,7 +115,7 @@ class TestRecalculateProfile:
         await reconciler.recalculate_profile(profile.id, force_push=True)
 
         producer.publish_profile_push.assert_awaited_once_with(
-            device_id=device.id,
+            serial_number=device.serial_number,
             profile_id=profile.id,
             profile_config=profile.policy,
             profile_version=2,
@@ -135,7 +135,7 @@ class TestRecalculateProfile:
 
         assert await repo.get_current_desired_device_ids(profile.id) == set()
         producer.publish_profile_revoke.assert_awaited_once_with(
-            device_id=device.id,
+            serial_number=device.serial_number,
             profile_id=profile.id,
             profile_version=2,
             assignment_id=2,
@@ -539,7 +539,7 @@ class TestRecalculateForDevice:
         )
         await _create_profile(db_session, "P3")
 
-        await reconciler.recalculate_profiles_for_device(device.id)
+        await reconciler.recalculate_profiles_for_device(device.id, publish=False)
 
         a1 = await repo.get_assignments(p1.id)
         a2 = await repo.get_assignments(p2.id)
@@ -554,7 +554,7 @@ class TestRecalculateForDevice:
         device = await _create_device(db_session, "Mac", "SN-1")
         await _create_profile(db_session, "P1")
 
-        await reconciler.recalculate_profiles_for_device(device.id)
+        await reconciler.recalculate_profiles_for_device(device.id, publish=False)
         producer.publish_profile_push.assert_not_awaited()
 
 
@@ -579,7 +579,7 @@ class TestMessageSending:
         await reconciler.recalculate_profile(profile.id)
 
         producer.publish_profile_push.assert_awaited_once_with(
-            device_id=device.id,
+            serial_number=device.serial_number,
             profile_id=profile.id,
             profile_config=profile.policy,
             profile_version=1,
@@ -607,7 +607,7 @@ class TestMessageSending:
         await reconciler.recalculate_profile(profile.id)
 
         producer.publish_profile_revoke.assert_awaited_once_with(
-            device_id=d2.id,
+            serial_number=d2.serial_number,
             profile_id=profile.id,
             profile_version=2,
             assignment_id=3,

@@ -52,7 +52,7 @@ async def create_profile(
 ) -> ProfileResponse:
     profile = await service.create_profile(data, current_user.id)
     if data.scope.targets:
-        await reconciler.recalculate_profile(profile.id)
+        await reconciler.request_recalculate_profile(profile.id)
     await revalidate(["profiles"])
     return ProfileResponse.model_validate(profile)
 
@@ -69,9 +69,9 @@ async def update_profile(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Profile not found")
     if data.scope is not None or data.policy is not None:
         if data.policy is not None:
-            await reconciler.recalculate_profile(profile_id, force_push=True)
+            await reconciler.request_recalculate_profile(profile_id, force_push=True)
         else:
-            await reconciler.recalculate_profile(profile_id)
+            await reconciler.request_recalculate_profile(profile_id)
     await revalidate(["profiles"])
     return ProfileResponse.model_validate(updated)
 

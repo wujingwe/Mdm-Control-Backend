@@ -2,9 +2,12 @@ from __future__ import annotations
 
 import logging
 
+from sqlalchemy import select
+
 from app.domains.commands.models import Command
 from app.domains.commands.repositories import CommandRepository
 from app.domains.commands.schemas import CommandCreate
+from app.domains.devices.models import Device
 from app.infra.messaging.producer import rabbitmq_producer
 
 logger = logging.getLogger(__name__)
@@ -21,15 +24,20 @@ class CommandService:
         created_by: int,
     ) -> dict[str, object]:
         command = await self.repo.create(device_id, data, created_by)
-        event_type = f"device.command.{data.command_type.value.lower()}"
+
+        stmt = select(Device.serial_number).where(Device.id == device_id)
+        result = await self.repo.db.execute(stmt)
+        serial = result.scalar_one_or_none()
+        if not serial:
+            logger.warning("Device %s not found when publishing command", device_id)
+            return {"command": command, "message_id": None}
 
         try:
             message_id = await rabbitmq_producer.publish_device_command(
-                device_id=device_id,
+                serial_number=serial,
                 command_id=command.id,
                 command_type=data.command_type.value,
                 parameters={},
-                event_type=event_type,
             )
             updated = await self.repo.mark_sent(command.id, message_id)
             if updated is not None:

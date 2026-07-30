@@ -70,7 +70,7 @@ class TestMobileAppsAPI:
 
     async def test_create_with_scope_triggers_reconciler(self, client: AsyncClient) -> None:
         reconciler = MagicMock()
-        reconciler.recalculate_mobile_app = AsyncMock()
+        reconciler.request_recalculate_mobile_app = AsyncMock()
         app.dependency_overrides[get_reconciler] = lambda: reconciler
         try:
             resp = await client.post(
@@ -90,11 +90,11 @@ class TestMobileAppsAPI:
             app.dependency_overrides.pop(get_reconciler, None)
 
         assert resp.status_code == 201
-        reconciler.recalculate_mobile_app.assert_awaited_once()
+        reconciler.request_recalculate_mobile_app.assert_awaited_once()
 
     async def test_create_with_empty_scope_skips_reconciler(self, client: AsyncClient) -> None:
         reconciler = MagicMock()
-        reconciler.recalculate_mobile_app = AsyncMock()
+        reconciler.request_recalculate_mobile_app = AsyncMock()
         app.dependency_overrides[get_reconciler] = lambda: reconciler
         try:
             resp = await client.post(
@@ -111,7 +111,7 @@ class TestMobileAppsAPI:
             app.dependency_overrides.pop(get_reconciler, None)
 
         assert resp.status_code == 201
-        reconciler.recalculate_mobile_app.assert_not_called()
+        reconciler.request_recalculate_mobile_app.assert_not_called()
 
     async def test_set_scope(self, client: AsyncClient) -> None:
         create = await client.post(
@@ -125,17 +125,26 @@ class TestMobileAppsAPI:
             },
         )
         app_id = create.json()["id"]
-        resp = await client.put(
-            f"{self.BASE}/{app_id}",
-            json={
-                "scope": {
-                    "targets": [{"scope_type": "ALL_DEVICES"}],
-                    "exclusions": [],
+
+        reconciler = MagicMock()
+        reconciler.request_recalculate_mobile_app = AsyncMock()
+        app.dependency_overrides[get_reconciler] = lambda: reconciler
+        try:
+            resp = await client.put(
+                f"{self.BASE}/{app_id}",
+                json={
+                    "scope": {
+                        "targets": [{"scope_type": "ALL_DEVICES"}],
+                        "exclusions": [],
+                    },
                 },
-            },
-        )
+            )
+        finally:
+            app.dependency_overrides.pop(get_reconciler, None)
+
         assert resp.status_code == 200
         assert len(resp.json()["scope"]["targets"]) == 1
+        reconciler.request_recalculate_mobile_app.assert_awaited_once_with(app_id)
 
     async def test_scope_update_recalculates(self, client: AsyncClient) -> None:
         create = await client.post(
@@ -151,7 +160,7 @@ class TestMobileAppsAPI:
         app_id = create.json()["id"]
 
         reconciler = MagicMock()
-        reconciler.recalculate_mobile_app = AsyncMock()
+        reconciler.request_recalculate_mobile_app = AsyncMock()
         reconciler.recalculate_mobile_apps_for_smart_group = AsyncMock()
         reconciler.recalculate_mobile_apps_for_static_group = AsyncMock()
         app.dependency_overrides[get_reconciler] = lambda: reconciler
@@ -169,7 +178,7 @@ class TestMobileAppsAPI:
             app.dependency_overrides.pop(get_reconciler, None)
 
         assert resp.status_code == 200
-        reconciler.recalculate_mobile_app.assert_awaited_once_with(app_id)
+        reconciler.request_recalculate_mobile_app.assert_awaited_once_with(app_id)
 
     async def test_update_without_scope_skips_reconciler(self, client: AsyncClient) -> None:
         create = await client.post(
@@ -185,7 +194,7 @@ class TestMobileAppsAPI:
         app_id = create.json()["id"]
 
         reconciler = MagicMock()
-        reconciler.recalculate_mobile_app = AsyncMock()
+        reconciler.request_recalculate_mobile_app = AsyncMock()
         app.dependency_overrides[get_reconciler] = lambda: reconciler
         try:
             resp = await client.put(
@@ -196,28 +205,28 @@ class TestMobileAppsAPI:
             app.dependency_overrides.pop(get_reconciler, None)
 
         assert resp.status_code == 200
-        reconciler.recalculate_mobile_app.assert_not_called()
+        reconciler.request_recalculate_mobile_app.assert_not_called()
 
     async def test_delete_with_smart_group_scope_triggers_reconciler(self, client: AsyncClient) -> None:
-        create = await client.post(
-            self.BASE,
-            json={
-                "name": "App",
-                "enabled": True,
-                "package_version": "1.0",
-                "package_name": "com.app",
-                "scope": {
-                    "targets": [{"scope_type": "SMART_GROUP", "target_id": 1}],
-                    "exclusions": [],
-                },
-            },
-        )
-        app_id = create.json()["id"]
-
         reconciler = MagicMock()
+        reconciler.request_recalculate_mobile_app = AsyncMock()
         reconciler.recalculate_mobile_apps_for_smart_group = AsyncMock()
         app.dependency_overrides[get_reconciler] = lambda: reconciler
         try:
+            create = await client.post(
+                self.BASE,
+                json={
+                    "name": "App",
+                    "enabled": True,
+                    "package_version": "1.0",
+                    "package_name": "com.app",
+                    "scope": {
+                        "targets": [{"scope_type": "SMART_GROUP", "target_id": 1}],
+                        "exclusions": [],
+                    },
+                },
+            )
+            app_id = create.json()["id"]
             resp = await client.delete(f"{self.BASE}/{app_id}")
         finally:
             app.dependency_overrides.pop(get_reconciler, None)
@@ -226,25 +235,25 @@ class TestMobileAppsAPI:
         reconciler.recalculate_mobile_apps_for_smart_group.assert_awaited_once_with(1)
 
     async def test_delete_with_static_group_scope_triggers_reconciler(self, client: AsyncClient) -> None:
-        create = await client.post(
-            self.BASE,
-            json={
-                "name": "App",
-                "enabled": True,
-                "package_version": "1.0",
-                "package_name": "com.app",
-                "scope": {
-                    "targets": [{"scope_type": "STATIC_GROUP", "target_id": 2}],
-                    "exclusions": [],
-                },
-            },
-        )
-        app_id = create.json()["id"]
-
         reconciler = MagicMock()
+        reconciler.request_recalculate_mobile_app = AsyncMock()
         reconciler.recalculate_mobile_apps_for_static_group = AsyncMock()
         app.dependency_overrides[get_reconciler] = lambda: reconciler
         try:
+            create = await client.post(
+                self.BASE,
+                json={
+                    "name": "App",
+                    "enabled": True,
+                    "package_version": "1.0",
+                    "package_name": "com.app",
+                    "scope": {
+                        "targets": [{"scope_type": "STATIC_GROUP", "target_id": 2}],
+                        "exclusions": [],
+                    },
+                },
+            )
+            app_id = create.json()["id"]
             resp = await client.delete(f"{self.BASE}/{app_id}")
         finally:
             app.dependency_overrides.pop(get_reconciler, None)

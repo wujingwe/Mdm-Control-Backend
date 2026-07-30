@@ -9,6 +9,7 @@ from app.infra.criteria import build_device_query
 from app.infra.criteria.schemas import Criteria
 from app.domains.devices.models import Device
 from app.infra.messaging.producer import RabbitMQProducer
+from app.infra.messaging.reconciliation import request_recalculation
 from app.domains.mobile_apps.models import MobileApp, MobileAppAssignment
 from app.domains.mobile_apps.repositories import MobileAppRepository
 from app.domains.mobile_apps.schemas import MobileAppAssignmentUpsert
@@ -33,6 +34,14 @@ class AssignmentReconciler:
         self.profile_repo = profile_repo
         self.mobile_app_repo = mobile_app_repo
         self.producer = producer
+
+    # ── Public request methods ───────────────────────────────────────────
+
+    async def request_recalculate_profile(self, profile_id: int, *, force_push: bool = False) -> None:
+        await request_recalculation("profile.recalculate", profile_id, force_push=force_push)
+
+    async def request_recalculate_mobile_app(self, mobile_app_id: int, *, force_push: bool = False) -> None:
+        await request_recalculation("mobile_app.recalculate", mobile_app_id, force_push=force_push)
 
     # ── Profile methods ──────────────────────────────────────────────────
 
@@ -140,8 +149,12 @@ class AssignmentReconciler:
 
     async def recalculate_profiles_for_device(self, device_id: int, *, publish: bool = True) -> None:
         profiles = await self.profile_repo.list_affected_profiles_for_device(device_id)
-        for profile in profiles:
-            await self.recalculate_profile(profile.id, publish=publish)
+        if publish:
+            for profile in profiles:
+                await self.request_recalculate_profile(profile.id)
+        else:
+            for profile in profiles:
+                await self.recalculate_profile(profile.id, publish=False)
 
     async def recalculate_profiles_for_smart_group(self, group_id: int) -> None:
         for profile in await self.profile_repo.list_all_profiles():
@@ -152,7 +165,7 @@ class AssignmentReconciler:
                 exclusion.scope_type == ScopeType.SMART_GROUP and exclusion.exclude_id == group_id
                 for exclusion in scope.exclusions
             ):
-                await self.recalculate_profile(profile.id)
+                await self.request_recalculate_profile(profile.id)
 
     async def recalculate_profiles_for_static_group(self, group_id: int) -> None:
         for profile in await self.profile_repo.list_all_profiles():
@@ -163,7 +176,7 @@ class AssignmentReconciler:
                 exclusion.scope_type == ScopeType.STATIC_GROUP and exclusion.exclude_id == group_id
                 for exclusion in scope.exclusions
             ):
-                await self.recalculate_profile(profile.id)
+                await self.request_recalculate_profile(profile.id)
 
     # ── Mobile App methods ──────────────────────────────────────────────
 
@@ -273,8 +286,12 @@ class AssignmentReconciler:
 
     async def recalculate_mobile_apps_for_device(self, device_id: int, *, publish: bool = True) -> None:
         apps = await self.mobile_app_repo.list_affected_mobile_apps_for_device(device_id)
-        for app in apps:
-            await self.recalculate_mobile_app(app.id, publish=publish)
+        if publish:
+            for app in apps:
+                await self.request_recalculate_mobile_app(app.id)
+        else:
+            for app in apps:
+                await self.recalculate_mobile_app(app.id, publish=False)
 
     async def recalculate_mobile_apps_for_smart_group(self, group_id: int) -> None:
         for app in await self.mobile_app_repo.list_all_mobile_apps():
@@ -285,7 +302,7 @@ class AssignmentReconciler:
                 exclusion.scope_type == ScopeType.SMART_GROUP and exclusion.exclude_id == group_id
                 for exclusion in scope.exclusions
             ):
-                await self.recalculate_mobile_app(app.id)
+                await self.request_recalculate_mobile_app(app.id)
 
     async def recalculate_mobile_apps_for_static_group(self, group_id: int) -> None:
         for app in await self.mobile_app_repo.list_all_mobile_apps():
@@ -296,7 +313,7 @@ class AssignmentReconciler:
                 exclusion.scope_type == ScopeType.STATIC_GROUP and exclusion.exclude_id == group_id
                 for exclusion in scope.exclusions
             ):
-                await self.recalculate_mobile_app(app.id)
+                await self.request_recalculate_mobile_app(app.id)
 
     # ── Purge ───────────────────────────────────────────────────────────
 
@@ -334,7 +351,7 @@ class AssignmentReconciler:
             try:
                 if assignment.desired_state == AssignmentDesiredState.PRESENT:
                     message_id = await self.producer.publish_profile_push(
-                        device_id=device_id,
+                        serial_number=device.serial_number,
                         profile_id=profile.id,
                         profile_config=profile.policy,
                         profile_version=assignment.profile_version,
@@ -342,7 +359,7 @@ class AssignmentReconciler:
                     )
                 else:
                     message_id = await self.producer.publish_profile_revoke(
-                        device_id=device_id,
+                        serial_number=device.serial_number,
                         profile_id=profile.id,
                         profile_version=assignment.profile_version,
                         assignment_id=assignment.id,
@@ -365,7 +382,7 @@ class AssignmentReconciler:
             try:
                 if assignment.desired_state == AssignmentDesiredState.PRESENT:
                     message_id = await self.producer.publish_mobile_app_push(
-                        device_id=device_id,
+                        serial_number=device.serial_number,
                         mobile_app_id=app.id,
                         package_name=app.package_name,
                         package_version=app.package_version,
@@ -374,7 +391,7 @@ class AssignmentReconciler:
                     )
                 else:
                     message_id = await self.producer.publish_mobile_app_revoke(
-                        device_id=device_id,
+                        serial_number=device.serial_number,
                         mobile_app_id=app.id,
                         package_name=app.package_name,
                         app_version=assignment.version,
@@ -483,6 +500,20 @@ class AssignmentReconciler:
 
     # ── Message helpers ─────────────────────────────────────────────────
 
+    async def _resolve_serial_map(self, device_ids: set[int]) -> dict[int, str]:
+        if not device_ids:
+            return {}
+        stmt = select(Device.id, Device.serial_number).where(Device.id.in_(device_ids))
+        rows = await self.profile_repo.db.execute(stmt)
+        return {row.id: row.serial_number for row in rows.all()}
+
+    async def _resolve_serial_map_mobile(self, device_ids: set[int]) -> dict[int, str]:
+        if not device_ids:
+            return {}
+        stmt = select(Device.id, Device.serial_number).where(Device.id.in_(device_ids))
+        rows = await self.mobile_app_repo.db.execute(stmt)
+        return {row.id: row.serial_number for row in rows.all()}
+
     async def _send_push_messages(
         self,
         profile: Profile,
@@ -490,11 +521,15 @@ class AssignmentReconciler:
         assignments: dict[int, ProfileAssignment],
         version: int,
     ) -> None:
+        serial_map = await self._resolve_serial_map(device_ids)
         for device_id in sorted(device_ids):
+            serial = serial_map.get(device_id)
+            if not serial:
+                continue
             assignment = assignments.get(device_id)
             try:
                 message_id = await self.producer.publish_profile_push(
-                    device_id=device_id,
+                    serial_number=serial,
                     profile_id=profile.id,
                     profile_config=profile.policy,
                     profile_version=version,
@@ -518,11 +553,15 @@ class AssignmentReconciler:
         assignments: dict[int, ProfileAssignment],
         version: int,
     ) -> None:
+        serial_map = await self._resolve_serial_map(device_ids)
         for device_id in sorted(device_ids):
+            serial = serial_map.get(device_id)
+            if not serial:
+                continue
             assignment = assignments.get(device_id)
             try:
                 message_id = await self.producer.publish_profile_revoke(
-                    device_id=device_id,
+                    serial_number=serial,
                     profile_id=profile.id,
                     profile_version=version,
                     assignment_id=assignment.id if assignment else None,
@@ -545,11 +584,15 @@ class AssignmentReconciler:
         assignments: dict[int, MobileAppAssignment],
         version: int,
     ) -> None:
+        serial_map = await self._resolve_serial_map_mobile(device_ids)
         for device_id in sorted(device_ids):
+            serial = serial_map.get(device_id)
+            if not serial:
+                continue
             assignment = assignments.get(device_id)
             try:
                 message_id = await self.producer.publish_mobile_app_push(
-                    device_id=device_id,
+                    serial_number=serial,
                     mobile_app_id=app.id,
                     package_name=app.package_name,
                     package_version=app.package_version,
@@ -574,11 +617,15 @@ class AssignmentReconciler:
         assignments: dict[int, MobileAppAssignment],
         version: int,
     ) -> None:
+        serial_map = await self._resolve_serial_map_mobile(device_ids)
         for device_id in sorted(device_ids):
+            serial = serial_map.get(device_id)
+            if not serial:
+                continue
             assignment = assignments.get(device_id)
             try:
                 message_id = await self.producer.publish_mobile_app_revoke(
-                    device_id=device_id,
+                    serial_number=serial,
                     mobile_app_id=app.id,
                     package_name=app.package_name,
                     app_version=version,

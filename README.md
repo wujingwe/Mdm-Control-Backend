@@ -55,17 +55,9 @@ Copy `.env` (defaults are pre-configured) and adjust as needed.
 All settings via `.env` file or environment variables:
 
 | Variable | Default | Description |
-|---|---|---|
+|---|---|---|---|
 | `DB_URL` | `mysql+aiomysql://jing-weiwu:mdm@localhost:3306/mdm_control` | Database connection string |
 | `RABBITMQ_URL` | `amqp://guest:guest@localhost:5672/` | AMQP connection URL |
-| `RABBITMQ_EXCHANGE` | `mdm.device.commands` | Exchange name for device messages |
-| `RABBITMQ_EXCHANGE_TYPE` | `topic` | Exchange type |
-| `RABBITMQ_DEVICE_ROUTING_KEY_PREFIX` | `device` | Routing key prefix (`device.<id>`) |
-| `RABBITMQ_CONSUMER_QUEUE` | `sse.commands.local` | Consumer queue name |
-| `RABBITMQ_CONSUMER_BINDING_KEYS` | `[]` | Routing key patterns to bind |
-| `RABBITMQ_PREFETCH_COUNT` | `10` | Max unacknowledged prefetched messages |
-| `RABBITMQ_REQUEUE_ON_ERROR` | `false` | Requeue on handler error |
-| `RABBITMQ_CONSUMER_ENABLED` | `false` | Start consumer on app startup |
 | `WEBHOOK_URL` | `http://localhost:3000/api/v1/revalidate` | Next.js revalidation endpoint |
 | `REVALIDATION_SECRET` | — | Shared webhook secret |
 | `SSE_SERVER_URL` | `http://0.0.0.0:8080/notify` | External SSE server endpoint |

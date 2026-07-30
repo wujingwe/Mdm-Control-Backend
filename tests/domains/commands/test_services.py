@@ -8,7 +8,12 @@ from app.domains.commands.enums import CommandType
 class TestCommandService:
     @pytest.fixture
     def repo(self) -> None:
+        db = MagicMock()
+        result = MagicMock()
+        result.scalar_one_or_none = MagicMock(return_value="SER001")
+        db.execute = AsyncMock(return_value=result)
         m = MagicMock()
+        m.db = db
         m.create = AsyncMock(return_value=MagicMock(id=1, device_id=1, command_type=CommandType.LOCK))
         m.get_by_id = AsyncMock(return_value=None)
         m.list = AsyncMock(return_value=[])
@@ -28,7 +33,12 @@ class TestCommandService:
             assert result["command"].id == 1
             assert result["message_id"] == "msg-123"
             repo.create.assert_called_once_with(1, data, 1)
-            mock_producer.publish_device_command.assert_called_once()
+            mock_producer.publish_device_command.assert_called_once_with(
+                serial_number="SER001",
+                command_id=1,
+                command_type="LOCK",
+                parameters={},
+            )
 
     async def test_trigger_command_publish_fails(self, repo: MagicMock) -> None:
         svc = CommandService(repo)
