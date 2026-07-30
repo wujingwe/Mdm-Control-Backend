@@ -5,18 +5,19 @@ import json
 import logging
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import select
 
 from app.domains.commands.models import Command
-from app.infra.common.enums import AssignmentStatus, CommandStatus
+from app.domains.commands.enums import CommandStatus
+from app.domains.profiles.enums import AssignmentStatus
 from app.infra.config.settings import settings
 from app.infra.core.database import async_session
 from app.infra.webhooks import send_validation_webhook
 from app.domains.profiles.models import ProfileAssignment
 
-try:
+if TYPE_CHECKING:
     import aio_pika
     from aio_pika.abc import (
         AbstractChannel,
@@ -25,13 +26,23 @@ try:
         AbstractQueue,
         AbstractRobustConnection,
     )
-except ModuleNotFoundError:  # pragma: no cover - exercised only without optional deps installed
-    aio_pika = None  # type: ignore[assignment]
-    AbstractChannel = Any  # type: ignore[misc,assignment]
-    AbstractExchange = Any  # type: ignore[misc,assignment]
-    AbstractIncomingMessage = Any  # type: ignore[misc,assignment]
-    AbstractQueue = Any  # type: ignore[misc,assignment]
-    AbstractRobustConnection = Any  # type: ignore[misc,assignment]
+else:
+    try:
+        import aio_pika
+        from aio_pika.abc import (
+            AbstractChannel,
+            AbstractExchange,
+            AbstractIncomingMessage,
+            AbstractQueue,
+            AbstractRobustConnection,
+        )
+    except ModuleNotFoundError:  # pragma: no cover
+        aio_pika = None  # type: ignore[assignment]
+        AbstractChannel = Any  # type: ignore[assignment]
+        AbstractExchange = Any  # type: ignore[assignment]
+        AbstractIncomingMessage = Any  # type: ignore[assignment]
+        AbstractQueue = Any  # type: ignore[assignment]
+        AbstractRobustConnection = Any  # type: ignore[assignment]
 
 logger = logging.getLogger(__name__)
 
@@ -198,7 +209,7 @@ async def process_profile_status_message(data: dict[str, Any]) -> None:
                 return
 
             if assignment:
-                assignment.status = status
+                assignment.status = AssignmentStatus(status)
                 if status == AssignmentStatus.APPLIED:
                     from datetime import datetime, timezone
 

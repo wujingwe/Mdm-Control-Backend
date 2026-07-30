@@ -1,0 +1,15 @@
+{
+  "pythonVersion": "3.13",
+  "typeCheckingMode": "standard",
+  "include": ["app"],
+  "exclude": [
+    "**/node_modules",
+    "**/__pycache__",
+    ".venv",
+    "venv"
+  ],
+  "reportMissingTypeStubs": false,
+  "reportMissingImports": false,
+  "reportOptionalMemberAccess": false,
+  "reportPrivateUsage": false
+}

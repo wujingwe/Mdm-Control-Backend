@@ -13,7 +13,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.infra.core.base import Base, utcnow
-from app.infra.common.enums import ConnectionStatus, DeviceStatus
+from app.domains.devices.enums import ConnectionStatus, DeviceStatus
 from app.domains.profiles.models import Profile
 from app.infra.core.types import CertificateListType, NetworkInfoType
 from app.domains.devices.schemas import Certificate, Network

@@ -6,8 +6,8 @@ from sqlalchemy.orm.attributes import flag_modified
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.infra.core.exceptions import ConflictError
-from app.infra.common.enums import AssignmentDesiredState, AssignmentStatus
-from app.infra.common.schemas import ScopeType
+from app.domains.profiles.enums import AssignmentDesiredState, AssignmentStatus
+from app.domains.shared.scope import ScopeType
 from app.domains.devices.models import Device
 from app.domains.mobile_apps.models import MobileApp, MobileAppAssignment
 from app.domains.static_groups.models import StaticGroupDevice
@@ -48,11 +48,7 @@ class MobileAppRepository:
         values = data.model_dump(exclude_unset=True)
         if not values:
             return await self.get_by_id(record_id)
-        stmt = (
-            update(MobileApp)
-            .where(MobileApp.id == record_id)
-            .values(**values, version=MobileApp.version + 1)
-        )
+        stmt = update(MobileApp).where(MobileApp.id == record_id).values(**values, version=MobileApp.version + 1)
         await self.db.execute(stmt)
         try:
             await self.db.commit()

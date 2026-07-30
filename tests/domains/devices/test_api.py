@@ -1,7 +1,7 @@
 from unittest.mock import AsyncMock, MagicMock
 
 from app.dependencies import get_reconciler
-from app.infra.common.enums import ExtensionDataType, ExtensionInputType
+from app.domains.extension_attributes.enums import ExtensionDataType, ExtensionInputType
 from app.domains.devices.models import Device
 from app.domains.devices.repositories import DeviceRepository
 from app.domains.devices.schemas import Certificate, DeviceUpdate, Network, Wifi, ExtensionAttributeValueCreate
@@ -506,7 +506,9 @@ class TestDevicesAPI:
         reconciler.recalculate_profiles_for_device.assert_awaited_once_with(device.id)
         reconciler.recalculate_mobile_apps_for_device.assert_awaited_once_with(device.id)
 
-    async def test_update_device_non_trigger_field_skips_reconciler(self, client: AsyncClient, db_session: AsyncSession) -> None:
+    async def test_update_device_non_trigger_field_skips_reconciler(
+        self, client: AsyncClient, db_session: AsyncSession
+    ) -> None:
         repo = DeviceRepository(db_session)
         device = await repo.create(
             {

@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from app.infra.common.schemas import Scope
+from app.domains.shared.scope import Scope
 from app.domains.mobile_apps.schemas import MobileAppResponse
 
 

@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domains.extension_attributes.schemas import ExtensionAttributeCreate
 from app.domains.extension_attributes.repositories import ExtensionAttributeRepository
-from app.infra.common.enums import ExtensionDataType, ExtensionInputType
+from app.domains.extension_attributes.enums import ExtensionDataType, ExtensionInputType
 
 
 class TestExtensionAttributesAPI:

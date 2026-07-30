@@ -1,15 +1,12 @@
-from datetime import datetime, timezone
-
 from app.domains.devices.models import Device
-from app.domains.mobile_apps.models import MobileAppAssignment
 from app.domains.mobile_apps.repositories import MobileAppRepository
 from app.domains.mobile_apps.schemas import (
     MobileAppCreate,
     MobileAppUpdate,
     MobileAppAssignmentUpsert,
 )
-from app.infra.common.enums import AssignmentDesiredState, AssignmentStatus
-from app.infra.common.schemas import Scope, ScopeExclusion, ScopeTarget, ScopeType
+from app.domains.profiles.enums import AssignmentDesiredState, AssignmentStatus
+from app.domains.shared.scope import Scope, ScopeExclusion, ScopeTarget, ScopeType
 from sqlalchemy.ext.asyncio import AsyncSession
 
 
@@ -231,7 +228,9 @@ class TestMobileAppRepository:
             created_by=1,
         )
         await repo.create(
-            MobileAppCreate(name="Unrelated", enabled=True, package_version="1.0", package_name="com.other", scope=Scope()),
+            MobileAppCreate(
+                name="Unrelated", enabled=True, package_version="1.0", package_name="com.other", scope=Scope()
+            ),
             created_by=1,
         )
 
@@ -254,7 +253,11 @@ class TestMobileAppRepository:
         )
         await repo.upsert_assignment(
             MobileAppAssignmentUpsert(
-                mobile_app_id=app.id, device_id=101, status=AssignmentStatus.PENDING, version=1, desired_state=AssignmentDesiredState.ABSENT
+                mobile_app_id=app.id,
+                device_id=101,
+                status=AssignmentStatus.PENDING,
+                version=1,
+                desired_state=AssignmentDesiredState.ABSENT,
             )
         )
         desired = await repo.get_current_desired_device_ids(app.id)
@@ -292,10 +295,17 @@ class TestMobileAppRepository:
             MobileAppCreate(name="App", enabled=True, package_version="1.0", package_name="com.app", scope=Scope()),
             created_by=1,
         )
-        count = await repo.bulk_upsert_assignments(app.id, [
-            MobileAppAssignmentUpsert(mobile_app_id=app.id, device_id=100, status=AssignmentStatus.PENDING, version=1),
-            MobileAppAssignmentUpsert(mobile_app_id=app.id, device_id=200, status=AssignmentStatus.PENDING, version=1),
-        ])
+        count = await repo.bulk_upsert_assignments(
+            app.id,
+            [
+                MobileAppAssignmentUpsert(
+                    mobile_app_id=app.id, device_id=100, status=AssignmentStatus.PENDING, version=1
+                ),
+                MobileAppAssignmentUpsert(
+                    mobile_app_id=app.id, device_id=200, status=AssignmentStatus.PENDING, version=1
+                ),
+            ],
+        )
         assert count == 2
 
     async def test_bulk_create_assignments(self, db_session: AsyncSession) -> None:
@@ -391,7 +401,7 @@ class TestMobileAppRepository:
 
     async def test_remove_scope_references_no_match(self, db_session: AsyncSession) -> None:
         repo = MobileAppRepository(db_session)
-        app = await repo.create(
+        _ = await repo.create(
             MobileAppCreate(
                 name="App",
                 enabled=True,

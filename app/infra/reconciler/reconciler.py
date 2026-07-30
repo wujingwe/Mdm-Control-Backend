@@ -2,8 +2,9 @@ import logging
 
 from sqlalchemy import select
 
-from app.infra.common.enums import AssignmentDesiredState, AssignmentStatus, DeviceStatus
-from app.infra.common.schemas import ScopeExclusion, Scope, ScopeType, ScopeTarget
+from app.domains.devices.enums import DeviceStatus
+from app.domains.profiles.enums import AssignmentDesiredState, AssignmentStatus
+from app.domains.shared.scope import ScopeExclusion, Scope, ScopeType, ScopeTarget
 from app.infra.criteria import build_device_query
 from app.infra.criteria.schemas import Criteria
 from app.domains.devices.models import Device
@@ -206,7 +207,9 @@ class AssignmentReconciler:
 
         return assignments
 
-    async def recalculate_mobile_app(self, mobile_app_id: int, *, force_push: bool = False, publish: bool = True) -> None:
+    async def recalculate_mobile_app(
+        self, mobile_app_id: int, *, force_push: bool = False, publish: bool = True
+    ) -> None:
         app = await self.mobile_app_repo.get_by_id_for_update(mobile_app_id)
         if not app:
             return

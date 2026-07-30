@@ -4,8 +4,8 @@ from sqlalchemy import String, Integer, DateTime, Boolean, ForeignKey, Text, Enu
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.infra.core.base import Base, utcnow
-from app.infra.common.enums import AssignmentDesiredState, AssignmentStatus
-from app.infra.common.schemas import Scope
+from app.domains.profiles.enums import AssignmentDesiredState, AssignmentStatus
+from app.domains.shared.scope import Scope
 from app.domains.profiles.models import ScopeColumnType
 from app.domains.users.models import User
 

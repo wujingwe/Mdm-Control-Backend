@@ -2,7 +2,7 @@ from typing import Any
 
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
-from app.infra.common.enums import CommandStatus
+from app.domains.commands.enums import CommandStatus
 from app.infra.messaging.consumer import process_profile_status_message
 
 

@@ -1,11 +1,7 @@
 from app.domains.commands.repositories import CommandRepository
 from app.domains.commands.schemas import CommandCreate
-from app.infra.common.enums import (
-    CommandType,
-    CommandStatus,
-    ConnectionStatus,
-    DeviceStatus,
-)
+from app.domains.commands.enums import CommandType, CommandStatus
+from app.domains.devices.enums import ConnectionStatus, DeviceStatus
 from app.domains.devices.models import Device
 from sqlalchemy.ext.asyncio import AsyncSession
 

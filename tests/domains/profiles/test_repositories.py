@@ -8,8 +8,8 @@ from app.domains.profiles.schemas.profile import (
     ProfileUpdate,
     AssignmentUpsert,
 )
-from app.infra.common.enums import AssignmentDesiredState, AssignmentStatus
-from app.infra.common.schemas import Scope, ScopeExclusion, ScopeTarget, ScopeType
+from app.domains.profiles.enums import AssignmentDesiredState, AssignmentStatus
+from app.domains.shared.scope import Scope, ScopeExclusion, ScopeTarget, ScopeType
 from app.domains.profiles.schemas.policy import Policy
 from app.infra.core.exceptions import ConflictError
 
@@ -233,7 +233,9 @@ class TestProfileRepository:
 
     async def test_list_affected_profiles_device_scope(self, db_session: AsyncSession) -> None:
         repo = ProfileRepository(db_session)
-        device = Device(name="D1", serial_number="SN-D1", os_version="14", connection_status="Connected", status="Enrolled")
+        device = Device(
+            name="D1", serial_number="SN-D1", os_version="14", connection_status="Connected", status="Enrolled"
+        )
         db_session.add(device)
         await db_session.commit()
         await db_session.refresh(device)
@@ -251,13 +253,18 @@ class TestProfileRepository:
     async def test_list_affected_profiles_smart_group_scope(self, db_session: AsyncSession) -> None:
         repo = ProfileRepository(db_session)
         from app.domains.smart_groups.models import SmartGroup
-        from app.infra.common.enums import CriteriaType
 
-        sg = SmartGroup(name="TestSG", criteria=[{"field": "os_version", "operator": "is", "type": "string", "value": "14"}], created_by=1)
+        sg = SmartGroup(
+            name="TestSG",
+            criteria=[{"field": "os_version", "operator": "is", "type": "string", "value": "14"}],
+            created_by=1,
+        )
         db_session.add(sg)
         await db_session.commit()
         await db_session.refresh(sg)
-        device = Device(name="D2", serial_number="SN-D2", os_version="14", connection_status="Connected", status="Enrolled")
+        device = Device(
+            name="D2", serial_number="SN-D2", os_version="14", connection_status="Connected", status="Enrolled"
+        )
         db_session.add(device)
         await db_session.commit()
         await db_session.refresh(device)
@@ -280,7 +287,9 @@ class TestProfileRepository:
         db_session.add(sg)
         await db_session.commit()
         await db_session.refresh(sg)
-        device = Device(name="D3", serial_number="SN-D3", os_version="14", connection_status="Connected", status="Enrolled")
+        device = Device(
+            name="D3", serial_number="SN-D3", os_version="14", connection_status="Connected", status="Enrolled"
+        )
         db_session.add(device)
         await db_session.commit()
         await db_session.refresh(device)
@@ -299,7 +308,9 @@ class TestProfileRepository:
 
     async def test_list_affected_profiles_exclusion_triggers(self, db_session: AsyncSession) -> None:
         repo = ProfileRepository(db_session)
-        device = Device(name="D4", serial_number="SN-D4", os_version="14", connection_status="Connected", status="Enrolled")
+        device = Device(
+            name="D4", serial_number="SN-D4", os_version="14", connection_status="Connected", status="Enrolled"
+        )
         db_session.add(device)
         await db_session.commit()
         await db_session.refresh(device)

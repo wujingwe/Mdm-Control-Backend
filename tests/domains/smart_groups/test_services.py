@@ -1,7 +1,7 @@
 from unittest.mock import AsyncMock, MagicMock
 import pytest
 
-from app.infra.common.enums import CriteriaType
+from app.domains.devices.criteria import CriteriaType
 from app.infra.criteria import Criteria
 from app.domains.smart_groups.services import SmartGroupService
 from app.domains.smart_groups.schemas import SmartGroupCreate, SmartGroupUpdate

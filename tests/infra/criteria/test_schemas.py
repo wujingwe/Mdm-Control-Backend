@@ -2,7 +2,7 @@ import pytest
 from pydantic import ValidationError
 
 from app.infra.criteria.schemas import Criteria
-from app.infra.common.enums import CriteriaType
+from app.domains.devices.criteria import CriteriaType
 
 
 class TestCriteria:

@@ -1,4 +1,4 @@
-from app.infra.common.enums import CriteriaType
+from app.domains.devices.criteria import CriteriaType
 from app.infra.criteria import Criteria
 from app.domains.inventory_search.models import InventorySearch
 from app.domains.inventory_search.repositories import InventorySearchRepository

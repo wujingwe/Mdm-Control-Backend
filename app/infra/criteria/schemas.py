@@ -1,4 +1,4 @@
-from app.infra.common.enums import CriteriaType
+from app.domains.devices.criteria import CriteriaType
 from app.infra.common.schemas import CamelModel
 
 VALID_CRITERIA_FIELDS: frozenset[str] = frozenset(

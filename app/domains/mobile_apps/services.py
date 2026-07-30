@@ -1,8 +1,8 @@
-from app.infra.common.enums import AssignmentStatus
+from app.domains.profiles.enums import AssignmentStatus
 from app.infra.core.exceptions import ConflictError
 from app.domains.mobile_apps.models import MobileApp, MobileAppAssignment
 from app.domains.mobile_apps.repositories import MobileAppRepository
-from app.domains.mobile_apps.schemas import MobileAppCreate, MobileAppUpdate, MobileAppStatusUpdate, MobileAppAssignmentUpsert
+from app.domains.mobile_apps.schemas import MobileAppCreate, MobileAppUpdate, MobileAppAssignmentUpsert
 
 
 class MobileAppService:
@@ -34,7 +34,9 @@ class MobileAppService:
     async def get_assignments(self, mobile_app_id: int) -> list[MobileAppAssignment]:
         return await self.repo.get_assignments(mobile_app_id)
 
-    async def update_assignment_status(self, mobile_app_id: int, device_id: int, status: str) -> MobileAppAssignment | None:
+    async def update_assignment_status(
+        self, mobile_app_id: int, device_id: int, status: str
+    ) -> MobileAppAssignment | None:
         from datetime import datetime, timezone
 
         assignment = await self.repo.get_assignment(mobile_app_id, device_id)

@@ -6,7 +6,7 @@ from sqlalchemy import String, Integer, DateTime
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.infra.core.base import Base, utcnow
-from app.infra.common.enums import Permission
+from app.domains.users.enums import Permission
 from app.infra.core.types import PermissionListType
 
 

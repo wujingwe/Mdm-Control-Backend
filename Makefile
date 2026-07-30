@@ -1,4 +1,4 @@
-.PHONY: install install-dev lint lint-fix format format-check test test-coverage run dev check
+.PHONY: install install-dev lint lint-fix format format-check test test-coverage typecheck run dev check
 
 install:
 	pip install -r requirements.txt
@@ -15,10 +15,13 @@ dev:
 lint:
 	ruff check --fix . && ruff format .
 
+typecheck:
+	pyright app/
+
 test:
 	pytest -v
 
 test-coverage:
 	pytest --cov=app --cov-report=term-missing
 
-check: lint test
+check: lint typecheck test

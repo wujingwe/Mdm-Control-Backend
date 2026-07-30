@@ -5,7 +5,7 @@ from passlib.context import CryptContext
 from sqlalchemy import text
 
 from app.infra.core.base import Base
-from app.infra.common.schemas import Scope, ScopeTarget, ScopeType
+from app.domains.shared.scope import Scope, ScopeTarget, ScopeType
 from app.infra.core.database import engine, async_session
 from app.domains.devices.models import Device
 from app.domains.devices.schemas import Network, Wifi
@@ -458,7 +458,7 @@ async def seed_database() -> None:
         profile_ids = [p.id for p in PROFILES]
 
         if profile_ids:
-            from app.infra.common.schemas import Scope, ScopeTarget, ScopeType
+            from app.domains.shared.scope import Scope, ScopeTarget, ScopeType
             from sqlalchemy import update as sa_update
             from app.domains.profiles.models import Profile
 

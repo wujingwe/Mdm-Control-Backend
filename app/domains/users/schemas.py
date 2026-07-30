@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from app.infra.common.enums import Permission
+from app.domains.users.enums import Permission
 from app.infra.common.schemas import CamelModel
 
 

@@ -1,4 +1,4 @@
-from app.infra.common.enums import CommandType
+from app.domains.commands.enums import CommandType
 from app.infra.common.schemas import CamelModel
 from datetime import datetime
 

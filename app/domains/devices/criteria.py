@@ -1,4 +1,4 @@
-rom enum import Enum
+from enum import Enum
 
 
 class CriteriaType(str, Enum):

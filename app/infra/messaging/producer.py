@@ -3,19 +3,23 @@ from __future__ import annotations
 import json
 import logging
 from dataclasses import dataclass
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from uuid import uuid4
 
 from app.infra.config.settings import settings
 
-try:
+if TYPE_CHECKING:
     import aio_pika
     from aio_pika.abc import AbstractChannel, AbstractExchange, AbstractRobustConnection
-except ModuleNotFoundError:  # pragma: no cover - exercised only without optional deps installed
-    aio_pika = None  # type: ignore[assignment]
-    AbstractChannel = Any  # type: ignore[misc,assignment]
-    AbstractExchange = Any  # type: ignore[misc,assignment]
-    AbstractRobustConnection = Any  # type: ignore[misc,assignment]
+else:
+    try:
+        import aio_pika
+        from aio_pika.abc import AbstractChannel, AbstractExchange, AbstractRobustConnection
+    except ModuleNotFoundError:  # pragma: no cover
+        aio_pika = None  # type: ignore[assignment]
+        AbstractChannel = Any  # type: ignore[assignment]
+        AbstractExchange = Any  # type: ignore[assignment]
+        AbstractRobustConnection = Any  # type: ignore[assignment]
 
 logger = logging.getLogger(__name__)
 
@@ -51,7 +55,7 @@ class RabbitMQProducer:
         connection = await aio_pika.connect_robust(self._url)
         channel = await connection.channel(publisher_confirms=True)
 
-        channel.add_on_return_callback(self._on_message_returned)
+        channel.add_on_return_callback(self._on_message_returned)  # type: ignore[attr-defined]
 
         exchange = await channel.declare_exchange(
             self._config.exchange_name,

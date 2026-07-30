@@ -1,6 +1,6 @@
 from unittest.mock import AsyncMock, MagicMock
 import pytest
-from app.infra.common.schemas import Scope
+from app.domains.shared.scope import Scope
 from app.infra.core.exceptions import ConflictError
 from app.domains.mobile_apps.services import MobileAppService
 from app.domains.mobile_apps.schemas import MobileAppCreate, MobileAppUpdate

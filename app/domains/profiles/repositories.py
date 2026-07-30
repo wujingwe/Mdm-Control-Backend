@@ -6,8 +6,8 @@ from sqlalchemy.orm.attributes import flag_modified
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.infra.core.exceptions import ConflictError
-from app.infra.common.enums import AssignmentDesiredState, AssignmentStatus
-from app.infra.common.schemas import ScopeType
+from app.domains.profiles.enums import AssignmentDesiredState, AssignmentStatus
+from app.domains.shared.scope import ScopeType
 from app.domains.devices.models import Device
 from app.domains.profiles.models import Profile, ProfileAssignment
 from app.domains.static_groups.models import StaticGroupDevice
@@ -291,7 +291,6 @@ class ProfileRepository:
             assignment.last_error = error[:2000]
             await self.db.commit()
 
-
     async def remove_scope_references(self, scope_type: ScopeType, target_id: int) -> list[int]:
         """Remove all scope targets and exclusions matching the given type and ID from every profile.
 
@@ -321,4 +320,3 @@ class ProfileRepository:
         if affected:
             await self.db.commit()
         return affected
-

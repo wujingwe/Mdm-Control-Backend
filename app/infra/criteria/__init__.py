@@ -2,7 +2,7 @@ from collections.abc import Callable
 from operator import and_, or_
 
 from sqlalchemy import select
-from sqlalchemy.sql.expression import BinaryExpression
+from sqlalchemy.sql.expression import BinaryExpression, ColumnElement
 
 from app.infra.criteria.schemas import Criteria
 from app.domains.devices.models import Device, DeviceExtensionAttributeValue
@@ -23,7 +23,7 @@ FILTER_BUILDERS: dict[str, Callable] = {
 }
 
 
-def _build_ext_attr_filter(c: Criteria) -> BinaryExpression | None:
+def _build_ext_attr_filter(c: Criteria) -> ColumnElement[bool] | None:
     """Build an EXISTS subquery filter for an extension attribute criterion."""
     builder = FILTER_BUILDERS.get(c.operator)
     if builder is None:
@@ -40,8 +40,8 @@ def _build_ext_attr_filter(c: Criteria) -> BinaryExpression | None:
     )
     return subq
 
-        
-def _build_filter(c: Criteria) -> BinaryExpression | None:
+
+def _build_filter(c: Criteria) -> ColumnElement[bool] | None:
     """Build a single filter expression from a Criterion."""
     col = getattr(Device, c.field, None)
     if c.extension_attribute_id is not None:
@@ -52,7 +52,7 @@ def _build_filter(c: Criteria) -> BinaryExpression | None:
     return builder(col, c.value) if builder else None
 
 
-def _combine(left: BinaryExpression, conj: str, right: BinaryExpression) -> BinaryExpression:
+def _combine(left: ColumnElement[bool], conj: str, right: ColumnElement[bool]) -> ColumnElement[bool]:
     """Combine two expressions using the given conjunction."""
     fn = and_ if conj.upper() == "AND" else or_
     result: BinaryExpression = fn(left, right)
@@ -61,7 +61,7 @@ def _combine(left: BinaryExpression, conj: str, right: BinaryExpression) -> Bina
 
 def build_device_query(
     criteria: list[Criteria],
-) -> BinaryExpression | None:
+) -> ColumnElement[bool] | None:
     """Build a SQLAlchemy WHERE expression from a list of Criteria.
 
     Each criterion's ``and_or`` field determines the conjunction to the
@@ -71,8 +71,8 @@ def build_device_query(
     """
 
     # 1. Group consecutive criteria by parentheses.
-    groups: list[list[tuple[BinaryExpression, str]]] = []
-    current_group: list[tuple[BinaryExpression, str]] = []
+    groups: list[list[tuple[ColumnElement[bool], str]]] = []
+    current_group: list[tuple[ColumnElement[bool], str]] = []
 
     for c in criteria:
         f = _build_filter(c)
@@ -94,7 +94,7 @@ def build_device_query(
         return None
 
     # 2. Combine each group using the conjunction on each criterion.
-    group_exprs: list[BinaryExpression] = []
+    group_exprs: list[ColumnElement[bool]] = []
     group_conjs: list[str] = []
 
     for group in groups:

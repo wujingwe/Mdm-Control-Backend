@@ -2,16 +2,15 @@ from unittest.mock import AsyncMock, MagicMock
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.infra.common.schemas import ScopeExclusion, Scope, ScopeType, ScopeTarget
+from app.domains.shared.scope import ScopeExclusion, Scope, ScopeType, ScopeTarget
 from app.domains.devices.models import Device
 from app.infra.messaging.producer import RabbitMQProducer
 from app.domains.mobile_apps.models import MobileApp, MobileAppAssignment
 from app.domains.mobile_apps.repositories import MobileAppRepository
 from app.domains.profiles.models import Profile, ProfileAssignment
 from app.domains.profiles.repositories import ProfileRepository
-from app.domains.profiles.schemas.profile import AssignmentUpsert
-from app.domains.mobile_apps.schemas import MobileAppAssignmentUpsert
-from app.infra.common.enums import AssignmentDesiredState, AssignmentStatus, DeviceStatus
+from app.domains.devices.enums import DeviceStatus
+from app.domains.profiles.enums import AssignmentDesiredState, AssignmentStatus
 from app.infra.reconciler.reconciler import AssignmentReconciler
 from app.domains.smart_groups.models import SmartGroup
 from app.domains.static_groups.models import StaticGroup, StaticGroupDevice
@@ -26,9 +25,7 @@ def _make_producer() -> MagicMock:
     return producer
 
 
-async def _create_device(
-    db: AsyncSession, name: str, serial: str, status: str = DeviceStatus.ENROLLED.value
-) -> Device:
+async def _create_device(db: AsyncSession, name: str, serial: str, status: str = DeviceStatus.ENROLLED.value) -> Device:
     device = Device(
         name=name,
         serial_number=serial,
@@ -67,9 +64,7 @@ async def _create_mobile_app(
     return app
 
 
-async def _create_assignment(
-    db: AsyncSession, profile_id: int, device_id: int, version: int = 1
-) -> ProfileAssignment:
+async def _create_assignment(db: AsyncSession, profile_id: int, device_id: int, version: int = 1) -> ProfileAssignment:
     assignment = ProfileAssignment(
         profile_id=profile_id,
         device_id=device_id,
@@ -218,7 +213,7 @@ class TestRecalculateProfilePublish:
         repo = ProfileRepository(db_session)
         reconciler = AssignmentReconciler(repo, MagicMock(spec=MobileAppRepository), producer)
 
-        device = await _create_device(db_session, "Mac", "SN-1")
+        _ = await _create_device(db_session, "Mac", "SN-1")
         profile = await _create_profile(
             db_session,
             "P1",
@@ -242,7 +237,7 @@ class TestRecalculateProfilesForSmartGroup:
         repo = ProfileRepository(db_session)
         reconciler = AssignmentReconciler(repo, MagicMock(spec=MobileAppRepository), producer)
 
-        device = await _create_device(db_session, "Mac", "SN-1")
+        _ = await _create_device(db_session, "Mac", "SN-1")
         sg = SmartGroup(
             name="Macs",
             criteria=[{"field": "name", "operator": "like", "type": "string", "value": "Mac"}],
@@ -268,7 +263,7 @@ class TestRecalculateProfilesForSmartGroup:
         repo = ProfileRepository(db_session)
         reconciler = AssignmentReconciler(repo, MagicMock(spec=MobileAppRepository), producer)
 
-        device = await _create_device(db_session, "Mac", "SN-1")
+        _ = await _create_device(db_session, "Mac", "SN-1")
         sg = SmartGroup(
             name="Excl",
             criteria=[{"field": "name", "operator": "like", "type": "string", "value": "Mac"}],
@@ -298,7 +293,7 @@ class TestRecalculateProfilesForSmartGroup:
         repo = ProfileRepository(db_session)
         reconciler = AssignmentReconciler(repo, MagicMock(spec=MobileAppRepository), producer)
 
-        profile = await _create_profile(
+        _ = await _create_profile(
             db_session,
             "P1",
             Scope(targets=[ScopeTarget(scope_type=ScopeType.STATIC_GROUP, target_id=999)]),
@@ -318,7 +313,7 @@ class TestRecalculateProfilesForStaticGroup:
         repo = ProfileRepository(db_session)
         reconciler = AssignmentReconciler(repo, MagicMock(spec=MobileAppRepository), producer)
 
-        d1 = await _create_device(db_session, "Mac1", "SN-1")
+        _ = await _create_device(db_session, "Mac1", "SN-1")
         sg = StaticGroup(name="SG1", created_by=1)
         db_session.add(sg)
         await db_session.commit()
@@ -475,7 +470,7 @@ class TestRecalculateMobileApp:
         repo = MobileAppRepository(db_session)
         reconciler = AssignmentReconciler(ProfileRepository(db_session), repo, producer)
 
-        device = await _create_device(db_session, "Mac", "SN-1")
+        _ = await _create_device(db_session, "Mac", "SN-1")
         app = await _create_mobile_app(
             db_session,
             "App1",
@@ -553,7 +548,7 @@ class TestRecalculateMobileAppsForSmartGroup:
         repo = MobileAppRepository(db_session)
         reconciler = AssignmentReconciler(ProfileRepository(db_session), repo, producer)
 
-        device = await _create_device(db_session, "Mac", "SN-1")
+        _ = await _create_device(db_session, "Mac", "SN-1")
         sg = SmartGroup(
             name="Macs",
             criteria=[{"field": "name", "operator": "like", "type": "string", "value": "Mac"}],
@@ -579,7 +574,7 @@ class TestRecalculateMobileAppsForSmartGroup:
         repo = MobileAppRepository(db_session)
         reconciler = AssignmentReconciler(ProfileRepository(db_session), repo, producer)
 
-        device = await _create_device(db_session, "Mac", "SN-1")
+        _ = await _create_device(db_session, "Mac", "SN-1")
         sg = SmartGroup(
             name="Excl",
             criteria=[{"field": "name", "operator": "like", "type": "string", "value": "Mac"}],
@@ -628,7 +623,7 @@ class TestRecalculateMobileAppsForStaticGroup:
         repo = MobileAppRepository(db_session)
         reconciler = AssignmentReconciler(ProfileRepository(db_session), repo, producer)
 
-        d1 = await _create_device(db_session, "Mac1", "SN-1")
+        _ = await _create_device(db_session, "Mac1", "SN-1")
         sg = StaticGroup(name="SG1", created_by=1)
         db_session.add(sg)
         await db_session.commit()
@@ -652,7 +647,7 @@ class TestRecalculateMobileAppsForStaticGroup:
         repo = MobileAppRepository(db_session)
         reconciler = AssignmentReconciler(ProfileRepository(db_session), repo, producer)
 
-        d1 = await _create_device(db_session, "Mac1", "SN-1")
+        _ = await _create_device(db_session, "Mac1", "SN-1")
         sg = StaticGroup(name="SG1", created_by=1)
         db_session.add(sg)
         await db_session.commit()

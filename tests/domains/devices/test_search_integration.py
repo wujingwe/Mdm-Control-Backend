@@ -1,7 +1,7 @@
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.infra.common.enums import ConnectionStatus
+from app.domains.devices.enums import ConnectionStatus
 from app.infra.criteria.schemas import Criteria
 from app.domains.devices.models import Device
 from app.domains.inventory_search.repositories import InventorySearchRepository

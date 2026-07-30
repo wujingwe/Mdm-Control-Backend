@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 import pytest
 from pydantic import ValidationError
 
-from app.infra.common.enums import CriteriaType
+from app.domains.devices.criteria import CriteriaType
 from app.infra.criteria import Criteria
 from app.domains.smart_groups.schemas import (
     SmartGroupCreate,

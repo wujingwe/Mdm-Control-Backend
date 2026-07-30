@@ -4,7 +4,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.domains.devices.models import Device
 from app.domains.inventory_search.schemas import InventorySearchCreate
 from app.domains.inventory_search.repositories import InventorySearchRepository
-from app.domains.inventory_search.models import Criteria
 
 
 class TestInventorySearchAPI:
@@ -59,12 +58,15 @@ class TestInventorySearchAPI:
     async def test_list(self, client: AsyncClient, db_session: AsyncSession) -> None:
         repo = InventorySearchRepository(db_session)
         for i in range(3):
-            await repo.create(InventorySearchCreate(
-                name=f"s{i}",
-                criteria=[{"field": "name", "operator": "is", "type": "string", "value": "test"}],
-                sort_field="name",
-                sort_direction="asc",
-            ), created_by=1)
+            await repo.create(
+                InventorySearchCreate(
+                    name=f"s{i}",
+                    criteria=[{"field": "name", "operator": "is", "type": "string", "value": "test"}],
+                    sort_field="name",
+                    sort_direction="asc",
+                ),
+                created_by=1,
+            )
         resp = await client.get(self.BASE)
         data = resp.json()
         assert data["total"] == 3
@@ -74,7 +76,11 @@ class TestInventorySearchAPI:
         await self._seed_device(db_session, "B", "SN-B")
         resp = await client.post(
             f"{self.BASE}/execute",
-            json={"criteria": [{"field": "name", "operator": "is", "type": "string", "value": "A"}], "sortField": "name", "sortDirection": "asc"},
+            json={
+                "criteria": [{"field": "name", "operator": "is", "type": "string", "value": "A"}],
+                "sortField": "name",
+                "sortDirection": "asc",
+            },
         )
         assert resp.status_code == 200
         assert len(resp.json()) == 1

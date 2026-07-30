@@ -23,4 +23,3 @@ class ScopeExclusion(CamelModel):
 class Scope(CamelModel):
     targets: list[ScopeTarget] = []
     exclusions: list[ScopeExclusion] = []
-    

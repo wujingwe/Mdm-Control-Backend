@@ -19,7 +19,9 @@ class TestLifecycle:
         lifecycle = Lifecycle()
         with patch("app.lifecycle.settings") as mock_settings:
             mock_settings.rabbitmq_consumer_enabled = False
-            with patch("app.infra.messaging.producer.rabbitmq_producer.start", side_effect=RuntimeError("Not available")):
+            with patch(
+                "app.infra.messaging.producer.rabbitmq_producer.start", side_effect=RuntimeError("Not available")
+            ):
                 await lifecycle.start()
         await lifecycle.stop()
 

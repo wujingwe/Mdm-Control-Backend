@@ -11,21 +11,23 @@ from app.domains.users.models import User
 
 router = APIRouter(prefix="/devices", tags=["Devices"])
 
-RECONCILER_TRIGGER_FIELDS = frozenset({
-    "name",
-    "serial_number",
-    "os_version",
-    "connection_status",
-    "status",
-    "battery_status",
+RECONCILER_TRIGGER_FIELDS = frozenset(
+    {
+        "name",
+        "serial_number",
+        "os_version",
+        "connection_status",
+        "status",
+        "battery_status",
         "total_storage",
-    "available_storage",
-    "total_memory",
-    "available_memory",
-    "extension_attribute_values",
-})
+        "available_storage",
+        "total_memory",
+        "available_memory",
+        "extension_attribute_values",
+    }
+)
 
-    
+
 @router.get("", response_model=PaginatedResponse[DeviceResponse])
 async def list_devices(
     skip: int = Query(0, ge=0),

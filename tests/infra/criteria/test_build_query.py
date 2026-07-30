@@ -4,7 +4,7 @@ from sqlalchemy.dialects import mysql
 from app.infra.criteria import build_device_query
 from app.infra.criteria.schemas import Criteria
 from app.domains.devices.models import Device
-from app.infra.common.enums import CriteriaType
+from app.domains.devices.criteria import CriteriaType
 
 _mariadb_dialect = mysql.dialect()
 

@@ -1,8 +1,9 @@
 from datetime import datetime
 
 
-from app.infra.common.enums import AssignmentDesiredState, AssignmentStatus
-from app.infra.common.schemas import CamelModel, Scope
+from app.domains.profiles.enums import AssignmentDesiredState, AssignmentStatus
+from app.domains.shared.scope import Scope
+from app.infra.common.schemas import CamelModel
 from app.domains.profiles.schemas.policy import Policy
 
 

@@ -1,4 +1,4 @@
-from app.infra.common.enums import AssignmentStatus
+from app.domains.profiles.enums import AssignmentStatus
 from app.infra.core.exceptions import ConflictError
 from app.domains.profiles.models import Profile, ProfileAssignment
 from app.domains.profiles.repositories import ProfileRepository

@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domains.commands.models import Command
 from app.domains.commands.schemas import CommandCreate
-from app.infra.common.enums import CommandStatus
+from app.domains.commands.enums import CommandStatus
 from app.infra.core.exceptions import ConflictError
 
 

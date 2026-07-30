@@ -1,7 +1,6 @@
 from unittest.mock import patch, AsyncMock
 
 import httpx
-import pytest
 
 from app.webhook_client import revalidate, _get_client
 

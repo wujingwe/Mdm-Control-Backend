@@ -5,7 +5,7 @@ from app.domains.extension_attributes.schemas import (
     ExtensionAttributeCreate,
     ExtensionAttributeUpdate,
 )
-from app.infra.common.enums import ExtensionDataType, ExtensionInputType
+from app.domains.extension_attributes.enums import ExtensionDataType, ExtensionInputType
 from sqlalchemy.ext.asyncio import AsyncSession
 
 

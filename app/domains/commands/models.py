@@ -6,7 +6,7 @@ from sqlalchemy import Enum, Integer, ForeignKey, DateTime, Text, Index, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.infra.core.base import Base, utcnow
-from app.infra.common.enums import CommandType, CommandStatus
+from app.domains.commands.enums import CommandType, CommandStatus
 from app.domains.devices.models import Device
 
 

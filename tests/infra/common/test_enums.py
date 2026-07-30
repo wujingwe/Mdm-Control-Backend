@@ -1,12 +1,7 @@
-from app.infra.common.enums import (
-    ExtensionDataType,
-    ExtensionInputType,
-    CommandType,
-    CommandStatus,
-    DeviceStatus,
-    ConnectionStatus,
-    AssignmentStatus,
-)
+from app.domains.commands.enums import CommandType, CommandStatus
+from app.domains.devices.enums import DeviceStatus, ConnectionStatus
+from app.domains.extension_attributes.enums import ExtensionDataType, ExtensionInputType
+from app.domains.profiles.enums import AssignmentStatus
 
 
 class TestEnums:

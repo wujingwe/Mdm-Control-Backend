@@ -1,7 +1,7 @@
 from datetime import datetime
 
 
-from app.infra.common.enums import ConnectionStatus, DeviceStatus
+from app.domains.devices.enums import ConnectionStatus, DeviceStatus
 from app.infra.common.schemas import CamelModel
 
 

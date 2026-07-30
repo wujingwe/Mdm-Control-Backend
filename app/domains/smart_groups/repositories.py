@@ -1,4 +1,7 @@
+from typing import cast
+
 from sqlalchemy import select, func, update, delete
+from sqlalchemy.engine import CursorResult
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -49,7 +52,7 @@ class SmartGroupRepository:
         stmt = delete(SmartGroup).where(SmartGroup.id == record_id)
         result = await self.db.execute(stmt)
         await self.db.commit()
-        return result.rowcount > 0
+        return cast(CursorResult, result).rowcount > 0
 
     async def count(self) -> int:
         stmt = select(func.count()).select_from(SmartGroup)

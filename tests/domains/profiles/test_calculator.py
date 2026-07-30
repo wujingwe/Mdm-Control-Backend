@@ -1,13 +1,11 @@
-from app.infra.common.schemas import Scope, ScopeTarget, ScopeExclusion, ScopeType
+from app.domains.shared.scope import Scope, ScopeTarget, ScopeExclusion, ScopeType
 from app.infra.reconciler.reconciler import AssignmentReconciler
 
 
 class TestAssignmentCalculator:
     def test_empty_scope(self) -> None:
         scope = Scope()
-        result = AssignmentReconciler.compute(
-            profile_id=1, profile_version=1, scope=scope, resolved_device_ids={}
-        )
+        result = AssignmentReconciler.compute(profile_id=1, profile_version=1, scope=scope, resolved_device_ids={})
         assert result == []
 
     def test_all_devices_target(self) -> None:
@@ -95,9 +93,7 @@ class TestAssignmentCalculator:
 
     def test_no_resolved_ids_for_target(self) -> None:
         scope = Scope(targets=[ScopeTarget(scope_type=ScopeType.SMART_GROUP, target_id=99)])
-        result = AssignmentReconciler.compute(
-            profile_id=1, profile_version=1, scope=scope, resolved_device_ids={}
-        )
+        result = AssignmentReconciler.compute(profile_id=1, profile_version=1, scope=scope, resolved_device_ids={})
         assert result == []
 
     def test_assignment_fields(self) -> None:

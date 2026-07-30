@@ -1,7 +1,7 @@
 from datetime import datetime
 
 
-from app.infra.common.enums import ExtensionDataType, ExtensionInputType
+from app.domains.extension_attributes.enums import ExtensionDataType, ExtensionInputType
 from app.infra.common.schemas import CamelModel
 
 

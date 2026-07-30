@@ -4,7 +4,7 @@ from sqlalchemy import Enum, ForeignKey, Index, Integer, String, Text, DateTime,
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.infra.core.base import Base, utcnow
-from app.infra.common.enums import ExtensionDataType, ExtensionInputType
+from app.domains.extension_attributes.enums import ExtensionDataType, ExtensionInputType
 from app.domains.users.models import User
 
 

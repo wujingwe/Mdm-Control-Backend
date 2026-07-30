@@ -2,7 +2,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from app.domains.commands.services import CommandService
 from app.domains.commands.schemas import CommandCreate
-from app.infra.common.enums import CommandType
+from app.domains.commands.enums import CommandType
 
 
 class TestCommandService:

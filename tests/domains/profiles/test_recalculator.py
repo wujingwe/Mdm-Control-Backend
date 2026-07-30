@@ -2,7 +2,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.infra.common.schemas import ScopeExclusion, Scope, ScopeType, ScopeTarget
+from app.domains.shared.scope import ScopeExclusion, Scope, ScopeType, ScopeTarget
 from app.domains.devices.models import Device
 from app.infra.messaging.producer import RabbitMQProducer
 from app.domains.profiles.models import Profile, ProfileAssignment

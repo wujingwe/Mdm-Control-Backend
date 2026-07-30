@@ -1,5 +1,5 @@
 from unittest.mock import AsyncMock, patch
-from app.infra.common.enums import ConnectionStatus, DeviceStatus
+from app.domains.devices.enums import ConnectionStatus, DeviceStatus
 from app.domains.devices.models import Device
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
