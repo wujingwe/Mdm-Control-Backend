@@ -11,3 +11,16 @@ class ScopeType(str, Enum):
 
 
 class ScopeTarget(CamelModel):
+    scope_type: ScopeType
+    target_id: int | None = None
+
+
+class ScopeExclusion(CamelModel):
+    scope_type: ScopeType
+    exclude_id: int | None = None
+
+
+class Scope(CamelModel):
+    targets: list[ScopeTarget] = []
+    exclusions: list[ScopeExclusion] = []
+    
