@@ -16,7 +16,7 @@ lint:
 	ruff check --fix . && ruff format .
 
 typecheck:
-	pyright app/
+	mypy app/
 
 test:
 	pytest -v
