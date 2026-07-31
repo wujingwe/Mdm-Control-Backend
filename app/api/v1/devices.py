@@ -126,3 +126,16 @@ async def execute_command(
     result = await service.trigger_command(device_id, data, current_user.id)
     command = result["command"]
     return CommandResponse.model_validate(command)
+
+
+@router.put("/{device_id}/commands/{command_id}/status", response_model=CommandResponse)
+async def update_command_status(
+    device_id: int,
+    command_id: int,
+    data: CommandStatusUpdate,
+    service: CommandService = Depends(get_command_service),
+) -> CommandResponse:
+    command = await service.update_status(command_id, data.status, data.result_message)
+    if not command or command.device_id != device_id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Command not found")
+    return CommandResponse.model_validate(command)
