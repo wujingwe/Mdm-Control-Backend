@@ -19,12 +19,6 @@ logger = logging.getLogger(__name__)
 class RabbitMQProducer:
     """Publishes messages to the SSE server exchange via the shared FastStream broker."""
 
-    async def start(self) -> None:
-        pass
-
-    async def stop(self) -> None:
-        pass
-
     async def publish_json(
         self,
         payload: dict[str, Any],
