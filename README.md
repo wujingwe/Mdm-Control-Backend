@@ -52,7 +52,7 @@ Copy `.env` (defaults are pre-configured) and adjust as needed.
 All settings via `.env` file or environment variables:
 
 | Variable | Default | Description |
-|---|---|---|---|
+|---|---|---|
 | `DB_URL` | `mysql+aiomysql://user:password@localhost:3306/mdm_control` | Database connection string |
 | `RABBITMQ_URL` | `amqp://guest:guest@localhost:5672/` | AMQP connection URL |
 | `WEBHOOK_URL` | `http://localhost:3000/api/v1/revalidate` | Next.js revalidation endpoint |
