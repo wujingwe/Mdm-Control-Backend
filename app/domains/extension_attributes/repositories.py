@@ -1,4 +1,4 @@
-from typing import cast
+from typing import Any, cast
 
 from sqlalchemy import select, func, update, delete
 from sqlalchemy.engine import CursorResult
@@ -53,7 +53,7 @@ class ExtensionAttributeRepository:
 
     async def delete(self, record_id: int) -> bool:
         stmt = delete(ExtensionAttribute).where(ExtensionAttribute.id == record_id)
-        result = await self.db.execute(stmt)
+        result = cast(CursorResult[Any], await self.db.execute(stmt))
         await self.db.commit()
         return cast(CursorResult, result).rowcount > 0
 
