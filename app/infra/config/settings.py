@@ -7,10 +7,12 @@ class Settings(BaseSettings):
     webhook_url: str = "http://localhost:3000/api/v1/revalidate"
     revalidation_secret: str = ""
 
-    sso_enabled: bool = False
     sso_jwks_url: str = ""
     sso_issuer: str = ""
     sso_audience: str = ""
+
+    dev_auth_enabled: bool = False
+    dev_auth_private_key: str = ""
 
     cors_origins: list[str] = ["*"]
 

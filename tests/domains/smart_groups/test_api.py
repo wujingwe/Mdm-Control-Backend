@@ -1,8 +1,45 @@
 from httpx import AsyncClient
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.domains.profiles.models import Profile
+from app.domains.shared.scope import Scope, ScopeTarget, ScopeType
 
 
 class TestSmartGroupsAPI:
     BASE = "/api/v1/smart-groups"
+
+    async def test_delete_referenced_by_profile_conflict(self, client: AsyncClient, db_session: AsyncSession) -> None:
+        create = await client.post(
+            self.BASE,
+            json={
+                "name": "Referenced",
+                "criteria": [
+                    {
+                        "field": "os_version",
+                        "operator": "is",
+                        "type": "string",
+                        "value": "Android 14",
+                    },
+                ],
+            },
+        )
+        gid = create.json()["id"]
+        db_session.add(
+            Profile(
+                name="P1",
+                policy={},
+                scope=Scope(targets=[ScopeTarget(scope_type=ScopeType.SMART_GROUP, target_id=gid)]),
+                created_by=1,
+            )
+        )
+        await db_session.commit()
+
+        resp = await client.delete(f"{self.BASE}/{gid}")
+        assert resp.status_code == 409
+        assert "referenced" in resp.json()["detail"]
+
+        still = await client.get(f"{self.BASE}/{gid}")
+        assert still.status_code == 200
 
     async def test_crud_flow(self, client: AsyncClient) -> None:
         create = await client.post(

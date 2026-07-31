@@ -616,3 +616,130 @@ class TestSearchEdgeCases:
         svc, _ = devices
         result = await _search(svc, "available_storage", "greaterThan", "200")
         assert _names(result) == ["Galaxy S24", "MacBook Pro"]
+
+
+@pytest.fixture
+async def ext_devices(
+    devices: tuple[InventorySearchService, dict[str, Device]],
+    db_session: AsyncSession,
+) -> tuple[InventorySearchService, dict[str, Device], int]:
+    """Give a subset of the devices a value for a shared extension attribute."""
+    from app.domains.devices.repositories import DeviceRepository
+    from app.domains.devices.schemas import DeviceUpdate
+    from app.domains.extension_attributes.repositories import ExtensionAttributeRepository
+    from app.domains.extension_attributes.schemas import ExtensionAttributeCreate
+
+    svc, by_serial = devices
+    ea = await ExtensionAttributeRepository(db_session).create(
+        ExtensionAttributeCreate(name="field1", data_type="string", input_type="Text field"),
+        created_by=1,
+    )
+    repo = DeviceRepository(db_session)
+    values = {
+        "SN-MBP-001": "high",
+        "SN-MBA-002": "medium",
+        "SN-IP15-003": "high",
+    }
+    for serial, value in values.items():
+        await repo.update(
+            by_serial[serial].id,
+            DeviceUpdate(
+                extension_attribute_values=[
+                    {
+                        "extension_attribute_id": ea.id,
+                        "extension_attribute_name": "field1",
+                        "value": value,
+                    },
+                ],
+            ),
+        )
+    return svc, by_serial, ea.id
+
+
+async def _ext_search(
+    service: InventorySearchService,
+    operator: str,
+    value: str,
+    extension_attribute_id: int,
+    field: str = "name",
+) -> list[Device]:
+    return await service.execute_search(
+        InventorySearchExecuteRequest(
+            criteria=[
+                Criteria(
+                    field=field,
+                    operator=operator,
+                    type="string",
+                    value=value,
+                    and_or="AND",
+                    extension_attribute_id=extension_attribute_id,
+                ),
+            ],
+        )
+    )
+
+
+class TestExtensionAttributeSearch:
+    async def test_ext_attr_is_matches_devices(
+        self, ext_devices: tuple[InventorySearchService, dict[str, Device], int]
+    ) -> None:
+        svc, _, ea_id = ext_devices
+        result = await _ext_search(svc, "is", "high", ea_id)
+        assert _names(result) == ["iPhone 15", "MacBook Pro"]
+
+    async def test_ext_attr_like_matches_substring(
+        self, ext_devices: tuple[InventorySearchService, dict[str, Device], int]
+    ) -> None:
+        svc, _, ea_id = ext_devices
+        result = await _ext_search(svc, "like", "%hi%", ea_id)
+        assert _names(result) == ["iPhone 15", "MacBook Pro"]
+
+    async def test_ext_attr_matches_regex(
+        self, ext_devices: tuple[InventorySearchService, dict[str, Device], int]
+    ) -> None:
+        svc, _, ea_id = ext_devices
+        result = await _ext_search(svc, "matchesRegex", "^m", ea_id)
+        assert _names(result) == ["MacBook Air"]
+
+    async def test_ext_attr_no_match_returns_empty(
+        self, ext_devices: tuple[InventorySearchService, dict[str, Device], int]
+    ) -> None:
+        svc, _, ea_id = ext_devices
+        result = await _ext_search(svc, "is", "nonexistent", ea_id)
+        assert result == []
+
+    async def test_devices_without_ext_attr_excluded(
+        self, ext_devices: tuple[InventorySearchService, dict[str, Device], int]
+    ) -> None:
+        """Devices that never got a value for the attribute never match."""
+        svc, _, ea_id = ext_devices
+        result = await _ext_search(svc, "is", "high", ea_id)
+        assert _names(result) == ["iPhone 15", "MacBook Pro"]
+        assert "Pixel 8" not in _names(result)
+
+    async def test_ext_attr_combined_with_device_field(
+        self, ext_devices: tuple[InventorySearchService, dict[str, Device], int]
+    ) -> None:
+        svc, _, ea_id = ext_devices
+        result = await svc.execute_search(
+            InventorySearchExecuteRequest(
+                criteria=[
+                    Criteria(
+                        field="name",
+                        operator="like",
+                        type="string",
+                        value="Mac",
+                        and_or="AND",
+                    ),
+                    Criteria(
+                        field="name",
+                        operator="is",
+                        type="string",
+                        value="high",
+                        and_or="AND",
+                        extension_attribute_id=ea_id,
+                    ),
+                ],
+            )
+        )
+        assert _names(result) == ["MacBook Pro"]

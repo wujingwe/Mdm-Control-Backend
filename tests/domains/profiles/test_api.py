@@ -2,7 +2,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 from httpx import AsyncClient
 
-from app.dependencies import get_reconciler
+from app.dependencies import get_reconciliation_service
 from app.main import app
 
 
@@ -47,6 +47,16 @@ class TestProfilesAPI:
         assert resp.status_code == 404
         assert resp.json()["detail"] == "Profile not found"
 
+    async def test_update_empty_body(self, client: AsyncClient) -> None:
+        create = await client.post(
+            self.BASE,
+            json={"name": "Profile1", "policy": {}, "scope": {"targets": [], "exclusions": []}},
+        )
+        pid = create.json()["id"]
+        resp = await client.put(f"{self.BASE}/{pid}", json={})
+        assert resp.status_code == 200
+        assert resp.json()["name"] == "Profile1"
+
     async def test_delete_not_found(self, client: AsyncClient) -> None:
         resp = await client.delete(f"{self.BASE}/999")
         assert resp.status_code == 404
@@ -63,9 +73,9 @@ class TestProfilesAPI:
         )
         pid = create.json()["id"]
 
-        reconciler = MagicMock()
-        reconciler.request_recalculate_profile = AsyncMock()
-        app.dependency_overrides[get_reconciler] = lambda: reconciler
+        reconciliation_service = MagicMock()
+        reconciliation_service.request_recalculate_profile = AsyncMock()
+        app.dependency_overrides[get_reconciliation_service] = lambda: reconciliation_service
         try:
             resp = await client.put(
                 f"{self.BASE}/{pid}",
@@ -77,11 +87,11 @@ class TestProfilesAPI:
                 },
             )
         finally:
-            app.dependency_overrides.pop(get_reconciler, None)
+            app.dependency_overrides.pop(get_reconciliation_service, None)
 
         assert resp.status_code == 200
         assert len(resp.json()["scope"]["targets"]) == 1
-        reconciler.request_recalculate_profile.assert_awaited_once_with(pid)
+        reconciliation_service.request_recalculate_profile.assert_awaited_once_with(pid, force_push=False)
 
     async def test_settings_update_forces_recalculation_push(self, client: AsyncClient) -> None:
         create = await client.post(
@@ -89,19 +99,19 @@ class TestProfilesAPI:
         )
         pid = create.json()["id"]
 
-        reconciler = MagicMock()
-        reconciler.request_recalculate_profile = AsyncMock()
-        app.dependency_overrides[get_reconciler] = lambda: reconciler
+        reconciliation_service = MagicMock()
+        reconciliation_service.request_recalculate_profile = AsyncMock()
+        app.dependency_overrides[get_reconciliation_service] = lambda: reconciliation_service
         try:
             resp = await client.put(
                 f"{self.BASE}/{pid}",
                 json={"policy": {"screenCaptureDisabled": True}},
             )
         finally:
-            app.dependency_overrides.pop(get_reconciler, None)
+            app.dependency_overrides.pop(get_reconciliation_service, None)
 
         assert resp.status_code == 200
-        reconciler.request_recalculate_profile.assert_awaited_once_with(pid, force_push=True)
+        reconciliation_service.request_recalculate_profile.assert_awaited_once_with(pid, force_push=True)
 
     async def test_scope_update_recalculates_without_force_push(self, client: AsyncClient) -> None:
         create = await client.post(
@@ -109,9 +119,9 @@ class TestProfilesAPI:
         )
         pid = create.json()["id"]
 
-        reconciler = MagicMock()
-        reconciler.request_recalculate_profile = AsyncMock()
-        app.dependency_overrides[get_reconciler] = lambda: reconciler
+        reconciliation_service = MagicMock()
+        reconciliation_service.request_recalculate_profile = AsyncMock()
+        app.dependency_overrides[get_reconciliation_service] = lambda: reconciliation_service
         try:
             resp = await client.put(
                 f"{self.BASE}/{pid}",
@@ -123,15 +133,15 @@ class TestProfilesAPI:
                 },
             )
         finally:
-            app.dependency_overrides.pop(get_reconciler, None)
+            app.dependency_overrides.pop(get_reconciliation_service, None)
 
         assert resp.status_code == 200
-        reconciler.request_recalculate_profile.assert_awaited_once_with(pid)
+        reconciliation_service.request_recalculate_profile.assert_awaited_once_with(pid, force_push=False)
 
     async def test_get_scope(self, client: AsyncClient) -> None:
-        reconciler = MagicMock()
-        reconciler.request_recalculate_profile = AsyncMock()
-        app.dependency_overrides[get_reconciler] = lambda: reconciler
+        reconciliation_service = MagicMock()
+        reconciliation_service.request_recalculate_profile = AsyncMock()
+        app.dependency_overrides[get_reconciliation_service] = lambda: reconciliation_service
         try:
             create = await client.post(
                 self.BASE,
@@ -147,7 +157,7 @@ class TestProfilesAPI:
             pid = create.json()["id"]
             resp = await client.get(f"{self.BASE}/{pid}")
         finally:
-            app.dependency_overrides.pop(get_reconciler, None)
+            app.dependency_overrides.pop(get_reconciliation_service, None)
         assert resp.status_code == 200
         assert len(resp.json()["scope"]["targets"]) == 1
 

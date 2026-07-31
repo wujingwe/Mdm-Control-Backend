@@ -2,12 +2,11 @@ from datetime import datetime, timezone
 
 from sqlalchemy import select, func, update, delete
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm.attributes import flag_modified
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.infra.core.exceptions import ConflictError
 from app.domains.profiles.enums import AssignmentDesiredState, AssignmentStatus
-from app.domains.shared.scope import ScopeType
+from app.domains.shared.scope import ScopeType, scope_matches
 from app.domains.devices.models import Device
 from app.domains.mobile_apps.models import MobileApp, MobileAppAssignment
 from app.domains.static_groups.models import StaticGroupDevice
@@ -16,63 +15,65 @@ from app.domains.mobile_apps.schemas import MobileAppCreate, MobileAppUpdate, Mo
 
 class MobileAppRepository:
     def __init__(self, db: AsyncSession) -> None:
-        self.db = db
+        self._db = db
 
     async def list_apps(self, skip: int = 0, limit: int = 100) -> list[MobileApp]:
         stmt = select(MobileApp).order_by(MobileApp.id).offset(skip).limit(limit)
-        result = await self.db.execute(stmt)
+        result = await self._db.execute(stmt)
         return list(result.scalars().all())
 
-    async def get_by_id(self, record_id: int) -> MobileApp | None:
-        stmt = select(MobileApp).where(MobileApp.id == record_id)
-        result = await self.db.execute(stmt)
+    async def get_by_id(self, mobile_app_id: int) -> MobileApp | None:
+        stmt = select(MobileApp).where(MobileApp.id == mobile_app_id)
+        result = await self._db.execute(stmt)
         return result.scalar_one_or_none()
 
-    async def get_by_id_for_update(self, record_id: int) -> MobileApp | None:
-        stmt = select(MobileApp).where(MobileApp.id == record_id).with_for_update()
-        result = await self.db.execute(stmt)
+    async def get_by_id_for_update(self, mobile_app_id: int) -> MobileApp | None:
+        stmt = select(MobileApp).where(MobileApp.id == mobile_app_id).with_for_update()
+        result = await self._db.execute(stmt)
         return result.scalar_one_or_none()
 
     async def create(self, data: MobileAppCreate, created_by: int) -> MobileApp:
         instance = MobileApp(**data.model_dump(), created_by=created_by)
-        self.db.add(instance)
+        self._db.add(instance)
         try:
-            await self.db.commit()
-            await self.db.refresh(instance)
+            await self._db.commit()
+            await self._db.refresh(instance)
         except IntegrityError as err:
-            await self.db.rollback()
+            await self._db.rollback()
             raise ConflictError("Resource already exists") from err
         return instance
 
-    async def update(self, record_id: int, data: MobileAppUpdate) -> MobileApp | None:
+    async def update(self, mobile_app_id: int, data: MobileAppUpdate) -> int:
         values = data.model_dump(exclude_unset=True)
         if not values:
-            return await self.get_by_id(record_id)
-        stmt = update(MobileApp).where(MobileApp.id == record_id).values(**values, version=MobileApp.version + 1)
-        await self.db.execute(stmt)
+            return 0
+        stmt = update(MobileApp).where(MobileApp.id == mobile_app_id).values(**values, version=MobileApp.version + 1)
         try:
-            await self.db.commit()
+            result = await self._db.execute(stmt)
+            await self._db.commit()
         except IntegrityError as err:
-            await self.db.rollback()
+            await self._db.rollback()
             raise ConflictError("Resource already exists") from err
-        return await self.get_by_id(record_id)
+        return result.rowcount  # type: ignore
 
-    async def delete(self, record_id: int) -> bool:
-        stmt = delete(MobileApp).where(MobileApp.id == record_id)
-        await self.db.execute(stmt)
-        await self.db.commit()
-        return True
+    async def delete(self, mobile_app_id: int) -> int:
+        stmt = delete(MobileApp).where(MobileApp.id == mobile_app_id)
+        result = await self._db.execute(stmt)
+        await self._db.commit()
+        return result.rowcount  # type: ignore
 
     async def count(self) -> int:
         stmt = select(func.count()).select_from(MobileApp)
-        result = await self.db.execute(stmt)
+        result = await self._db.execute(stmt)
         return result.scalar_one()
 
-    async def get_assignments(self, mobile_app_id: int) -> list[MobileAppAssignment]:
-        return await self.get_current_assignments(mobile_app_id)
-
     async def get_current_assignments(self, mobile_app_id: int) -> list[MobileAppAssignment]:
-        subq = (
+        """Return the current assignment for each device.
+
+        The current assignment is the highest version row for the
+        (mobile_app_id, device_id) pair.
+        """
+        max_versions = (
             select(
                 MobileAppAssignment.device_id,
                 func.max(MobileAppAssignment.version).label("max_version"),
@@ -84,14 +85,14 @@ class MobileAppRepository:
         stmt = (
             select(MobileAppAssignment)
             .join(
-                subq,
+                max_versions,
                 (MobileAppAssignment.mobile_app_id == mobile_app_id)
-                & (MobileAppAssignment.device_id == subq.c.device_id)
-                & (MobileAppAssignment.version == subq.c.max_version),
+                & (MobileAppAssignment.device_id == max_versions.c.device_id)
+                & (MobileAppAssignment.version == max_versions.c.max_version),
             )
             .order_by(MobileAppAssignment.device_id)
         )
-        result = await self.db.execute(stmt)
+        result = await self._db.execute(stmt)
         return list(result.scalars().all())
 
     async def get_current_desired_device_ids(self, mobile_app_id: int) -> set[int]:
@@ -101,29 +102,6 @@ class MobileAppRepository:
             for assignment in assignments
             if assignment.desired_state == AssignmentDesiredState.PRESENT
         }
-
-    async def get_current_assignments_for_device(self, device_id: int) -> list[MobileAppAssignment]:
-        subq = (
-            select(
-                MobileAppAssignment.mobile_app_id,
-                func.max(MobileAppAssignment.version).label("max_version"),
-            )
-            .where(MobileAppAssignment.device_id == device_id)
-            .group_by(MobileAppAssignment.mobile_app_id)
-            .subquery()
-        )
-        stmt = (
-            select(MobileAppAssignment)
-            .join(
-                subq,
-                (MobileAppAssignment.device_id == device_id)
-                & (MobileAppAssignment.mobile_app_id == subq.c.mobile_app_id)
-                & (MobileAppAssignment.version == subq.c.max_version),
-            )
-            .order_by(MobileAppAssignment.mobile_app_id)
-        )
-        result = await self.db.execute(stmt)
-        return list(result.scalars().all())
 
     async def get_assignment(self, mobile_app_id: int, device_id: int) -> MobileAppAssignment | None:
         stmt = (
@@ -135,57 +113,41 @@ class MobileAppRepository:
             .order_by(MobileAppAssignment.version.desc())
             .limit(1)
         )
-        result = await self.db.execute(stmt)
-        return result.scalar_one_or_none()
-
-    async def get_assignment_by_version(
-        self, mobile_app_id: int, device_id: int, version: int
-    ) -> MobileAppAssignment | None:
-        stmt = select(MobileAppAssignment).where(
-            MobileAppAssignment.mobile_app_id == mobile_app_id,
-            MobileAppAssignment.device_id == device_id,
-            MobileAppAssignment.version == version,
-        )
-        result = await self.db.execute(stmt)
+        result = await self._db.execute(stmt)
         return result.scalar_one_or_none()
 
     async def upsert_assignment(self, data: MobileAppAssignmentUpsert) -> MobileAppAssignment:
-        existing = await self.get_assignment_by_version(data.mobile_app_id, data.device_id, data.version)
-        if existing:
+        latest = await self.get_assignment(data.mobile_app_id, data.device_id)
+        if data.version is None:
+            if latest is None:
+                raise ValueError("Cannot upsert without a version when no assignment exists")
+            version = latest.version
+        else:
+            version = data.version
+        if latest is not None and version < latest.version:
+            raise ValueError(f"Cannot upsert assignment at version {version}; latest version is {latest.version}")
+        if latest is not None and version == latest.version:
             for key, value in data.model_dump(exclude_unset=True).items():
-                setattr(existing, key, value)
-            await self.db.commit()
-            await self.db.refresh(existing)
-            return existing
+                setattr(latest, key, value)
+            await self._db.commit()
+            await self._db.refresh(latest)
+            return latest
         instance = MobileAppAssignment(**data.model_dump())
-        self.db.add(instance)
-        await self.db.commit()
-        await self.db.refresh(instance)
+        self._db.add(instance)
+        await self._db.commit()
+        await self._db.refresh(instance)
         return instance
-
-    async def bulk_upsert_assignments(self, mobile_app_id: int, assignments: list[MobileAppAssignmentUpsert]) -> int:
-        count = 0
-        for data in assignments:
-            existing = await self.get_assignment_by_version(data.mobile_app_id, data.device_id, data.version)
-            if existing:
-                for key, value in data.model_dump(exclude_unset=True).items():
-                    setattr(existing, key, value)
-            else:
-                self.db.add(MobileAppAssignment(**data.model_dump()))
-            count += 1
-        await self.db.commit()
-        return count
 
     async def list_all_mobile_apps(self) -> list[MobileApp]:
         stmt = select(MobileApp).order_by(MobileApp.id)
-        result = await self.db.execute(stmt)
+        result = await self._db.execute(stmt)
         return list(result.scalars().all())
 
-    async def list_affected_mobile_apps_for_device(self, device_id: int) -> list[MobileApp]:
-        device = await self.db.get(Device, device_id)
+    async def list_mobile_apps_affected_by_device(self, device_id: int) -> list[MobileApp]:
+        device = await self._db.get(Device, device_id)
         if device is None:
             return []
-        static_group_rows = await self.db.execute(
+        static_group_rows = await self._db.execute(
             select(StaticGroupDevice.static_group_id).where(
                 StaticGroupDevice.device_serial_number == device.serial_number
             )
@@ -209,32 +171,14 @@ class MobileAppRepository:
                 if target.scope_type == ScopeType.STATIC_GROUP and target.target_id in static_group_ids:
                     affected.append(app)
                     break
-            else:
-                for exclusion in scope.exclusions:
-                    if exclusion.scope_type == ScopeType.SMART_GROUP:
-                        affected.append(app)
-                        break
-                    if (exclusion.scope_type == ScopeType.DEVICE and exclusion.exclude_id == device_id) or (
-                        exclusion.scope_type == ScopeType.STATIC_GROUP and exclusion.exclude_id in static_group_ids
-                    ):
-                        affected.append(app)
-                        break
         return affected
 
     async def get_max_assignment_version(self, mobile_app_id: int) -> int:
         stmt = select(func.coalesce(func.max(MobileAppAssignment.version), 0)).where(
             MobileAppAssignment.mobile_app_id == mobile_app_id
         )
-        result = await self.db.execute(stmt)
+        result = await self._db.execute(stmt)
         return result.scalar_one()
-
-    async def get_assignment_device_ids_at_version(self, mobile_app_id: int, version: int) -> set[int]:
-        stmt = select(MobileAppAssignment.device_id).where(
-            MobileAppAssignment.mobile_app_id == mobile_app_id,
-            MobileAppAssignment.version == version,
-        )
-        result = await self.db.execute(stmt)
-        return {row[0] for row in result.all()}
 
     async def bulk_create_assignments(
         self,
@@ -244,7 +188,7 @@ class MobileAppRepository:
         revoked_device_ids: set[int] | None = None,
     ) -> None:
         for device_id in device_ids:
-            self.db.add(
+            self._db.add(
                 MobileAppAssignment(
                     mobile_app_id=mobile_app_id,
                     device_id=device_id,
@@ -254,7 +198,7 @@ class MobileAppRepository:
                 )
             )
         for device_id in revoked_device_ids or set():
-            self.db.add(
+            self._db.add(
                 MobileAppAssignment(
                     mobile_app_id=mobile_app_id,
                     device_id=device_id,
@@ -264,8 +208,22 @@ class MobileAppRepository:
                 )
             )
 
+    async def write_revision(
+        self,
+        app: MobileApp,
+        device_ids: set[int],
+        revoked_device_ids: set[int] | None = None,
+    ) -> int:
+        """Persist a new assignment revision for the mobile app and return the version used."""
+        latest_version = await self.get_max_assignment_version(app.id)
+        version = max(app.version, latest_version + 1 if latest_version else 1)
+        app.version = version
+        await self.bulk_create_assignments(app.id, version, device_ids, revoked_device_ids=revoked_device_ids)
+        await self._db.commit()
+        return version
+
     async def mark_assignment_sent(self, assignment_id: int, message_id: str) -> None:
-        assignment = await self.db.get(MobileAppAssignment, assignment_id)
+        assignment = await self._db.get(MobileAppAssignment, assignment_id)
         if assignment:
             assignment.status = (
                 AssignmentStatus.REVOKE_PENDING
@@ -276,39 +234,18 @@ class MobileAppRepository:
             assignment.attempt_count += 1
             assignment.last_attempt_at = datetime.now(timezone.utc)
             assignment.last_error = None
-            await self.db.commit()
+            await self._db.commit()
 
     async def mark_assignment_failed(self, assignment_id: int, error: str) -> None:
-        assignment = await self.db.get(MobileAppAssignment, assignment_id)
+        assignment = await self._db.get(MobileAppAssignment, assignment_id)
         if assignment:
             assignment.status = AssignmentStatus.FAILED
             assignment.attempt_count += 1
             assignment.last_attempt_at = datetime.now(timezone.utc)
             assignment.last_error = error[:2000]
-            await self.db.commit()
+            await self._db.commit()
 
-    async def remove_scope_references(self, scope_type: ScopeType, target_id: int) -> list[int]:
+    async def list_mobile_apps_referencing(self, scope_type: ScopeType, target_id: int) -> list[MobileApp]:
+        """Return mobile apps whose scope references the given entity as a target or exclusion."""
         apps = await self.list_all_mobile_apps()
-        affected: list[int] = []
-        for app in apps:
-            modified = False
-            original_targets = list(app.scope.targets)
-            original_exclusions = list(app.scope.exclusions)
-            new_targets = [
-                t for t in original_targets if not (t.scope_type == scope_type and (t.target_id or 0) == target_id)
-            ]
-            new_exclusions = [
-                e for e in original_exclusions if not (e.scope_type == scope_type and (e.exclude_id or 0) == target_id)
-            ]
-            if len(new_targets) != len(original_targets):
-                app.scope.targets = new_targets
-                modified = True
-            if len(new_exclusions) != len(original_exclusions):
-                app.scope.exclusions = new_exclusions
-                modified = True
-            if modified:
-                flag_modified(app, "scope")
-                affected.append(app.id)
-        if affected:
-            await self.db.commit()
-        return affected
+        return [app for app in apps if scope_matches(app.scope, scope_type, target_id)]

@@ -19,7 +19,7 @@ class TestUserRepository:
         found = await repo.get_by_id(created.id)
         assert found.email == "j@example.com"
 
-        assert await repo.delete(created.id) is True
+        assert await repo.delete(created.id) == 1
 
     async def test_list(self, db_session: AsyncSession) -> None:
         repo = UserRepository(db_session)
@@ -37,13 +37,13 @@ class TestUserRepository:
                 permissions=frozenset({"viewer"}),
             )
         )
-        updated = await repo.update(created.id, UserUpdate(name="updated"))
-        assert updated is not None
-        assert updated.name == "updated"
+        assert await repo.update(created.id, UserUpdate(name="updated")) == 1
+        found = await repo.get_by_id(created.id)
+        assert found.name == "updated"
 
     async def test_update_not_found(self, db_session: AsyncSession) -> None:
         repo = UserRepository(db_session)
-        assert await repo.update(999, UserUpdate(name="x")) is None
+        assert await repo.update(999, UserUpdate(name="x")) == 0
 
     async def test_count(self, db_session: AsyncSession) -> None:
         repo = UserRepository(db_session)
@@ -67,4 +67,4 @@ class TestUserRepository:
 
     async def test_delete_not_found(self, db_session: AsyncSession) -> None:
         repo = UserRepository(db_session)
-        assert await repo.delete(999) is False
+        assert await repo.delete(999) == 0

@@ -1,5 +1,6 @@
+import logging
 from collections.abc import AsyncGenerator
-from typing import Callable, Awaitable
+from typing import Any, Callable, Awaitable
 
 from fastapi import Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -17,8 +18,8 @@ from app.domains.inventory_search.services import InventorySearchService
 from app.domains.mobile_apps.repositories import MobileAppRepository
 from app.domains.mobile_apps.services import MobileAppService
 from app.domains.profiles.repositories import ProfileRepository
-from app.infra.reconciler.reconciler import AssignmentReconciler
 from app.domains.profiles.services import ProfileService
+from app.domains.shared.reconciliation_service import ReconciliationService
 from app.domains.smart_groups.repositories import SmartGroupRepository
 from app.domains.smart_groups.services import SmartGroupService
 from app.domains.static_groups.repositories import StaticGroupRepository
@@ -26,6 +27,8 @@ from app.domains.static_groups.services import StaticGroupService
 from app.domains.users.models import User
 from app.domains.users.repositories import UserRepository
 from app.domains.users.services import UserService
+
+logger = logging.getLogger(__name__)
 
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
@@ -38,10 +41,11 @@ def get_user_service(db: AsyncSession = Depends(get_db)) -> UserService:
 
 
 async def get_current_user(
-    token: dict = Depends(verify_token),
+    token: dict[str, Any] = Depends(verify_token),
     user_service: UserService = Depends(get_user_service),
 ) -> User:
     user = await user_service.get_user_by_email(token["email"])
+    logger.info("Auth: get_current_user email=%r found=%s", token["email"], user is not None)
     if not user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
     return user
@@ -51,23 +55,54 @@ def require_permission(
     permission: str,
 ) -> Callable[..., Awaitable[User]]:
     async def _check(current_user: User = Depends(get_current_user)) -> User:
-        if "admin" not in current_user.permissions and permission not in current_user.permissions:
+        allowed = "admin" in current_user.permissions or permission in current_user.permissions
+        logger.info(
+            "Auth: require_permission(%r) user=%r permissions=%r allowed=%s",
+            permission,
+            current_user.email,
+            current_user.permissions,
+            allowed,
+        )
+        if not allowed:
             raise HTTPException(status_code=403, detail="Insufficient permissions")
         return current_user
 
     return _check
 
 
-def get_device_service(db: AsyncSession = Depends(get_db)) -> DeviceService:
-    return DeviceService(DeviceRepository(db))
+def get_reconciliation_service(db: AsyncSession = Depends(get_db)) -> ReconciliationService:
+    return ReconciliationService(ProfileRepository(db), MobileAppRepository(db))
 
 
-def get_smart_group_service(db: AsyncSession = Depends(get_db)) -> SmartGroupService:
-    return SmartGroupService(SmartGroupRepository(db))
+def get_device_service(
+    db: AsyncSession = Depends(get_db),
+    reconciliation_service: ReconciliationService = Depends(get_reconciliation_service),
+) -> DeviceService:
+    return DeviceService(DeviceRepository(db), reconciliation_service)
 
 
-def get_static_group_service(db: AsyncSession = Depends(get_db)) -> StaticGroupService:
-    return StaticGroupService(StaticGroupRepository(db))
+def get_smart_group_service(
+    db: AsyncSession = Depends(get_db),
+    reconciliation_service: ReconciliationService = Depends(get_reconciliation_service),
+) -> SmartGroupService:
+    return SmartGroupService(
+        SmartGroupRepository(db),
+        ProfileRepository(db),
+        MobileAppRepository(db),
+        reconciliation_service,
+    )
+
+
+def get_static_group_service(
+    db: AsyncSession = Depends(get_db),
+    reconciliation_service: ReconciliationService = Depends(get_reconciliation_service),
+) -> StaticGroupService:
+    return StaticGroupService(
+        StaticGroupRepository(db),
+        ProfileRepository(db),
+        MobileAppRepository(db),
+        reconciliation_service,
+    )
 
 
 def get_inventory_search_service(
@@ -76,8 +111,11 @@ def get_inventory_search_service(
     return InventorySearchService(InventorySearchRepository(db))
 
 
-def get_mobile_app_service(db: AsyncSession = Depends(get_db)) -> MobileAppService:
-    return MobileAppService(MobileAppRepository(db))
+def get_mobile_app_service(
+    db: AsyncSession = Depends(get_db),
+    reconciliation_service: ReconciliationService = Depends(get_reconciliation_service),
+) -> MobileAppService:
+    return MobileAppService(MobileAppRepository(db), reconciliation_service)
 
 
 def get_extension_attribute_service(
@@ -86,19 +124,12 @@ def get_extension_attribute_service(
     return ExtensionAttributeService(ExtensionAttributeRepository(db))
 
 
-def get_profile_service(db: AsyncSession = Depends(get_db)) -> ProfileService:
-    return ProfileService(ProfileRepository(db))
-
-
-def get_reconciler(db: AsyncSession = Depends(get_db)) -> AssignmentReconciler:
-    from app.infra.messaging.producer import rabbitmq_producer
-
-    return AssignmentReconciler(
-        ProfileRepository(db),
-        MobileAppRepository(db),
-        rabbitmq_producer,
-    )
+def get_profile_service(
+    db: AsyncSession = Depends(get_db),
+    reconciliation_service: ReconciliationService = Depends(get_reconciliation_service),
+) -> ProfileService:
+    return ProfileService(ProfileRepository(db), reconciliation_service)
 
 
 def get_command_service(db: AsyncSession = Depends(get_db)) -> CommandService:
-    return CommandService(CommandRepository(db))
+    return CommandService(CommandRepository(db), DeviceRepository(db))

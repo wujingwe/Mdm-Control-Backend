@@ -47,7 +47,7 @@ class Profile(Base):
     name: Mapped[str] = mapped_column(String(100), unique=True)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     version: Mapped[int] = mapped_column(Integer, default=1)
-    policy: Mapped[dict] = mapped_column(JSON, default=dict)
+    policy: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
     scope: Mapped[Scope] = mapped_column(ScopeColumnType, default=Scope)
     created_by: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"))
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)

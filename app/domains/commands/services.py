@@ -2,20 +2,20 @@ from __future__ import annotations
 
 import logging
 
-from sqlalchemy import select
-
+from app.domains.commands.enums import CommandStatus
 from app.domains.commands.models import Command
 from app.domains.commands.repositories import CommandRepository
 from app.domains.commands.schemas import CommandCreate
-from app.domains.devices.models import Device
+from app.domains.devices.repositories import DeviceRepository
 from app.infra.messaging.producer import rabbitmq_producer
 
 logger = logging.getLogger(__name__)
 
 
 class CommandService:
-    def __init__(self, repo: CommandRepository) -> None:
+    def __init__(self, repo: CommandRepository, device_repo: DeviceRepository) -> None:
         self.repo = repo
+        self.device_repo = device_repo
 
     async def trigger_command(
         self,
@@ -25,9 +25,7 @@ class CommandService:
     ) -> dict[str, object]:
         command = await self.repo.create(device_id, data, created_by)
 
-        stmt = select(Device.serial_number).where(Device.id == device_id)
-        result = await self.repo.db.execute(stmt)
-        serial = result.scalar_one_or_none()
+        serial = await self.device_repo.get_serial_number(device_id)
         if not serial:
             logger.warning("Device %s not found when publishing command", device_id)
             return {"command": command, "message_id": None}
@@ -49,6 +47,14 @@ class CommandService:
 
     async def get_command(self, command_id: int) -> Command | None:
         return await self.repo.get_by_id(command_id)
+
+    async def update_status(
+        self,
+        command_id: int,
+        status: CommandStatus,
+        result_message: str | None = None,
+    ) -> Command | None:
+        return await self.repo.update_status(command_id, status, result_message)
 
     async def list_commands(
         self,

@@ -22,5 +22,5 @@ class StaticGroupResponse(CamelModel):
     description: str | None = None
     created_by: int
     created_at: datetime
-    updated_at: datetime | None = None
+    updated_at: datetime
     devices: list[DeviceResponse]

@@ -84,13 +84,13 @@ class TestExtensionAttributeRepository:
             ),
             created_by=1,
         )
-        updated = await repo.update(created.id, ExtensionAttributeUpdate(name="ext2"))
-        assert updated is not None
-        assert updated.name == "ext2"
+        assert await repo.update(created.id, ExtensionAttributeUpdate(name="ext2")) == 1
+        found = await repo.get_by_id(created.id)
+        assert found.name == "ext2"
 
     async def test_update_not_found(self, db_session: AsyncSession) -> None:
         repo = ExtensionAttributeRepository(db_session)
-        assert await repo.update(999, ExtensionAttributeUpdate(name="x")) is None
+        assert await repo.update(999, ExtensionAttributeUpdate(name="x")) == 0
 
     async def test_delete(self, db_session: AsyncSession) -> None:
         repo = ExtensionAttributeRepository(db_session)
@@ -102,12 +102,12 @@ class TestExtensionAttributeRepository:
             ),
             created_by=1,
         )
-        assert await repo.delete(created.id) is True
+        assert await repo.delete(created.id) == 1
         assert await repo.get_by_id(created.id) is None
 
     async def test_delete_not_found(self, db_session: AsyncSession) -> None:
         repo = ExtensionAttributeRepository(db_session)
-        assert await repo.delete(999) is False
+        assert await repo.delete(999) == 0
 
     async def test_count(self, db_session: AsyncSession) -> None:
         repo = ExtensionAttributeRepository(db_session)

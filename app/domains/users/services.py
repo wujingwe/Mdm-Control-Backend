@@ -21,8 +21,8 @@ class UserService:
     async def create_user(self, data: UserCreate) -> User:
         return await self.repo.create(data)
 
-    async def update_user(self, user_id: int, data: UserUpdate) -> User | None:
+    async def update_user(self, user_id: int, data: UserUpdate) -> int:
         return await self.repo.update(user_id, data)
 
-    async def delete_user(self, user_id: int) -> bool:
+    async def delete_user(self, user_id: int) -> int:
         return await self.repo.delete(user_id)

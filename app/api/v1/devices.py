@@ -1,31 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
-from app.domains.commands.schemas import CommandCreate, CommandResponse
+from app.domains.commands.schemas import CommandCreate, CommandResponse, CommandStatusUpdate
 from app.domains.commands.services import CommandService
 from app.infra.common.schemas import PaginatedResponse
-from app.dependencies import get_command_service, get_device_service, get_reconciler, require_permission
+from app.dependencies import get_command_service, get_device_service, require_permission
 from app.domains.devices.schemas import DeviceResponse, DeviceUpdate
 from app.domains.devices.services import DeviceService
-from app.infra.reconciler.reconciler import AssignmentReconciler
 from app.domains.users.models import User
 
 router = APIRouter(prefix="/devices", tags=["Devices"])
-
-RECONCILER_TRIGGER_FIELDS = frozenset(
-    {
-        "name",
-        "serial_number",
-        "os_version",
-        "connection_status",
-        "status",
-        "battery_status",
-        "total_storage",
-        "available_storage",
-        "total_memory",
-        "available_memory",
-        "extension_attribute_values",
-    }
-)
 
 
 @router.get("", response_model=PaginatedResponse[DeviceResponse])
@@ -59,33 +42,19 @@ async def update_device(
     device_id: int,
     data: DeviceUpdate,
     service: DeviceService = Depends(get_device_service),
-    reconciler: AssignmentReconciler = Depends(get_reconciler),
 ) -> DeviceResponse:
-    device = await service.update_device(device_id, data)
-    if not device:
+    if not data.model_fields_set:
+        device = await service.get_device(device_id)
+        if device is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Device not found")
+        return DeviceResponse.model_validate(device)
+    updated = await service.update_device(device_id, data)
+    if not updated:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Device not found")
-    changed_fields = data.model_fields_set
-    if changed_fields & RECONCILER_TRIGGER_FIELDS:
-        await reconciler.recalculate_profiles_for_device(device_id)
-        await reconciler.recalculate_mobile_apps_for_device(device_id)
-    return DeviceResponse.model_validate(device)
-
-
-@router.post("/{device_id}/check-in")
-async def device_check_in(
-    device_id: int,
-    service: DeviceService = Depends(get_device_service),
-    reconciler: AssignmentReconciler = Depends(get_reconciler),
-) -> dict[str, str]:
     device = await service.get_device(device_id)
-    if not device:
+    if device is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Device not found")
-    # Recalculate desired state first, then send one consolidated latest revision.
-    await reconciler.recalculate_profiles_for_device(device_id, publish=False)
-    await reconciler.recalculate_mobile_apps_for_device(device_id, publish=False)
-    await reconciler.dispatch_device_assignments(device_id)
-    await reconciler.dispatch_device_mobile_app_assignments(device_id)
-    return {"status": "ok"}
+    return DeviceResponse.model_validate(device)
 
 
 @router.get("/{device_id}/commands", response_model=PaginatedResponse[CommandResponse])

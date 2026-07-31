@@ -1,15 +1,18 @@
 from unittest.mock import AsyncMock, MagicMock
 
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domains.shared.scope import ScopeExclusion, Scope, ScopeType, ScopeTarget
 from app.domains.devices.models import Device
+from app.domains.devices.repositories import DeviceRepository
 from app.infra.messaging.producer import RabbitMQProducer
 from app.domains.profiles.models import Profile, ProfileAssignment
 from app.infra.reconciler.reconciler import AssignmentReconciler
 from app.domains.profiles.repositories import ProfileRepository
 from app.domains.mobile_apps.repositories import MobileAppRepository
 from app.domains.smart_groups.models import SmartGroup
+from app.domains.smart_groups.repositories import SmartGroupRepository
 from app.domains.static_groups.models import StaticGroup, StaticGroupDevice
 
 
@@ -62,7 +65,13 @@ class TestRecalculateProfile:
     async def test_new_assignments(self, db_session: AsyncSession) -> None:
         producer = _make_producer()
         repo = ProfileRepository(db_session)
-        reconciler = AssignmentReconciler(repo, MagicMock(spec=MobileAppRepository), producer)
+        reconciler = AssignmentReconciler(
+            repo,
+            MagicMock(spec=MobileAppRepository),
+            DeviceRepository(db_session),
+            SmartGroupRepository(db_session),
+            producer,
+        )
 
         device = await _create_device(db_session, "Mac", "SN-1")
         profile = await _create_profile(
@@ -73,7 +82,7 @@ class TestRecalculateProfile:
 
         await reconciler.recalculate_profile(profile.id)
 
-        assignments = await repo.get_assignments(profile.id)
+        assignments = await repo.get_current_assignments(profile.id)
         assert len(assignments) == 1
         assert assignments[0].device_id == device.id
         assert assignments[0].profile_version == 1
@@ -82,7 +91,13 @@ class TestRecalculateProfile:
     async def test_no_changes(self, db_session: AsyncSession) -> None:
         producer = _make_producer()
         repo = ProfileRepository(db_session)
-        reconciler = AssignmentReconciler(repo, MagicMock(spec=MobileAppRepository), producer)
+        reconciler = AssignmentReconciler(
+            repo,
+            MagicMock(spec=MobileAppRepository),
+            DeviceRepository(db_session),
+            SmartGroupRepository(db_session),
+            producer,
+        )
 
         device = await _create_device(db_session, "Mac", "SN-1")
         profile = await _create_profile(
@@ -94,7 +109,7 @@ class TestRecalculateProfile:
 
         await reconciler.recalculate_profile(profile.id)
 
-        assignments = await repo.get_assignments(profile.id)
+        assignments = await repo.get_current_assignments(profile.id)
         assert len(assignments) == 1
         producer.publish_profile_push.assert_not_awaited()
         producer.publish_profile_revoke.assert_not_awaited()
@@ -102,7 +117,13 @@ class TestRecalculateProfile:
     async def test_force_push_reapplies_existing_assignments(self, db_session: AsyncSession) -> None:
         producer = _make_producer()
         repo = ProfileRepository(db_session)
-        reconciler = AssignmentReconciler(repo, MagicMock(spec=MobileAppRepository), producer)
+        reconciler = AssignmentReconciler(
+            repo,
+            MagicMock(spec=MobileAppRepository),
+            DeviceRepository(db_session),
+            SmartGroupRepository(db_session),
+            producer,
+        )
 
         device = await _create_device(db_session, "Mac", "SN-1")
         profile = await _create_profile(
@@ -125,7 +146,13 @@ class TestRecalculateProfile:
     async def test_empty_scope_clears(self, db_session: AsyncSession) -> None:
         producer = _make_producer()
         repo = ProfileRepository(db_session)
-        reconciler = AssignmentReconciler(repo, MagicMock(spec=MobileAppRepository), producer)
+        reconciler = AssignmentReconciler(
+            repo,
+            MagicMock(spec=MobileAppRepository),
+            DeviceRepository(db_session),
+            SmartGroupRepository(db_session),
+            producer,
+        )
 
         device = await _create_device(db_session, "Mac", "SN-1")
         profile = await _create_profile(db_session, "P1")
@@ -144,7 +171,13 @@ class TestRecalculateProfile:
     async def test_empty_scope_delete_is_committed(self, db_session: AsyncSession) -> None:
         producer = _make_producer()
         repo = ProfileRepository(db_session)
-        reconciler = AssignmentReconciler(repo, MagicMock(spec=MobileAppRepository), producer)
+        reconciler = AssignmentReconciler(
+            repo,
+            MagicMock(spec=MobileAppRepository),
+            DeviceRepository(db_session),
+            SmartGroupRepository(db_session),
+            producer,
+        )
 
         device = await _create_device(db_session, "Mac", "SN-1")
         profile = await _create_profile(db_session, "P1")
@@ -161,7 +194,13 @@ class TestRecalculateProfile:
     async def test_profile_not_found(self, db_session: AsyncSession) -> None:
         producer = _make_producer()
         repo = ProfileRepository(db_session)
-        reconciler = AssignmentReconciler(repo, MagicMock(spec=MobileAppRepository), producer)
+        reconciler = AssignmentReconciler(
+            repo,
+            MagicMock(spec=MobileAppRepository),
+            DeviceRepository(db_session),
+            SmartGroupRepository(db_session),
+            producer,
+        )
 
         await reconciler.recalculate_profile(99999)
         producer.publish_profile_push.assert_not_awaited()
@@ -176,7 +215,13 @@ class TestRecalculateDeviceChanges:
     async def test_adds_device(self, db_session: AsyncSession) -> None:
         producer = _make_producer()
         repo = ProfileRepository(db_session)
-        reconciler = AssignmentReconciler(repo, MagicMock(spec=MobileAppRepository), producer)
+        reconciler = AssignmentReconciler(
+            repo,
+            MagicMock(spec=MobileAppRepository),
+            DeviceRepository(db_session),
+            SmartGroupRepository(db_session),
+            producer,
+        )
 
         d1 = await _create_device(db_session, "Mac1", "SN-1")
         profile = await _create_profile(
@@ -190,7 +235,7 @@ class TestRecalculateDeviceChanges:
 
         await reconciler.recalculate_profile(profile.id)
 
-        assignments = await repo.get_assignments(profile.id)
+        assignments = await repo.get_current_assignments(profile.id)
         device_ids = {a.device_id for a in assignments}
         assert d1.id in device_ids
         assert d2.id in device_ids
@@ -199,7 +244,13 @@ class TestRecalculateDeviceChanges:
     async def test_removes_device(self, db_session: AsyncSession) -> None:
         producer = _make_producer()
         repo = ProfileRepository(db_session)
-        reconciler = AssignmentReconciler(repo, MagicMock(spec=MobileAppRepository), producer)
+        reconciler = AssignmentReconciler(
+            repo,
+            MagicMock(spec=MobileAppRepository),
+            DeviceRepository(db_session),
+            SmartGroupRepository(db_session),
+            producer,
+        )
 
         d1 = await _create_device(db_session, "Mac1", "SN-1")
         d2 = await _create_device(db_session, "Mac2", "SN-2")
@@ -223,7 +274,7 @@ class TestRecalculateDeviceChanges:
 
         await reconciler.recalculate_profile(profile.id)
 
-        assignments = await repo.get_assignments(profile.id)
+        assignments = await repo.get_current_assignments(profile.id)
         current = {a.device_id for a in assignments if a.desired_state.value == "PRESENT"}
         assert current == {d1.id}
         producer.publish_profile_revoke.assert_awaited_once()
@@ -238,7 +289,13 @@ class TestRecalculateScopeTypes:
     async def test_all_devices(self, db_session: AsyncSession) -> None:
         producer = _make_producer()
         repo = ProfileRepository(db_session)
-        reconciler = AssignmentReconciler(repo, MagicMock(spec=MobileAppRepository), producer)
+        reconciler = AssignmentReconciler(
+            repo,
+            MagicMock(spec=MobileAppRepository),
+            DeviceRepository(db_session),
+            SmartGroupRepository(db_session),
+            producer,
+        )
 
         d1 = await _create_device(db_session, "Mac1", "SN-1")
         d2 = await _create_device(db_session, "Mac2", "SN-2")
@@ -250,14 +307,20 @@ class TestRecalculateScopeTypes:
 
         await reconciler.recalculate_profile(profile.id)
 
-        assignments = await repo.get_assignments(profile.id)
+        assignments = await repo.get_current_assignments(profile.id)
         device_ids = {a.device_id for a in assignments}
         assert device_ids == {d1.id, d2.id}
 
     async def test_all_devices_only_includes_enrolled_devices(self, db_session: AsyncSession) -> None:
         producer = _make_producer()
         repo = ProfileRepository(db_session)
-        reconciler = AssignmentReconciler(repo, MagicMock(spec=MobileAppRepository), producer)
+        reconciler = AssignmentReconciler(
+            repo,
+            MagicMock(spec=MobileAppRepository),
+            DeviceRepository(db_session),
+            SmartGroupRepository(db_session),
+            producer,
+        )
 
         enrolled = await _create_device(db_session, "Enrolled", "SN-1", "ENROLLED")
         unenrolled = await _create_device(db_session, "Unenrolled", "SN-2", "UNENROLLED")
@@ -275,7 +338,13 @@ class TestRecalculateScopeTypes:
     async def test_device_target(self, db_session: AsyncSession) -> None:
         producer = _make_producer()
         repo = ProfileRepository(db_session)
-        reconciler = AssignmentReconciler(repo, MagicMock(spec=MobileAppRepository), producer)
+        reconciler = AssignmentReconciler(
+            repo,
+            MagicMock(spec=MobileAppRepository),
+            DeviceRepository(db_session),
+            SmartGroupRepository(db_session),
+            producer,
+        )
 
         d1 = await _create_device(db_session, "Mac1", "SN-1")
         d2 = await _create_device(db_session, "Mac2", "SN-2")
@@ -287,7 +356,7 @@ class TestRecalculateScopeTypes:
 
         await reconciler.recalculate_profile(profile.id)
 
-        assignments = await repo.get_assignments(profile.id)
+        assignments = await repo.get_current_assignments(profile.id)
         device_ids = {a.device_id for a in assignments}
         assert device_ids == {d1.id}
         assert d2.id not in device_ids
@@ -295,7 +364,13 @@ class TestRecalculateScopeTypes:
     async def test_missing_device_target_is_ignored(self, db_session: AsyncSession) -> None:
         producer = _make_producer()
         repo = ProfileRepository(db_session)
-        reconciler = AssignmentReconciler(repo, MagicMock(spec=MobileAppRepository), producer)
+        reconciler = AssignmentReconciler(
+            repo,
+            MagicMock(spec=MobileAppRepository),
+            DeviceRepository(db_session),
+            SmartGroupRepository(db_session),
+            producer,
+        )
 
         profile = await _create_profile(
             db_session,
@@ -305,13 +380,19 @@ class TestRecalculateScopeTypes:
 
         await reconciler.recalculate_profile(profile.id)
 
-        assert await repo.get_assignments(profile.id) == []
+        assert await repo.get_current_assignments(profile.id) == []
         producer.publish_profile_push.assert_not_awaited()
 
     async def test_static_group(self, db_session: AsyncSession) -> None:
         producer = _make_producer()
         repo = ProfileRepository(db_session)
-        reconciler = AssignmentReconciler(repo, MagicMock(spec=MobileAppRepository), producer)
+        reconciler = AssignmentReconciler(
+            repo,
+            MagicMock(spec=MobileAppRepository),
+            DeviceRepository(db_session),
+            SmartGroupRepository(db_session),
+            producer,
+        )
 
         d1 = await _create_device(db_session, "Mac1", "SN-1")
         await _create_device(db_session, "Mac2", "SN-2")
@@ -331,14 +412,20 @@ class TestRecalculateScopeTypes:
 
         await reconciler.recalculate_profile(profile.id)
 
-        assignments = await repo.get_assignments(profile.id)
+        assignments = await repo.get_current_assignments(profile.id)
         device_ids = {a.device_id for a in assignments}
         assert device_ids == {d1.id}
 
     async def test_smart_group(self, db_session: AsyncSession) -> None:
         producer = _make_producer()
         repo = ProfileRepository(db_session)
-        reconciler = AssignmentReconciler(repo, MagicMock(spec=MobileAppRepository), producer)
+        reconciler = AssignmentReconciler(
+            repo,
+            MagicMock(spec=MobileAppRepository),
+            DeviceRepository(db_session),
+            SmartGroupRepository(db_session),
+            producer,
+        )
 
         await _create_device(db_session, "MacBook Pro", "SN-1")
         await _create_device(db_session, "iPhone", "SN-2")
@@ -360,7 +447,7 @@ class TestRecalculateScopeTypes:
 
         await reconciler.recalculate_profile(profile.id)
 
-        assignments = await repo.get_assignments(profile.id)
+        assignments = await repo.get_current_assignments(profile.id)
         assert len(assignments) == 1
 
 
@@ -373,7 +460,13 @@ class TestRecalculateExclusions:
     async def test_exclusion_removes_device(self, db_session: AsyncSession) -> None:
         producer = _make_producer()
         repo = ProfileRepository(db_session)
-        reconciler = AssignmentReconciler(repo, MagicMock(spec=MobileAppRepository), producer)
+        reconciler = AssignmentReconciler(
+            repo,
+            MagicMock(spec=MobileAppRepository),
+            DeviceRepository(db_session),
+            SmartGroupRepository(db_session),
+            producer,
+        )
 
         d1 = await _create_device(db_session, "Mac1", "SN-1")
         d2 = await _create_device(db_session, "Mac2", "SN-2")
@@ -388,14 +481,20 @@ class TestRecalculateExclusions:
 
         await reconciler.recalculate_profile(profile.id)
 
-        assignments = await repo.get_assignments(profile.id)
+        assignments = await repo.get_current_assignments(profile.id)
         device_ids = {a.device_id for a in assignments}
         assert device_ids == {d2.id}
 
     async def test_all_excluded(self, db_session: AsyncSession) -> None:
         producer = _make_producer()
         repo = ProfileRepository(db_session)
-        reconciler = AssignmentReconciler(repo, MagicMock(spec=MobileAppRepository), producer)
+        reconciler = AssignmentReconciler(
+            repo,
+            MagicMock(spec=MobileAppRepository),
+            DeviceRepository(db_session),
+            SmartGroupRepository(db_session),
+            producer,
+        )
 
         d1 = await _create_device(db_session, "Mac1", "SN-1")
         profile = await _create_profile(
@@ -409,14 +508,18 @@ class TestRecalculateExclusions:
 
         await reconciler.recalculate_profile(profile.id)
 
-        max_version = await repo.get_max_assignment_version(profile.id)
-        device_ids = await repo.get_assignment_device_ids_at_version(profile.id, max_version)
-        assert len(device_ids) == 0
+        assert len(await repo.get_current_assignments(profile.id)) == 0
 
     async def test_smart_group_exclusion(self, db_session: AsyncSession) -> None:
         producer = _make_producer()
         repo = ProfileRepository(db_session)
-        reconciler = AssignmentReconciler(repo, MagicMock(spec=MobileAppRepository), producer)
+        reconciler = AssignmentReconciler(
+            repo,
+            MagicMock(spec=MobileAppRepository),
+            DeviceRepository(db_session),
+            SmartGroupRepository(db_session),
+            producer,
+        )
 
         await _create_device(db_session, "MacBook Pro", "SN-1")
         await _create_device(db_session, "MacBook Air", "SN-2")
@@ -450,7 +553,7 @@ class TestRecalculateExclusions:
 
         await reconciler.recalculate_profile(profile.id)
 
-        assignments = await repo.get_assignments(profile.id)
+        assignments = await repo.get_current_assignments(profile.id)
         assert len(assignments) == 1
 
 
@@ -463,7 +566,13 @@ class TestRecalculateVersion:
     async def test_first_assignment_version_1(self, db_session: AsyncSession) -> None:
         producer = _make_producer()
         repo = ProfileRepository(db_session)
-        reconciler = AssignmentReconciler(repo, MagicMock(spec=MobileAppRepository), producer)
+        reconciler = AssignmentReconciler(
+            repo,
+            MagicMock(spec=MobileAppRepository),
+            DeviceRepository(db_session),
+            SmartGroupRepository(db_session),
+            producer,
+        )
 
         await _create_device(db_session, "Mac", "SN-1")
         profile = await _create_profile(
@@ -480,7 +589,13 @@ class TestRecalculateVersion:
     async def test_existing_version_preserved(self, db_session: AsyncSession) -> None:
         producer = _make_producer()
         repo = ProfileRepository(db_session)
-        reconciler = AssignmentReconciler(repo, MagicMock(spec=MobileAppRepository), producer)
+        reconciler = AssignmentReconciler(
+            repo,
+            MagicMock(spec=MobileAppRepository),
+            DeviceRepository(db_session),
+            SmartGroupRepository(db_session),
+            producer,
+        )
 
         d1 = await _create_device(db_session, "Mac1", "SN-1")
         profile = await _create_profile(
@@ -516,49 +631,6 @@ class TestRecalculateVersion:
 
 
 # ---------------------------------------------------------------------------
-# recalculate_for_device
-# ---------------------------------------------------------------------------
-
-
-class TestRecalculateForDevice:
-    async def test_triggers_all_profiles(self, db_session: AsyncSession) -> None:
-        producer = _make_producer()
-        repo = ProfileRepository(db_session)
-        reconciler = AssignmentReconciler(repo, MagicMock(spec=MobileAppRepository), producer)
-
-        device = await _create_device(db_session, "Mac", "SN-1")
-        p1 = await _create_profile(
-            db_session,
-            "P1",
-            Scope(targets=[ScopeTarget(scope_type=ScopeType.ALL_DEVICES)]),
-        )
-        p2 = await _create_profile(
-            db_session,
-            "P2",
-            Scope(targets=[ScopeTarget(scope_type=ScopeType.ALL_DEVICES)]),
-        )
-        await _create_profile(db_session, "P3")
-
-        await reconciler.recalculate_profiles_for_device(device.id, publish=False)
-
-        a1 = await repo.get_assignments(p1.id)
-        a2 = await repo.get_assignments(p2.id)
-        assert len(a1) == 1
-        assert len(a2) == 1
-
-    async def test_no_profiles_with_scope(self, db_session: AsyncSession) -> None:
-        producer = _make_producer()
-        repo = ProfileRepository(db_session)
-        reconciler = AssignmentReconciler(repo, MagicMock(spec=MobileAppRepository), producer)
-
-        device = await _create_device(db_session, "Mac", "SN-1")
-        await _create_profile(db_session, "P1")
-
-        await reconciler.recalculate_profiles_for_device(device.id, publish=False)
-        producer.publish_profile_push.assert_not_awaited()
-
-
-# ---------------------------------------------------------------------------
 # Message sending
 # ---------------------------------------------------------------------------
 
@@ -567,7 +639,13 @@ class TestMessageSending:
     async def test_push_for_new_assignments(self, db_session: AsyncSession) -> None:
         producer = _make_producer()
         repo = ProfileRepository(db_session)
-        reconciler = AssignmentReconciler(repo, MagicMock(spec=MobileAppRepository), producer)
+        reconciler = AssignmentReconciler(
+            repo,
+            MagicMock(spec=MobileAppRepository),
+            DeviceRepository(db_session),
+            SmartGroupRepository(db_session),
+            producer,
+        )
 
         device = await _create_device(db_session, "Mac", "SN-1")
         profile = await _create_profile(
@@ -589,7 +667,13 @@ class TestMessageSending:
     async def test_revoke_for_removed_assignments(self, db_session: AsyncSession) -> None:
         producer = _make_producer()
         repo = ProfileRepository(db_session)
-        reconciler = AssignmentReconciler(repo, MagicMock(spec=MobileAppRepository), producer)
+        reconciler = AssignmentReconciler(
+            repo,
+            MagicMock(spec=MobileAppRepository),
+            DeviceRepository(db_session),
+            SmartGroupRepository(db_session),
+            producer,
+        )
 
         d1 = await _create_device(db_session, "Mac1", "SN-1")
         d2 = await _create_device(db_session, "Mac2", "SN-2")
@@ -617,7 +701,13 @@ class TestMessageSending:
         producer = _make_producer()
         producer.publish_profile_push = AsyncMock(side_effect=RuntimeError("RabbitMQ down"))
         repo = ProfileRepository(db_session)
-        reconciler = AssignmentReconciler(repo, MagicMock(spec=MobileAppRepository), producer)
+        reconciler = AssignmentReconciler(
+            repo,
+            MagicMock(spec=MobileAppRepository),
+            DeviceRepository(db_session),
+            SmartGroupRepository(db_session),
+            producer,
+        )
 
         await _create_device(db_session, "Mac", "SN-1")
         profile = await _create_profile(
@@ -628,31 +718,9 @@ class TestMessageSending:
 
         await reconciler.recalculate_profile(profile.id)
 
-        assignments = await repo.get_assignments(profile.id)
+        assignments = await repo.get_current_assignments(profile.id)
         assert len(assignments) == 1
 
         assert assignments[0].status == "FAILED"
         assert assignments[0].attempt_count == 1
         assert assignments[0].last_error == "RabbitMQ down"
-
-    async def test_check_in_reconciles_latest_desired_revision(self, db_session: AsyncSession) -> None:
-        producer = _make_producer()
-        repo = ProfileRepository(db_session)
-        reconciler = AssignmentReconciler(repo, MagicMock(spec=MobileAppRepository), producer)
-
-        device = await _create_device(db_session, "Mac", "SN-1")
-        profile = await _create_profile(
-            db_session,
-            "P1",
-            Scope(targets=[ScopeTarget(scope_type=ScopeType.DEVICE, target_id=device.id)]),
-        )
-        await reconciler.recalculate_profile(profile.id)
-        producer.publish_profile_push.reset_mock()
-
-        await reconciler.recalculate_profiles_for_device(device.id, publish=False)
-        await reconciler.dispatch_device_assignments(device.id)
-
-        producer.publish_profile_push.assert_awaited_once()
-        assignment = (await repo.get_current_assignments(profile.id))[0]
-        assert assignment.status == "SENT"
-        assert assignment.attempt_count == 2

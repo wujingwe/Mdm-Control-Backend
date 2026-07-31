@@ -2,12 +2,11 @@ from datetime import datetime, timezone
 
 from sqlalchemy import select, func, update, delete
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm.attributes import flag_modified
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.infra.core.exceptions import ConflictError
 from app.domains.profiles.enums import AssignmentDesiredState, AssignmentStatus
-from app.domains.shared.scope import ScopeType
+from app.domains.shared.scope import ScopeType, scope_matches
 from app.domains.devices.models import Device
 from app.domains.profiles.models import Profile, ProfileAssignment
 from app.domains.static_groups.models import StaticGroupDevice
@@ -20,63 +19,65 @@ from app.domains.profiles.schemas.profile import (
 
 class ProfileRepository:
     def __init__(self, db: AsyncSession) -> None:
-        self.db = db
+        self._db = db
 
-    async def list_all(self, skip: int = 0, limit: int = 100) -> list[Profile]:
+    async def list_profiles(self, skip: int = 0, limit: int = 100) -> list[Profile]:
         stmt = select(Profile).order_by(Profile.id).offset(skip).limit(limit)
-        result = await self.db.execute(stmt)
+        result = await self._db.execute(stmt)
         return list(result.scalars().all())
 
-    async def get_by_id(self, record_id: int) -> Profile | None:
-        stmt = select(Profile).where(Profile.id == record_id)
-        result = await self.db.execute(stmt)
+    async def get_by_id(self, profile_id: int) -> Profile | None:
+        stmt = select(Profile).where(Profile.id == profile_id)
+        result = await self._db.execute(stmt)
         return result.scalar_one_or_none()
 
-    async def get_by_id_for_update(self, record_id: int) -> Profile | None:
-        stmt = select(Profile).where(Profile.id == record_id).with_for_update()
-        result = await self.db.execute(stmt)
+    async def get_by_id_for_update(self, profile_id: int) -> Profile | None:
+        stmt = select(Profile).where(Profile.id == profile_id).with_for_update()
+        result = await self._db.execute(stmt)
         return result.scalar_one_or_none()
 
     async def create(self, data: ProfileCreate, created_by: int) -> Profile:
         instance = Profile(**data.model_dump(), created_by=created_by)
-        self.db.add(instance)
+        self._db.add(instance)
         try:
-            await self.db.commit()
-            await self.db.refresh(instance)
+            await self._db.commit()
+            await self._db.refresh(instance)
         except IntegrityError as err:
-            await self.db.rollback()
+            await self._db.rollback()
             raise ConflictError("Profile with this name already exists") from err
         return instance
 
-    async def update(self, record_id: int, data: ProfileUpdate) -> Profile | None:
+    async def update(self, record_id: int, data: ProfileUpdate) -> int:
         values = data.model_dump(exclude_unset=True)
         if not values:
-            return await self.get_by_id(record_id)
+            return 0
         stmt = update(Profile).where(Profile.id == record_id).values(**values)
         try:
-            await self.db.execute(stmt)
-            await self.db.commit()
+            result = await self._db.execute(stmt)
+            await self._db.commit()
         except IntegrityError as err:
-            await self.db.rollback()
+            await self._db.rollback()
             raise ConflictError("Profile with this name already exists") from err
-        return await self.get_by_id(record_id)
+        return result.rowcount  # type: ignore
 
-    async def delete(self, record_id: int) -> bool:
+    async def delete(self, record_id: int) -> int:
         stmt = delete(Profile).where(Profile.id == record_id)
-        await self.db.execute(stmt)
-        await self.db.commit()
-        return True
+        result = await self._db.execute(stmt)
+        await self._db.commit()
+        return result.rowcount  # type: ignore
 
     async def count(self) -> int:
         stmt = select(func.count()).select_from(Profile)
-        result = await self.db.execute(stmt)
+        result = await self._db.execute(stmt)
         return result.scalar_one()
 
-    async def get_assignments(self, profile_id: int) -> list[ProfileAssignment]:
-        return await self.get_current_assignments(profile_id)
-
     async def get_current_assignments(self, profile_id: int) -> list[ProfileAssignment]:
-        subq = (
+        """Return the current assignment for each device.
+
+        The current assignment is the highest profile_version row for the
+        (profile_id, device_id) pair.
+        """
+        max_versions = (
             select(
                 ProfileAssignment.device_id,
                 func.max(ProfileAssignment.profile_version).label("max_version"),
@@ -85,17 +86,18 @@ class ProfileRepository:
             .group_by(ProfileAssignment.device_id)
             .subquery()
         )
+
         stmt = (
             select(ProfileAssignment)
             .join(
-                subq,
+                max_versions,
                 (ProfileAssignment.profile_id == profile_id)
-                & (ProfileAssignment.device_id == subq.c.device_id)
-                & (ProfileAssignment.profile_version == subq.c.max_version),
+                & (ProfileAssignment.device_id == max_versions.c.device_id)
+                & (ProfileAssignment.profile_version == max_versions.c.max_version),
             )
             .order_by(ProfileAssignment.device_id)
         )
-        result = await self.db.execute(stmt)
+        result = await self._db.execute(stmt)
         return list(result.scalars().all())
 
     async def get_current_desired_device_ids(self, profile_id: int) -> set[int]:
@@ -105,29 +107,6 @@ class ProfileRepository:
             for assignment in assignments
             if assignment.desired_state == AssignmentDesiredState.PRESENT
         }
-
-    async def get_current_assignments_for_device(self, device_id: int) -> list[ProfileAssignment]:
-        subq = (
-            select(
-                ProfileAssignment.profile_id,
-                func.max(ProfileAssignment.profile_version).label("max_version"),
-            )
-            .where(ProfileAssignment.device_id == device_id)
-            .group_by(ProfileAssignment.profile_id)
-            .subquery()
-        )
-        stmt = (
-            select(ProfileAssignment)
-            .join(
-                subq,
-                (ProfileAssignment.device_id == device_id)
-                & (ProfileAssignment.profile_id == subq.c.profile_id)
-                & (ProfileAssignment.profile_version == subq.c.max_version),
-            )
-            .order_by(ProfileAssignment.profile_id)
-        )
-        result = await self.db.execute(stmt)
-        return list(result.scalars().all())
 
     async def get_assignment(self, profile_id: int, device_id: int) -> ProfileAssignment | None:
         stmt = (
@@ -139,57 +118,44 @@ class ProfileRepository:
             .order_by(ProfileAssignment.profile_version.desc())
             .limit(1)
         )
-        result = await self.db.execute(stmt)
-        return result.scalar_one_or_none()
-
-    async def get_assignment_by_version(
-        self, profile_id: int, device_id: int, profile_version: int
-    ) -> ProfileAssignment | None:
-        stmt = select(ProfileAssignment).where(
-            ProfileAssignment.profile_id == profile_id,
-            ProfileAssignment.device_id == device_id,
-            ProfileAssignment.profile_version == profile_version,
-        )
-        result = await self.db.execute(stmt)
+        result = await self._db.execute(stmt)
         return result.scalar_one_or_none()
 
     async def upsert_assignment(self, data: AssignmentUpsert) -> ProfileAssignment:
-        existing = await self.get_assignment_by_version(data.profile_id, data.device_id, data.profile_version)
-        if existing:
+        latest = await self.get_assignment(data.profile_id, data.device_id)
+        if data.profile_version is None:
+            if latest is None:
+                raise ValueError("Cannot upsert without a profile_version when no assignment exists")
+            version = latest.profile_version
+        else:
+            version = data.profile_version
+        if latest is not None and version < latest.profile_version:
+            raise ValueError(
+                f"Cannot upsert assignment at version {version}; latest version is {latest.profile_version}"
+            )
+        if latest is not None and version == latest.profile_version:
             for key, value in data.model_dump(exclude_unset=True).items():
-                setattr(existing, key, value)
-            await self.db.commit()
-            await self.db.refresh(existing)
-            return existing
+                setattr(latest, key, value)
+            await self._db.commit()
+            await self._db.refresh(latest)
+            return latest
         instance = ProfileAssignment(**data.model_dump())
-        self.db.add(instance)
-        await self.db.commit()
-        await self.db.refresh(instance)
+        self._db.add(instance)
+        await self._db.commit()
+        await self._db.refresh(instance)
         return instance
-
-    async def bulk_upsert_assignments(self, profile_id: int, assignments: list[AssignmentUpsert]) -> int:
-        count = 0
-        for data in assignments:
-            existing = await self.get_assignment_by_version(data.profile_id, data.device_id, data.profile_version)
-            if existing:
-                for key, value in data.model_dump(exclude_unset=True).items():
-                    setattr(existing, key, value)
-            else:
-                self.db.add(ProfileAssignment(**data.model_dump()))
-            count += 1
-        await self.db.commit()
-        return count
 
     async def list_all_profiles(self) -> list[Profile]:
         stmt = select(Profile).order_by(Profile.id)
-        result = await self.db.execute(stmt)
+        result = await self._db.execute(stmt)
         return list(result.scalars().all())
 
-    async def list_affected_profiles_for_device(self, device_id: int) -> list[Profile]:
-        device = await self.db.get(Device, device_id)
+    async def list_profiles_affected_by_device(self, device_id: int) -> list[Profile]:
+        device = await self._db.get(Device, device_id)
         if device is None:
             return []
-        static_group_rows = await self.db.execute(
+
+        static_group_rows = await self._db.execute(
             select(StaticGroupDevice.static_group_id).where(
                 StaticGroupDevice.device_serial_number == device.serial_number
             )
@@ -213,32 +179,14 @@ class ProfileRepository:
                 if target.scope_type == ScopeType.STATIC_GROUP and target.target_id in static_group_ids:
                     affected.append(profile)
                     break
-            else:
-                for exclusion in scope.exclusions:
-                    if exclusion.scope_type == ScopeType.SMART_GROUP:
-                        affected.append(profile)
-                        break
-                    if (exclusion.scope_type == ScopeType.DEVICE and exclusion.exclude_id == device_id) or (
-                        exclusion.scope_type == ScopeType.STATIC_GROUP and exclusion.exclude_id in static_group_ids
-                    ):
-                        affected.append(profile)
-                        break
         return affected
 
     async def get_max_assignment_version(self, profile_id: int) -> int:
         stmt = select(func.coalesce(func.max(ProfileAssignment.profile_version), 0)).where(
             ProfileAssignment.profile_id == profile_id
         )
-        result = await self.db.execute(stmt)
+        result = await self._db.execute(stmt)
         return result.scalar_one()
-
-    async def get_assignment_device_ids_at_version(self, profile_id: int, version: int) -> set[int]:
-        stmt = select(ProfileAssignment.device_id).where(
-            ProfileAssignment.profile_id == profile_id,
-            ProfileAssignment.profile_version == version,
-        )
-        result = await self.db.execute(stmt)
-        return {row[0] for row in result.all()}
 
     async def bulk_create_assignments(
         self,
@@ -248,7 +196,7 @@ class ProfileRepository:
         revoked_device_ids: set[int] | None = None,
     ) -> None:
         for device_id in device_ids:
-            self.db.add(
+            self._db.add(
                 ProfileAssignment(
                     profile_id=profile_id,
                     device_id=device_id,
@@ -258,7 +206,7 @@ class ProfileRepository:
                 )
             )
         for device_id in revoked_device_ids or set():
-            self.db.add(
+            self._db.add(
                 ProfileAssignment(
                     profile_id=profile_id,
                     device_id=device_id,
@@ -268,55 +216,48 @@ class ProfileRepository:
                 )
             )
 
+    async def write_revision(
+        self,
+        profile: Profile,
+        device_ids: set[int],
+        revoked_device_ids: set[int] | None = None,
+    ) -> int:
+        """Persist a new assignment revision for the profile and return the version used."""
+        latest_version = await self.get_max_assignment_version(profile.id)
+        version = max(profile.version, latest_version + 1 if latest_version else 1)
+        profile.version = version
+        await self.bulk_create_assignments(profile.id, version, device_ids, revoked_device_ids=revoked_device_ids)
+        await self._db.commit()
+        return version
+
     async def mark_assignment_sent(self, assignment_id: int, message_id: str) -> None:
-        assignment = await self.db.get(ProfileAssignment, assignment_id)
-        if assignment:
-            assignment.status = (
-                AssignmentStatus.REVOKE_PENDING
-                if assignment.desired_state == AssignmentDesiredState.ABSENT
-                else AssignmentStatus.SENT
-            )
-            assignment.message_id = message_id
-            assignment.attempt_count += 1
-            assignment.last_attempt_at = datetime.now(timezone.utc)
-            assignment.last_error = None
-            await self.db.commit()
+        assignment = await self._db.get(ProfileAssignment, assignment_id)
+        if not assignment:
+            return
+
+        assignment.status = (
+            AssignmentStatus.REVOKE_PENDING
+            if assignment.desired_state == AssignmentDesiredState.ABSENT
+            else AssignmentStatus.SENT
+        )
+        assignment.message_id = message_id
+        assignment.attempt_count += 1
+        assignment.last_attempt_at = datetime.now(timezone.utc)
+        assignment.last_error = None
+        await self._db.commit()
 
     async def mark_assignment_failed(self, assignment_id: int, error: str) -> None:
-        assignment = await self.db.get(ProfileAssignment, assignment_id)
-        if assignment:
-            assignment.status = AssignmentStatus.FAILED
-            assignment.attempt_count += 1
-            assignment.last_attempt_at = datetime.now(timezone.utc)
-            assignment.last_error = error[:2000]
-            await self.db.commit()
+        assignment = await self._db.get(ProfileAssignment, assignment_id)
+        if not assignment:
+            return
 
-    async def remove_scope_references(self, scope_type: ScopeType, target_id: int) -> list[int]:
-        """Remove all scope targets and exclusions matching the given type and ID from every profile.
+        assignment.status = AssignmentStatus.FAILED
+        assignment.attempt_count += 1
+        assignment.last_attempt_at = datetime.now(timezone.utc)
+        assignment.last_error = error[:2000]
+        await self._db.commit()
 
-        Returns the IDs of profiles whose scope was modified.
-        """
+    async def list_profiles_referencing(self, scope_type: ScopeType, target_id: int) -> list[Profile]:
+        """Return profiles whose scope references the given entity as a target or exclusion."""
         profiles = await self.list_all_profiles()
-        affected: list[int] = []
-        for profile in profiles:
-            modified = False
-            original_targets = list(profile.scope.targets)
-            original_exclusions = list(profile.scope.exclusions)
-            new_targets = [
-                t for t in original_targets if not (t.scope_type == scope_type and (t.target_id or 0) == target_id)
-            ]
-            new_exclusions = [
-                e for e in original_exclusions if not (e.scope_type == scope_type and (e.exclude_id or 0) == target_id)
-            ]
-            if len(new_targets) != len(original_targets):
-                profile.scope.targets = new_targets
-                modified = True
-            if len(new_exclusions) != len(original_exclusions):
-                profile.scope.exclusions = new_exclusions
-                modified = True
-            if modified:
-                flag_modified(profile, "scope")
-                affected.append(profile.id)
-        if affected:
-            await self.db.commit()
-        return affected
+        return [profile for profile in profiles if scope_matches(profile.scope, scope_type, target_id)]

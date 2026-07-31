@@ -9,14 +9,28 @@ from sqlalchemy import (
     UniqueConstraint,
     Text,
     ForeignKey,
+    select,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.infra.core.base import Base, utcnow
 from app.domains.devices.enums import ConnectionStatus, DeviceStatus
-from app.domains.profiles.models import Profile
+from app.domains.mobile_apps.models import MobileApp, MobileAppAssignment
+from app.domains.profiles.models import Profile, ProfileAssignment
 from app.infra.core.types import CertificateListType, NetworkInfoType
 from app.domains.devices.schemas import Certificate, Network
+
+_latest_profile_assignments = (
+    select(ProfileAssignment.profile_id, ProfileAssignment.device_id)
+    .group_by(ProfileAssignment.profile_id, ProfileAssignment.device_id)
+    .subquery()
+)
+
+_latest_mobile_app_assignments = (
+    select(MobileAppAssignment.mobile_app_id, MobileAppAssignment.device_id)
+    .group_by(MobileAppAssignment.mobile_app_id, MobileAppAssignment.device_id)
+    .subquery()
+)
 
 
 class Device(Base):
@@ -50,10 +64,21 @@ class Device(Base):
     )
 
     profiles: Mapped[list["Profile"]] = relationship(
-        secondary="profile_assignments",
-        primaryjoin="Device.id == ProfileAssignment.device_id",
-        secondaryjoin="Profile.id == ProfileAssignment.profile_id",
+        "Profile",
+        secondary=_latest_profile_assignments,
+        primaryjoin=lambda: Device.id == _latest_profile_assignments.c.device_id,
+        secondaryjoin=lambda: Profile.id == _latest_profile_assignments.c.profile_id,
         viewonly=True,
+        lazy="noload",
+    )
+
+    mobile_apps: Mapped[list["MobileApp"]] = relationship(
+        "MobileApp",
+        secondary=_latest_mobile_app_assignments,
+        primaryjoin=lambda: Device.id == _latest_mobile_app_assignments.c.device_id,
+        secondaryjoin=lambda: MobileApp.id == _latest_mobile_app_assignments.c.mobile_app_id,
+        viewonly=True,
+        lazy="noload",
     )
 
 

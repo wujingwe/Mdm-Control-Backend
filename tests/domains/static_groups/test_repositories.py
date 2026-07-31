@@ -30,10 +30,7 @@ class TestStaticGroupRepository:
         group = await repo.create(StaticGroupCreate(name="SG1"), created_by=1)
 
         assert group is not None
-        result = await repo.get_by_id(group.id)
-        assert result is not None
-        serials = [x.serial_number for x in result.devices]
-        assert serials == []
+        assert [x.serial_number for x in group.devices] == []
 
     async def test_create_with_devices(self, db_session: AsyncSession) -> None:
         repo = StaticGroupRepository(db_session)
@@ -70,10 +67,7 @@ class TestStaticGroupRepository:
         )
 
         assert group is not None
-        result = await repo.get_by_id(group.id)
-        assert result is not None
-        serials = [x.serial_number for x in result.devices]
-        assert set(serials) == {"SN001", "SN002", "SN003"}
+        assert {x.serial_number for x in group.devices} == {"SN001", "SN002", "SN003"}
 
     async def test_create_duplicate_name_raises(self, db_session: AsyncSession) -> None:
         repo = StaticGroupRepository(db_session)
@@ -132,45 +126,48 @@ class TestStaticGroupRepository:
         repo = StaticGroupRepository(db_session)
         created = await repo.create(StaticGroupCreate(name="SG1"), created_by=1)
         assert created is not None
-        updated = await repo.update(created.id, StaticGroupUpdate(name="SG2"))
-        assert updated is not None
-        assert updated.name == "SG2"
+        assert await repo.update(created.id, StaticGroupUpdate(name="SG2")) == 1
+        found = await repo.get_by_id(created.id)
+        assert found is not None
+        assert found.name == "SG2"
 
     async def test_update_description(self, db_session: AsyncSession) -> None:
         repo = StaticGroupRepository(db_session)
         created = await repo.create(StaticGroupCreate(name="SG1"), created_by=1)
         assert created is not None
-        updated = await repo.update(created.id, StaticGroupUpdate(description="New desc"))
-        assert updated is not None
-        assert updated.description == "New desc"
+        assert await repo.update(created.id, StaticGroupUpdate(description="New desc")) == 1
+        found = await repo.get_by_id(created.id)
+        assert found is not None
+        assert found.description == "New desc"
 
     async def test_update_name_and_description(self, db_session: AsyncSession) -> None:
         repo = StaticGroupRepository(db_session)
         created = await repo.create(StaticGroupCreate(name="SG1"), created_by=1)
         assert created is not None
-        updated = await repo.update(
-            created.id,
-            StaticGroupUpdate(
-                name="SG2",
-                description="New desc",
-            ),
+        assert (
+            await repo.update(
+                created.id,
+                StaticGroupUpdate(
+                    name="SG2",
+                    description="New desc",
+                ),
+            )
+            == 1
         )
-        assert updated is not None
-        assert updated.name == "SG2"
-        assert updated.description == "New desc"
+        found = await repo.get_by_id(created.id)
+        assert found is not None
+        assert found.name == "SG2"
+        assert found.description == "New desc"
 
     async def test_update_empty_body_returns_same(self, db_session: AsyncSession) -> None:
         repo = StaticGroupRepository(db_session)
         created = await repo.create(StaticGroupCreate(name="SG1"), created_by=1)
         assert created is not None
-        updated = await repo.update(created.id, StaticGroupUpdate())
-        assert updated is not None
-        assert updated.id == created.id
-        assert updated.name == "SG1"
+        assert await repo.update(created.id, StaticGroupUpdate()) == 0
 
     async def test_update_not_found(self, db_session: AsyncSession) -> None:
         repo = StaticGroupRepository(db_session)
-        assert await repo.update(999, StaticGroupUpdate(name="x")) is None
+        assert await repo.update(999, StaticGroupUpdate(name="x")) == 0
 
     async def test_update_duplicate_name_raises(self, db_session: AsyncSession) -> None:
         repo = StaticGroupRepository(db_session)
@@ -215,7 +212,7 @@ class TestStaticGroupRepository:
             created_by=1,
         )
         assert group is not None
-        await repo.update(group.id, StaticGroupUpdate(device_serial_numbers=["SN003"]))
+        assert await repo.update(group.id, StaticGroupUpdate(device_serial_numbers=["SN003"])) == 1
 
         result = await repo.get_by_id(group.id)
         assert result is not None
@@ -250,7 +247,7 @@ class TestStaticGroupRepository:
             created_by=1,
         )
         assert group is not None
-        await repo.update(group.id, StaticGroupUpdate(device_serial_numbers=["SN002"]))
+        assert await repo.update(group.id, StaticGroupUpdate(device_serial_numbers=["SN002"])) == 1
 
         result = await repo.get_by_id(group.id)
         assert result is not None
@@ -278,7 +275,7 @@ class TestStaticGroupRepository:
             created_by=1,
         )
         assert group is not None
-        await repo.update(group.id, StaticGroupUpdate(device_serial_numbers=[]))
+        assert await repo.update(group.id, StaticGroupUpdate(device_serial_numbers=[])) == 1
 
         result = await repo.get_by_id(group.id)
         assert result is not None
@@ -313,14 +310,16 @@ class TestStaticGroupRepository:
             created_by=1,
         )
         assert group is not None
-        updated = await repo.update(
-            group.id,
-            StaticGroupUpdate(
-                name="SG2",
-                device_serial_numbers=["SN002"],
-            ),
+        assert (
+            await repo.update(
+                group.id,
+                StaticGroupUpdate(
+                    name="SG2",
+                    device_serial_numbers=["SN002"],
+                ),
+            )
+            == 2
         )
-        assert updated.name == "SG2"
 
         result = await repo.get_by_id(group.id)
         assert result is not None
@@ -362,17 +361,23 @@ class TestStaticGroupRepository:
             created_by=1,
         )
         assert group is not None
-        await repo.update(
-            group.id,
-            StaticGroupUpdate(
-                device_serial_numbers=["SN001", "SN002"],
-            ),
+        assert (
+            await repo.update(
+                group.id,
+                StaticGroupUpdate(
+                    device_serial_numbers=["SN001", "SN002"],
+                ),
+            )
+            == 1
         )
-        await repo.update(
-            group.id,
-            StaticGroupUpdate(
-                device_serial_numbers=["SN003"],
-            ),
+        assert (
+            await repo.update(
+                group.id,
+                StaticGroupUpdate(
+                    device_serial_numbers=["SN003"],
+                ),
+            )
+            == 1
         )
 
         result = await repo.get_by_id(group.id)
@@ -384,12 +389,12 @@ class TestStaticGroupRepository:
         repo = StaticGroupRepository(db_session)
         created = await repo.create(StaticGroupCreate(name="SG1"), created_by=1)
         assert created is not None
-        assert await repo.delete(created.id) is True
+        assert await repo.delete(created.id) == 1
         assert await repo.get_by_id(created.id) is None
 
     async def test_delete_not_found(self, db_session: AsyncSession) -> None:
         repo = StaticGroupRepository(db_session)
-        assert await repo.delete(999) is False
+        assert await repo.delete(999) == 0
 
     async def test_count(self, db_session: AsyncSession) -> None:
         repo = StaticGroupRepository(db_session)

@@ -58,12 +58,47 @@ All settings via `.env` file or environment variables:
 | `WEBHOOK_URL` | `http://localhost:3000/api/v1/revalidate` | Next.js revalidation endpoint |
 | `REVALIDATION_SECRET` | — | Shared webhook secret |
 | `SSE_SERVER_URL` | `http://0.0.0.0:8080/notify` | External SSE server endpoint |
-| `SSO_ENABLED` | `False` | Enable SSO authentication |
 | `SSO_JWKS_URL` | — | JWKS URL for JWT verification |
 | `SSO_ISSUER` | — | Expected JWT issuer |
 | `SSO_AUDIENCE` | — | Expected JWT audience |
+| `DEV_AUTH_ENABLED` | `false` | Expose `POST /api/v1/auth/dev-token` (local fake IdP) |
+| `DEV_AUTH_PRIVATE_KEY` | — | PEM RSA key for dev-token signing |
 | `CORS_ORIGINS` | `["*"]` | Allowed CORS origins |
 | `MOCK_DB` | `false` | Use in-memory SQLite instead of MariaDB |
+
+## Local JWT auth (dev, no Docker)
+
+The backend speaks the same OIDC/JWT contract as Azure AD (Entra ID): it fetches a
+JWKS URL, verifies the RS256 signature, and checks `iss` + `aud`. For local
+development you can run a built-in fake IdP instead of Keycloak/Docker:
+
+```sh
+# .env
+SSO_JWKS_URL=http://localhost:8000/api/v1/auth/jwks
+SSO_ISSUER=http://localhost:8000
+SSO_AUDIENCE=mdm-api
+DEV_AUTH_ENABLED=true
+```
+
+- `GET /api/v1/auth/jwks` — publishes the public signing key (JWKS).
+- `GET /api/v1/auth/me` — returns the authenticated user resolved from the verified JWT.
+- `POST /api/v1/auth/dev-token` with `{"email": "jane@example.com"}` — mints an RS256
+  JWT for a user in the `users` table (404 if the email is unknown), using that user's
+  predefined permissions. The email must match a seeded user
+  (`admin@example.com`, `jane@example.com`, `bob@example.com`).
+  This endpoint is only exposed when `DEV_AUTH_ENABLED=true`; otherwise it returns
+  `403`.
+
+> Set `DEV_AUTH_PRIVATE_KEY` to the same PEM value for every backend process so JWTs
+> survive restarts and multiple workers. Keep it out of source control.
+
+### Frontend (Auth.js / NextAuth)
+
+Use a **Credentials provider** whose `authorize` calls `POST /api/v1/auth/dev-token`,
+store the returned `access_token`, and send it as `Authorization: Bearer <token>` on
+every request. This mirrors how you'd forward a real AAD access token later — the
+backend verifies RS256 against JWKS in both cases, so switching to Entra ID is just
+changing the `SSO_*` env vars and pointing Auth.js at the tenant.
 
 ## Run
 

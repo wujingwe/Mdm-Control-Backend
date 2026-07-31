@@ -52,3 +52,73 @@ class TestCommandsAPI:
         device = await _create_device(client, db_session)
         resp = await client.get(f"{self.BASE}/{device.id}/commands/999")
         assert resp.status_code == 404
+
+    @patch("app.domains.commands.services.rabbitmq_producer")
+    async def test_update_status(self, mock_producer: MagicMock, client: AsyncClient, db_session: AsyncSession) -> None:
+        mock_producer.publish_device_command = AsyncMock(return_value="msg-123")
+        device = await _create_device(client, db_session)
+
+        create = await client.post(
+            f"{self.BASE}/{device.id}/commands",
+            json={"commandType": "LOCK"},
+        )
+        cid = create.json()["id"]
+
+        resp = await client.put(
+            f"{self.BASE}/{device.id}/commands/{cid}/status",
+            json={"status": "ACKNOWLEDGED"},
+        )
+        assert resp.status_code == 200
+        assert resp.json()["status"] == "ACKNOWLEDGED"
+        assert resp.json()["acknowledgedAt"] is not None
+
+        completed = await client.put(
+            f"{self.BASE}/{device.id}/commands/{cid}/status",
+            json={"status": "COMPLETED", "resultMessage": "done"},
+        )
+        assert completed.status_code == 200
+        assert completed.json()["status"] == "COMPLETED"
+        assert completed.json()["resultMessage"] == "done"
+        assert completed.json()["completedAt"] is not None
+
+    @patch("app.domains.commands.services.rabbitmq_producer")
+    async def test_update_status_not_found(
+        self, mock_producer: MagicMock, client: AsyncClient, db_session: AsyncSession
+    ) -> None:
+        mock_producer.publish_device_command = AsyncMock(return_value="msg-123")
+        device = await _create_device(client, db_session)
+
+        resp = await client.put(
+            f"{self.BASE}/{device.id}/commands/999/status",
+            json={"status": "COMPLETED"},
+        )
+        assert resp.status_code == 404
+
+    @patch("app.domains.commands.services.rabbitmq_producer")
+    async def test_update_status_wrong_device(
+        self, mock_producer: MagicMock, client: AsyncClient, db_session: AsyncSession
+    ) -> None:
+        mock_producer.publish_device_command = AsyncMock(return_value="msg-123")
+        device = await _create_device(client, db_session)
+        other = Device(
+            name="Other Device",
+            serial_number="SER002",
+            os_version="15.0",
+            connection_status=ConnectionStatus.CONNECTED,
+            status=DeviceStatus.ENROLLED,
+        )
+        db_session.add(other)
+        await db_session.commit()
+        await db_session.refresh(other)
+
+        create = await client.post(
+            f"{self.BASE}/{device.id}/commands",
+            json={"commandType": "LOCK"},
+        )
+        cid = create.json()["id"]
+
+        resp = await client.put(
+            f"{self.BASE}/{other.id}/commands/{cid}/status",
+            json={"status": "COMPLETED"},
+        )
+        assert resp.status_code == 404

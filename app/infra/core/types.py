@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Generic, TypeVar
+from typing import Any, Generic, TypeVar
 
 from sqlalchemy import JSON, TypeDecorator
 from sqlalchemy.engine.interfaces import Dialect
@@ -30,25 +30,25 @@ class JsonType(TypeDecorator[T], ABC, Generic[S, T]):
     def _result(self, value: S) -> T: ...
 
 
-class NetworkInfoType(JsonType[dict, Network]):
+class NetworkInfoType(JsonType[dict[str, Any], Network]):
     cache_ok = True
 
-    def _bind(self, value: Network | dict) -> dict:
+    def _bind(self, value: Network | dict[str, Any]) -> dict[str, Any]:
         if isinstance(value, dict):
             return value
         return value.model_dump()
 
-    def _result(self, value: dict) -> Network:
+    def _result(self, value: dict[str, Any]) -> Network:
         return Network.model_validate(value)
 
 
-class CertificateListType(JsonType[list[dict], list[Certificate]]):
+class CertificateListType(JsonType[list[dict[str, Any]], list[Certificate]]):
     cache_ok = True
 
-    def _bind(self, value: list[Certificate] | list[dict]) -> list[dict]:
+    def _bind(self, value: list[Certificate] | list[dict[str, Any]]) -> list[dict[str, Any]]:
         return [c if isinstance(c, dict) else c.model_dump() for c in value]
 
-    def _result(self, value: list[dict]) -> list[Certificate]:
+    def _result(self, value: list[dict[str, Any]]) -> list[Certificate]:
         return [Certificate.model_validate(c) for c in value]
 
 

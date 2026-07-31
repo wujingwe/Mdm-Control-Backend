@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 broker = RabbitBroker(settings.rabbitmq_url)
 
 exchange = RabbitExchange(
-    "mdm.sse.messages",
+    "tmdm.sse.messages",
     type=ExchangeType.TOPIC,
     durable=True,
 )

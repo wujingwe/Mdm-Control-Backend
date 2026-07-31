@@ -1,6 +1,6 @@
 from unittest.mock import AsyncMock, MagicMock
 
-from app.dependencies import get_reconciler
+from app.dependencies import get_reconciliation_service
 from app.domains.extension_attributes.enums import ExtensionDataType, ExtensionInputType
 from app.domains.devices.models import Device
 from app.domains.devices.repositories import DeviceRepository
@@ -443,41 +443,6 @@ class TestDevicesAPI:
         assert body["connectionStatus"] == "Connected"
         assert body["serialNumber"] == "SN-EMP-001"
 
-    async def test_check_in_not_found(self, client: AsyncClient) -> None:
-        resp = await client.post("/api/v1/devices/999/check-in")
-        assert resp.status_code == 404
-        assert resp.json()["detail"] == "Device not found"
-
-    async def test_check_in_dispatches(self, client: AsyncClient, db_session: AsyncSession) -> None:
-        repo = DeviceRepository(db_session)
-        device = await repo.create(
-            {
-                "name": "CheckMe",
-                "serial_number": "SN-CHK-001",
-                "os_version": "15.0",
-                "connection_status": "Connected",
-                "status": "Enrolled",
-            }
-        )
-
-        reconciler = MagicMock()
-        reconciler.recalculate_profiles_for_device = AsyncMock()
-        reconciler.recalculate_mobile_apps_for_device = AsyncMock()
-        reconciler.dispatch_device_assignments = AsyncMock()
-        reconciler.dispatch_device_mobile_app_assignments = AsyncMock()
-        app.dependency_overrides[get_reconciler] = lambda: reconciler
-        try:
-            resp = await client.post(f"/api/v1/devices/{device.id}/check-in")
-        finally:
-            app.dependency_overrides.pop(get_reconciler, None)
-
-        assert resp.status_code == 200
-        assert resp.json() == {"status": "ok"}
-        reconciler.recalculate_profiles_for_device.assert_awaited_once_with(device.id, publish=False)
-        reconciler.recalculate_mobile_apps_for_device.assert_awaited_once_with(device.id, publish=False)
-        reconciler.dispatch_device_assignments.assert_awaited_once_with(device.id)
-        reconciler.dispatch_device_mobile_app_assignments.assert_awaited_once_with(device.id)
-
     async def test_update_device_triggers_reconciler(self, client: AsyncClient, db_session: AsyncSession) -> None:
         repo = DeviceRepository(db_session)
         device = await repo.create(
@@ -490,21 +455,21 @@ class TestDevicesAPI:
             }
         )
 
-        reconciler = MagicMock()
-        reconciler.recalculate_profiles_for_device = AsyncMock()
-        reconciler.recalculate_mobile_apps_for_device = AsyncMock()
-        app.dependency_overrides[get_reconciler] = lambda: reconciler
+        reconciliation_service = MagicMock()
+        reconciliation_service.recalculate_profiles_for_device = AsyncMock()
+        reconciliation_service.recalculate_mobile_apps_for_device = AsyncMock()
+        app.dependency_overrides[get_reconciliation_service] = lambda: reconciliation_service
         try:
             resp = await client.put(
                 f"/api/v1/devices/{device.id}",
                 json={"connectionStatus": "Disconnected"},
             )
         finally:
-            app.dependency_overrides.pop(get_reconciler, None)
+            app.dependency_overrides.pop(get_reconciliation_service, None)
 
         assert resp.status_code == 200
-        reconciler.recalculate_profiles_for_device.assert_awaited_once_with(device.id)
-        reconciler.recalculate_mobile_apps_for_device.assert_awaited_once_with(device.id)
+        reconciliation_service.recalculate_profiles_for_device.assert_awaited_once_with(device.id)
+        reconciliation_service.recalculate_mobile_apps_for_device.assert_awaited_once_with(device.id)
 
     async def test_update_device_non_trigger_field_skips_reconciler(
         self, client: AsyncClient, db_session: AsyncSession
@@ -520,20 +485,20 @@ class TestDevicesAPI:
             }
         )
 
-        reconciler = MagicMock()
-        reconciler.recalculate_profiles_for_device = AsyncMock()
-        reconciler.recalculate_mobile_apps_for_device = AsyncMock()
-        app.dependency_overrides[get_reconciler] = lambda: reconciler
+        reconciliation_service = MagicMock()
+        reconciliation_service.recalculate_profiles_for_device = AsyncMock()
+        reconciliation_service.recalculate_mobile_apps_for_device = AsyncMock()
+        app.dependency_overrides[get_reconciliation_service] = lambda: reconciliation_service
         try:
             resp = await client.put(
                 f"/api/v1/devices/{device.id}",
                 json={"network": {"wifi": {"ssid": "Guest"}}},
             )
         finally:
-            app.dependency_overrides.pop(get_reconciler, None)
+            app.dependency_overrides.pop(get_reconciliation_service, None)
 
         assert resp.status_code == 200
-        reconciler.recalculate_profiles_for_device.assert_not_called()
+        reconciliation_service.recalculate_profiles_for_device.assert_not_called()
 
 
 class TestCommandsAPI:

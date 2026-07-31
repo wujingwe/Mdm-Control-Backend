@@ -21,8 +21,8 @@ class ExtensionAttributeService:
     async def create_attribute(self, data: ExtensionAttributeCreate, created_by: int) -> ExtensionAttribute:
         return await self.repo.create(data, created_by)
 
-    async def update_attribute(self, attribute_id: int, data: ExtensionAttributeUpdate) -> ExtensionAttribute | None:
+    async def update_attribute(self, attribute_id: int, data: ExtensionAttributeUpdate) -> int:
         return await self.repo.update(attribute_id, data)
 
-    async def delete_attribute(self, attribute_id: int) -> bool:
+    async def delete_attribute(self, attribute_id: int) -> int:
         return await self.repo.delete(attribute_id)

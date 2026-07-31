@@ -1,8 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app.infra.common.schemas import PaginatedResponse
-from app.dependencies import get_mobile_app_service, get_reconciler, require_permission
-from app.infra.reconciler.reconciler import AssignmentReconciler
+from app.dependencies import get_mobile_app_service, require_permission
 from app.domains.mobile_apps.schemas import (
     MobileAppAssignmentResponse,
     MobileAppCreate,
@@ -47,12 +46,9 @@ async def get_mobile_app(
 async def create_mobile_app(
     data: MobileAppCreate,
     service: MobileAppService = Depends(get_mobile_app_service),
-    reconciler: AssignmentReconciler = Depends(get_reconciler),
     current_user: User = Depends(require_permission("editor")),
 ) -> MobileAppResponse:
     app = await service.create_mobile_app(data, current_user.id)
-    if data.scope.targets:
-        await reconciler.request_recalculate_mobile_app(app.id)
     await revalidate(["mobile-apps"])
     return MobileAppResponse.model_validate(app)
 
@@ -62,33 +58,32 @@ async def update_mobile_app(
     mobile_app_id: int,
     data: MobileAppUpdate,
     service: MobileAppService = Depends(get_mobile_app_service),
-    reconciler: AssignmentReconciler = Depends(get_reconciler),
     _current_user: User = Depends(require_permission("editor")),
 ) -> MobileAppResponse:
+    if not data.model_fields_set:
+        app = await service.get_mobile_app(mobile_app_id)
+        if app is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Mobile app not found")
+        return MobileAppResponse.model_validate(app)
     updated = await service.update_mobile_app(mobile_app_id, data)
     if not updated:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Mobile app not found")
-    if data.scope is not None:
-        await reconciler.request_recalculate_mobile_app(mobile_app_id)
     await revalidate(["mobile-apps"])
-    return MobileAppResponse.model_validate(updated)
+    app = await service.get_mobile_app(mobile_app_id)
+    if app is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Mobile app not found")
+    return MobileAppResponse.model_validate(app)
 
 
 @router.delete("/{mobile_app_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_mobile_app(
     mobile_app_id: int,
     service: MobileAppService = Depends(get_mobile_app_service),
-    reconciler: AssignmentReconciler = Depends(get_reconciler),
     _current_user: User = Depends(require_permission("editor")),
 ) -> None:
     app = await service.get_mobile_app(mobile_app_id)
     if not app:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Mobile app not found")
-    for target in app.scope.targets:
-        if target.scope_type == "SMART_GROUP" and target.target_id:
-            await reconciler.recalculate_mobile_apps_for_smart_group(target.target_id)
-        elif target.scope_type == "STATIC_GROUP" and target.target_id:
-            await reconciler.recalculate_mobile_apps_for_static_group(target.target_id)
     await service.delete_mobile_app(mobile_app_id)
     await revalidate(["mobile-apps"])
 

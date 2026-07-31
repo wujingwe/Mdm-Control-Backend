@@ -1,8 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app.infra.common.schemas import PaginatedResponse
-from app.dependencies import get_reconciler, get_static_group_service, require_permission
-from app.infra.reconciler.reconciler import AssignmentReconciler
+from app.dependencies import get_static_group_service, require_permission
 from app.domains.static_groups.schemas import (
     StaticGroupCreate,
     StaticGroupResponse,
@@ -46,12 +45,9 @@ async def get_static_group(
 async def create_static_group(
     data: StaticGroupCreate,
     service: StaticGroupService = Depends(get_static_group_service),
-    reconciler: AssignmentReconciler = Depends(get_reconciler),
     current_user: User = Depends(require_permission("editor")),
 ) -> StaticGroupResponse:
     group = await service.create_group(data, current_user.id)
-    if group:
-        await reconciler.recalculate_profiles_for_static_group(group.id)
     await revalidate(["static-groups"])
     return StaticGroupResponse.model_validate(group)
 
@@ -61,26 +57,30 @@ async def update_static_group(
     group_id: int,
     data: StaticGroupUpdate,
     service: StaticGroupService = Depends(get_static_group_service),
-    reconciler: AssignmentReconciler = Depends(get_reconciler),
     _current_user: User = Depends(require_permission("editor")),
 ) -> StaticGroupResponse:
+    if not data.model_fields_set:
+        group = await service.get_group(group_id)
+        if group is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Static group not found")
+        return StaticGroupResponse.model_validate(group)
     updated = await service.update_group(group_id, data)
     if not updated:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Static group not found")
-    await reconciler.recalculate_profiles_for_static_group(group_id)
     await revalidate(["static-groups"])
-    return StaticGroupResponse.model_validate(updated)
+    group = await service.get_group(group_id)
+    if group is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Static group not found")
+    return StaticGroupResponse.model_validate(group)
 
 
 @router.delete("/{group_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_static_group(
     group_id: int,
     service: StaticGroupService = Depends(get_static_group_service),
-    reconciler: AssignmentReconciler = Depends(get_reconciler),
     _current_user: User = Depends(require_permission("editor")),
 ) -> None:
     deleted = await service.delete_group(group_id)
     if not deleted:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Static group not found")
-    await reconciler.purge_static_group(group_id)
     await revalidate(["static-groups"])

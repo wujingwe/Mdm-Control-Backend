@@ -17,6 +17,8 @@ class TestRabbitMQProducer:
             serial_number="SER001",
             profile_id=10,
             profile_config={"cameraDisabled": True},
+            profile_version=3,
+            assignment_id=42,
         )
 
         mock_publish.assert_awaited_once()
@@ -28,6 +30,8 @@ class TestRabbitMQProducer:
         assert body.serial_number == "SER001"
         assert body.profile_id == 10
         assert body.profile_config == {"cameraDisabled": True}
+        assert body.profile_version == 3
+        assert body.assignment_id == 42
 
     async def test_publish_profile_revoke_routes_by_serial(self, monkeypatch: pytest.MonkeyPatch) -> None:
         mock_publish = AsyncMock()
@@ -37,6 +41,8 @@ class TestRabbitMQProducer:
         await producer.publish_profile_revoke(
             serial_number="SER001",
             profile_id=10,
+            profile_version=3,
+            assignment_id=42,
         )
 
         kwargs = mock_publish.call_args.kwargs
@@ -46,6 +52,8 @@ class TestRabbitMQProducer:
         assert body.kind == "profile.revoke"
         assert body.serial_number == "SER001"
         assert body.profile_id == 10
+        assert body.profile_version == 3
+        assert body.assignment_id == 42
 
     async def test_publish_json_sends_payload(self, monkeypatch: pytest.MonkeyPatch) -> None:
         mock_publish = AsyncMock()
@@ -78,7 +86,7 @@ class TestRabbitMQProducer:
         )
 
         assert isinstance(message_id, str)
-        assert len(message_id) == 36  # noqa: PLR2004
+        assert len(message_id) == 36
 
     async def test_publish_json_with_headers(self, monkeypatch: pytest.MonkeyPatch) -> None:
         mock_publish = AsyncMock()
@@ -163,7 +171,8 @@ class TestRabbitMQProducer:
         producer = RabbitMQProducer()
         assert producer.healthy is False
 
-    async def test_start_stop_are_noops(self) -> None:
-        producer = RabbitMQProducer()
-        await producer.start()
-        await producer.stop()
+    def test_uses_shared_broker_singleton(self) -> None:
+        from app.infra.messaging import broker as broker_module
+        from app.infra.messaging import producer as producer_module
+
+        assert producer_module.broker is broker_module.broker

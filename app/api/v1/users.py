@@ -62,11 +62,19 @@ async def update_user(
     data: UserUpdate,
     service: UserService = Depends(get_user_service),
 ) -> UserResponse:
+    if not data.model_fields_set:
+        user = await service.get_user(user_id)
+        if user is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+        return UserResponse.model_validate(user)
     updated = await service.update_user(user_id, data)
     if not updated:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
     await revalidate(["users"])
-    return UserResponse.model_validate(updated)
+    user = await service.get_user(user_id)
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+    return UserResponse.model_validate(user)
 
 
 @router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)

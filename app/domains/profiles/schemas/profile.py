@@ -47,7 +47,7 @@ class AssignmentResponse(CamelModel):
     last_attempt_at: datetime | None = None
     last_error: str | None = None
     message_id: str | None = None
-    updated_at: datetime | None = None
+    updated_at: datetime
 
 
 class StatusUpdate(CamelModel):
@@ -59,6 +59,6 @@ class AssignmentUpsert(CamelModel):
     device_id: int
     status: AssignmentStatus
     desired_state: AssignmentDesiredState = AssignmentDesiredState.PRESENT
-    profile_version: int
+    profile_version: int | None = None
     applied_at: datetime | None = None
     revoked_at: datetime | None = None

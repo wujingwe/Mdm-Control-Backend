@@ -2,6 +2,8 @@ from datetime import datetime
 
 
 from app.domains.devices.enums import ConnectionStatus, DeviceStatus
+from app.domains.mobile_apps.schemas import MobileAppResponse
+from app.domains.profiles.schemas.profile import ProfileResponse
 from app.infra.common.schemas import CamelModel
 
 
@@ -63,9 +65,11 @@ class DeviceResponse(CamelModel):
     available_storage: int | None = None
     total_memory: int | None = None
     available_memory: int | None = None
-    network: Network | dict | None = None
-    certificates: list[Certificate] | list | None = None
+    network: Network | None = None
+    certificates: list[Certificate] | None = None
     extension_attribute_values: list[ExtensionAttributeValueResponse] | None = None
+    profiles: list[ProfileResponse] | None = None
+    mobile_apps: list[MobileAppResponse] | None = None
 
 
 class ExtensionAttributeValueCreate(CamelModel):

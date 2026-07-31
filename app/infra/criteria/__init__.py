@@ -1,15 +1,15 @@
 from collections.abc import Callable
-from operator import and_, or_
+from itertools import pairwise
 
 from sqlalchemy import select
-from sqlalchemy.sql.expression import BinaryExpression, ColumnElement
+from sqlalchemy.sql.expression import ColumnElement
 
 from app.infra.criteria.schemas import Criteria
 from app.domains.devices.models import Device, DeviceExtensionAttributeValue
 
 __all__ = ["Criteria", "FILTER_BUILDERS", "build_device_query"]
 
-FILTER_BUILDERS: dict[str, Callable] = {
+FILTER_BUILDERS: dict[str, Callable[..., ColumnElement[bool]]] = {
     "is": lambda col, v: col == v,
     "isNot": lambda col, v: col != v,
     "like": lambda col, v: col.like(f"%{v}%"),
@@ -29,7 +29,7 @@ def _build_ext_attr_filter(c: Criteria) -> ColumnElement[bool] | None:
     if builder is None:
         return None
     value_expr = builder(DeviceExtensionAttributeValue.value, c.value)
-    subq = (
+    return (
         select(DeviceExtensionAttributeValue.device_id)
         .where(
             DeviceExtensionAttributeValue.extension_attribute_id == c.extension_attribute_id,
@@ -38,7 +38,6 @@ def _build_ext_attr_filter(c: Criteria) -> ColumnElement[bool] | None:
         )
         .exists()
     )
-    return subq
 
 
 def _build_filter(c: Criteria) -> ColumnElement[bool] | None:
@@ -54,9 +53,41 @@ def _build_filter(c: Criteria) -> ColumnElement[bool] | None:
 
 def _combine(left: ColumnElement[bool], conj: str, right: ColumnElement[bool]) -> ColumnElement[bool]:
     """Combine two expressions using the given conjunction."""
-    fn = and_ if conj.upper() == "AND" else or_
-    result: BinaryExpression = fn(left, right)
-    return result
+    return left & right if conj.upper() == "AND" else left | right
+
+
+def _partition(criteria: list[Criteria]) -> list[list[tuple[ColumnElement[bool], str]]]:
+    """Split criteria into parenthesized groups, each entry ``(expr, and_or)``."""
+    groups: list[list[tuple[ColumnElement[bool], str]]] = []
+    current: list[tuple[ColumnElement[bool], str]] = []
+
+    for c in criteria:
+        expr = _build_filter(c)
+        if expr is None:
+            continue
+        if c.left_parentheses and current:
+            groups.append(current)
+            current = []
+        current.append((expr, c.and_or))
+        if c.right_parentheses:
+            groups.append(current)
+            current = []
+
+    if current:
+        groups.append(current)
+    return groups
+
+
+def _fold_group(group: list[tuple[ColumnElement[bool], str]]) -> tuple[ColumnElement[bool], str]:
+    """Fold a group into a single expression, returning ``(expr, trailing_conj)``.
+
+    ``trailing_conj`` is the ``and_or`` of the last criterion, which connects
+    this group to the next one.
+    """
+    expr = group[0][0]
+    for (left_expr, conj), (right_expr, _) in pairwise(group):
+        expr = _combine(expr, conj, right_expr)
+    return expr, group[-1][1]
 
 
 def build_device_query(
@@ -69,45 +100,11 @@ def build_device_query(
     group criteria into sub-expressions so that parentheses override the
     default left-to-right evaluation.
     """
-
-    # 1. Group consecutive criteria by parentheses.
-    groups: list[list[tuple[ColumnElement[bool], str]]] = []
-    current_group: list[tuple[ColumnElement[bool], str]] = []
-
-    for c in criteria:
-        f = _build_filter(c)
-        if f is None:
-            continue
-        if c.left_parentheses:
-            if current_group:
-                groups.append(current_group)
-            current_group = []
-        current_group.append((f, c.and_or))
-        if c.right_parentheses:
-            groups.append(current_group)
-            current_group = []
-
-    if current_group:
-        groups.append(current_group)
-
+    groups = [_fold_group(group) for group in _partition(criteria)]
     if not groups:
         return None
 
-    # 2. Combine each group using the conjunction on each criterion.
-    group_exprs: list[ColumnElement[bool]] = []
-    group_conjs: list[str] = []
-
-    for group in groups:
-        expr = group[0][0]
-        for j in range(1, len(group)):
-            expr = _combine(expr, group[j - 1][1], group[j][0])
-        group_exprs.append(expr)
-        group_conjs.append(group[-1][1])
-
-    # 3. Combine groups.  The conjunction between group i-1 and group i
-    #    is the ``and_or`` of the last criterion in group i-1.
-    result = group_exprs[0]
-    for idx in range(1, len(group_exprs)):
-        result = _combine(result, group_conjs[idx - 1], group_exprs[idx])
-
+    result, _ = groups[0]
+    for (left_expr, conj), (right_expr, _) in pairwise(groups):
+        result = _combine(result, conj, right_expr)
     return result

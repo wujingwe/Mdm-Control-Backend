@@ -60,11 +60,19 @@ async def update_inventory_search(
     service: InventorySearchService = Depends(get_inventory_search_service),
     _current_user: User = Depends(require_permission("editor")),
 ) -> InventorySearchResponse:
+    if not data.model_fields_set:
+        search = await service.get_search(search_id)
+        if search is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Inventory search not found")
+        return InventorySearchResponse.model_validate(search)
     updated = await service.update_search(search_id, data)
     if not updated:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Inventory search not found")
     await revalidate(["inventory-search"])
-    return InventorySearchResponse.model_validate(updated)
+    search = await service.get_search(search_id)
+    if search is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Inventory search not found")
+    return InventorySearchResponse.model_validate(search)
 
 
 @router.delete("/{search_id}", status_code=status.HTTP_204_NO_CONTENT)

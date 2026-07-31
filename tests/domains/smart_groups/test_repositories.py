@@ -23,20 +23,21 @@ class TestSmartGroupRepository:
         found = await repo.get_by_id(created.id)
         assert found.name == "Group A"
 
-        updated = await repo.update(created.id, SmartGroupUpdate(description="desc"))
-        assert updated.description == "desc"
+        assert await repo.update(created.id, SmartGroupUpdate(description="desc")) == 1
+        found = await repo.get_by_id(created.id)
+        assert found.description == "desc"
 
         assert await repo.count() == 1
 
     async def test_delete(self, db_session: AsyncSession) -> None:
         repo = SmartGroupRepository(db_session)
         created = await repo.create(SmartGroupCreate(name="G", criteria=_CRITERIA), created_by=1)
-        assert await repo.delete(created.id) is True
+        assert await repo.delete(created.id) == 1
         assert await repo.get_by_id(created.id) is None
 
     async def test_delete_not_found(self, db_session: AsyncSession) -> None:
         repo = SmartGroupRepository(db_session)
-        assert await repo.delete(999) is False
+        assert await repo.delete(999) == 0
 
     async def test_get_by_id_not_found(self, db_session: AsyncSession) -> None:
         repo = SmartGroupRepository(db_session)
@@ -109,22 +110,26 @@ class TestSmartGroupRepository:
             ),
             created_by=1,
         )
-        updated = await repo.update(
-            created.id,
-            SmartGroupUpdate(
-                criteria=[
-                    Criteria(
-                        field="battery_status",
-                        operator="lessThan",
-                        type=CriteriaType.NUMBER,
-                        value="15",
-                    ),
-                ],
-            ),
+        assert (
+            await repo.update(
+                created.id,
+                SmartGroupUpdate(
+                    criteria=[
+                        Criteria(
+                            field="battery_status",
+                            operator="lessThan",
+                            type=CriteriaType.NUMBER,
+                            value="15",
+                        ),
+                    ],
+                ),
+            )
+            == 1
         )
-        assert updated.criteria is not None
-        assert len(updated.criteria) == 1
-        assert updated.criteria[0]["field"] == "battery_status"
+        found = await repo.get_by_id(created.id)
+        assert found.criteria is not None
+        assert len(found.criteria) == 1
+        assert found.criteria[0]["field"] == "battery_status"
 
     async def test_update_criteria_empty_list_accepted(self, db_session: AsyncSession) -> None:
         repo = SmartGroupRepository(db_session)
@@ -142,8 +147,9 @@ class TestSmartGroupRepository:
             ),
             created_by=1,
         )
-        updated = await repo.update(created.id, SmartGroupUpdate(criteria=[]))
-        assert updated.criteria == []
+        assert await repo.update(created.id, SmartGroupUpdate(criteria=[])) == 1
+        found = await repo.get_by_id(created.id)
+        assert found.criteria == []
 
     async def test_update_name_preserves_criteria(self, db_session: AsyncSession) -> None:
         repo = SmartGroupRepository(db_session)
@@ -161,8 +167,8 @@ class TestSmartGroupRepository:
             ),
             created_by=1,
         )
-        updated = await repo.update(created.id, SmartGroupUpdate(name="New Name"))
-        assert updated.name == "New Name"
+        assert await repo.update(created.id, SmartGroupUpdate(name="New Name")) == 1
         found = await repo.get_by_id(created.id)
+        assert found.name == "New Name"
         assert len(found.criteria) == 1
         assert found.criteria[0]["field"] == "os_version"

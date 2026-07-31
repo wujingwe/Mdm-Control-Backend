@@ -19,8 +19,8 @@ logger = logging.getLogger(__name__)
 class RabbitMQProducer:
     """Publishes messages to the SSE server exchange via the shared FastStream broker."""
 
+    @staticmethod
     async def publish_json(
-        self,
         payload: dict[str, Any],
         *,
         routing_key: str,
@@ -40,14 +40,14 @@ class RabbitMQProducer:
         )
         return published_message_id
 
+    @staticmethod
     async def publish_profile_push(
-        self,
         *,
         serial_number: str,
         profile_id: int,
         profile_config: dict[str, Any],
-        profile_version: int | None = None,
-        assignment_id: int | None = None,
+        profile_version: int,
+        assignment_id: int,
     ) -> str:
         message = ProfilePushRequested(
             serial_number=serial_number,
@@ -66,13 +66,13 @@ class RabbitMQProducer:
         )
         return message_id
 
+    @staticmethod
     async def publish_profile_revoke(
-        self,
         *,
         serial_number: str,
         profile_id: int,
-        profile_version: int | None = None,
-        assignment_id: int | None = None,
+        profile_version: int,
+        assignment_id: int,
     ) -> str:
         message = ProfileRevokeRequested(
             serial_number=serial_number,
@@ -90,15 +90,15 @@ class RabbitMQProducer:
         )
         return message_id
 
+    @staticmethod
     async def publish_mobile_app_push(
-        self,
         *,
         serial_number: str,
         mobile_app_id: int,
         package_name: str,
         package_version: str,
-        app_version: int | None = None,
-        assignment_id: int | None = None,
+        app_version: int,
+        assignment_id: int,
     ) -> str:
         message = MobileAppPushRequested(
             serial_number=serial_number,
@@ -118,14 +118,14 @@ class RabbitMQProducer:
         )
         return message_id
 
+    @staticmethod
     async def publish_mobile_app_revoke(
-        self,
         *,
         serial_number: str,
         mobile_app_id: int,
         package_name: str,
-        app_version: int | None = None,
-        assignment_id: int | None = None,
+        app_version: int,
+        assignment_id: int,
     ) -> str:
         message = MobileAppRevokeRequested(
             serial_number=serial_number,
@@ -144,8 +144,8 @@ class RabbitMQProducer:
         )
         return message_id
 
+    @staticmethod
     async def publish_device_command(
-        self,
         *,
         serial_number: str,
         command_id: int,
@@ -170,7 +170,7 @@ class RabbitMQProducer:
 
     @property
     def healthy(self) -> bool:
-        return broker._channel is not None  # noqa: SLF001
+        return broker._channel is not None
 
 
 rabbitmq_producer = RabbitMQProducer()

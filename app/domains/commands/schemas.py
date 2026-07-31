@@ -1,10 +1,15 @@
-from app.domains.commands.enums import CommandType
+from app.domains.commands.enums import CommandStatus, CommandType
 from app.infra.common.schemas import CamelModel
 from datetime import datetime
 
 
 class CommandCreate(CamelModel):
     command_type: CommandType
+
+
+class CommandStatusUpdate(CamelModel):
+    status: CommandStatus
+    result_message: str | None = None
 
 
 class CommandResponse(CamelModel):

@@ -8,16 +8,16 @@ class ProfilePushRequested(BaseModel):
     serial_number: str
     profile_id: int
     profile_config: dict[str, Any]
-    profile_version: int | None = None
-    assignment_id: int | None = None
+    profile_version: int
+    assignment_id: int
 
 
 class ProfileRevokeRequested(BaseModel):
     kind: Literal["profile.revoke"] = "profile.revoke"
     serial_number: str
     profile_id: int
-    profile_version: int | None = None
-    assignment_id: int | None = None
+    profile_version: int
+    assignment_id: int
 
 
 class MobileAppPushRequested(BaseModel):
@@ -26,8 +26,8 @@ class MobileAppPushRequested(BaseModel):
     mobile_app_id: int
     package_name: str
     package_version: str
-    app_version: int | None = None
-    assignment_id: int | None = None
+    app_version: int
+    assignment_id: int
 
 
 class MobileAppRevokeRequested(BaseModel):
@@ -35,8 +35,8 @@ class MobileAppRevokeRequested(BaseModel):
     serial_number: str
     mobile_app_id: int
     package_name: str
-    app_version: int | None = None
-    assignment_id: int | None = None
+    app_version: int
+    assignment_id: int
 
 
 class DeviceCommandRequested(BaseModel):

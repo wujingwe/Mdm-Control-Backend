@@ -61,6 +61,14 @@ async def update_extension_attribute(
     service: ExtensionAttributeService = Depends(get_extension_attribute_service),
     _current_user: User = Depends(require_permission("editor")),
 ) -> ExtensionAttributeResponse:
+    if not data.model_fields_set:
+        attribute = await service.get_attribute(attribute_id)
+        if attribute is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Extension attribute not found",
+            )
+        return ExtensionAttributeResponse.model_validate(attribute)
     updated = await service.update_attribute(attribute_id, data)
     if not updated:
         raise HTTPException(
@@ -69,7 +77,13 @@ async def update_extension_attribute(
         )
 
     await revalidate(["extension-attributes"])
-    return ExtensionAttributeResponse.model_validate(updated)
+    attribute = await service.get_attribute(attribute_id)
+    if attribute is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Extension attribute not found",
+        )
+    return ExtensionAttributeResponse.model_validate(attribute)
 
 
 @router.delete("/{attribute_id}", status_code=status.HTTP_204_NO_CONTENT)
