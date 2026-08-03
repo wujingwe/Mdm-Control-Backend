@@ -36,7 +36,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
 
 app = FastAPI(
-    title="MdM Control Backend",
+    title="tMDM Control Backend",
     version=APP_VERSION,
     lifespan=lifespan,
 )
