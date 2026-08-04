@@ -58,6 +58,7 @@ async def update_profile(
     profile_id: int,
     data: ProfileUpdate,
     service: ProfileService = Depends(get_profile_service),
+    _current_user: User = Depends(require_permission("editor")),
 ) -> ProfileResponse:
     if not data.model_fields_set:
         profile = await service.get_profile(profile_id)
@@ -78,6 +79,7 @@ async def update_profile(
 async def delete_profile(
     profile_id: int,
     service: ProfileService = Depends(get_profile_service),
+    _current_user: User = Depends(require_permission("admin")),
 ) -> None:
     deleted = await service.delete_profile(profile_id)
     if not deleted:
@@ -100,6 +102,7 @@ async def update_assignment_status(
     device_id: int,
     data: StatusUpdate,
     service: ProfileService = Depends(get_profile_service),
+    _current_user: User = Depends(require_permission("editor")),
 ) -> AssignmentResponse:
     assignment = await service.update_assignment_status(profile_id, device_id, data.status.value)
     if not assignment:

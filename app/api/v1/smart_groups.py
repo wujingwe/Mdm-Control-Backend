@@ -77,7 +77,7 @@ async def update_smart_group(
 async def delete_smart_group(
     group_id: int,
     service: SmartGroupService = Depends(get_smart_group_service),
-    _current_user: User = Depends(require_permission("editor")),
+    _current_user: User = Depends(require_permission("admin")),
 ) -> None:
     deleted = await service.delete_group(group_id)
     if not deleted:

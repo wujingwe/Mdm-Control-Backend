@@ -90,7 +90,7 @@ async def update_extension_attribute(
 async def delete_extension_attribute(
     attribute_id: int,
     service: ExtensionAttributeService = Depends(get_extension_attribute_service),
-    _current_user: User = Depends(require_permission("editor")),
+    _current_user: User = Depends(require_permission("admin")),
 ) -> None:
     deleted = await service.delete_attribute(attribute_id)
     if not deleted:

@@ -1,10 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app.infra.common.schemas import PaginatedResponse
-from app.dependencies import get_user_service
+from app.dependencies import get_user_service, require_permission
 from app.domains.users.schemas import UserCreate, UserResponse, UserUpdate
 from app.domains.users.services import UserService
 from app.webhook_client import revalidate
+from app.domains.users.models import User
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
@@ -50,6 +51,7 @@ async def get_user_by_email(
 async def create_user(
     data: UserCreate,
     service: UserService = Depends(get_user_service),
+    _current_user: User = Depends(require_permission("editor")),
 ) -> UserResponse:
     user = await service.create_user(data)
     await revalidate(["users"])
@@ -61,6 +63,7 @@ async def update_user(
     user_id: int,
     data: UserUpdate,
     service: UserService = Depends(get_user_service),
+    _current_user: User = Depends(require_permission("editor")),
 ) -> UserResponse:
     if not data.model_fields_set:
         user = await service.get_user(user_id)
@@ -81,6 +84,7 @@ async def update_user(
 async def delete_user(
     user_id: int,
     service: UserService = Depends(get_user_service),
+    _current_user: User = Depends(require_permission("admin")),
 ) -> None:
     deleted = await service.delete_user(user_id)
     if not deleted:

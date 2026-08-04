@@ -42,6 +42,7 @@ async def update_device(
     device_id: int,
     data: DeviceUpdate,
     service: DeviceService = Depends(get_device_service),
+    _current_user: User = Depends(require_permission("editor")),
 ) -> DeviceResponse:
     if not data.model_fields_set:
         device = await service.get_device(device_id)
@@ -103,6 +104,7 @@ async def update_command_status(
     command_id: int,
     data: CommandStatusUpdate,
     service: CommandService = Depends(get_command_service),
+    _current_user: User = Depends(require_permission("editor")),
 ) -> CommandResponse:
     command = await service.update_status(command_id, data.status, data.result_message)
     if not command or command.device_id != device_id:

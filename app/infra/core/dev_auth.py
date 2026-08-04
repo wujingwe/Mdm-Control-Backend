@@ -9,6 +9,8 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 from app.infra.config.settings import settings
 
 DEV_TOKEN_TTL_SECONDS = 3600
+
+
 def _encode_base64url(data: bytes) -> str:
     return base64.urlsafe_b64encode(data).rstrip(b"=").decode("ascii")
 

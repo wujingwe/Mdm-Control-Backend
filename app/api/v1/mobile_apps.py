@@ -79,7 +79,7 @@ async def update_mobile_app(
 async def delete_mobile_app(
     mobile_app_id: int,
     service: MobileAppService = Depends(get_mobile_app_service),
-    _current_user: User = Depends(require_permission("editor")),
+    _current_user: User = Depends(require_permission("admin")),
 ) -> None:
     app = await service.get_mobile_app(mobile_app_id)
     if not app:
@@ -103,6 +103,7 @@ async def update_mobile_app_assignment_status(
     device_id: int,
     data: MobileAppStatusUpdate,
     service: MobileAppService = Depends(get_mobile_app_service),
+    _current_user: User = Depends(require_permission("editor")),
 ) -> MobileAppAssignmentResponse:
     assignment = await service.update_assignment_status(mobile_app_id, device_id, data.status.value)
     if not assignment:

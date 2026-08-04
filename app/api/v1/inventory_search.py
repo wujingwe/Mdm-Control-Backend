@@ -79,7 +79,7 @@ async def update_inventory_search(
 async def delete_inventory_search(
     search_id: int,
     service: InventorySearchService = Depends(get_inventory_search_service),
-    _current_user: User = Depends(require_permission("editor")),
+    _current_user: User = Depends(require_permission("admin")),
 ) -> None:
     deleted = await service.delete_search(search_id)
     if not deleted:
