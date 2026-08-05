@@ -2,7 +2,7 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-    db_url: str = "mysql+aiomysql://jing-weiwu:mdm@localhost:3306/mdm_control"
+    db_url: str = "mysql+aiomysql://tmdm:tmdm@localhost:3306/tmdm"
     rabbitmq_url: str = "amqp://guest:guest@localhost:5672/"
     webhook_url: str = "http://localhost:3000/api/v1/revalidate"
     revalidation_secret: str = ""
