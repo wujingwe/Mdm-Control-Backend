@@ -54,6 +54,12 @@ class MobileAppStatusUpdate(CamelModel):
     status: AssignmentStatus
 
 
+class MobileAppAssignmentReportIn(CamelModel):
+    assignment_id: int
+    status: AssignmentStatus
+    result_message: str | None = None
+
+
 class MobileAppAssignmentUpsert(CamelModel):
     mobile_app_id: int
     device_id: int

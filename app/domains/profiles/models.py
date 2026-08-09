@@ -77,6 +77,8 @@ class ProfileAssignment(Base):
     )
     profile_version: Mapped[int] = mapped_column(Integer, default=1)
     assigned_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+    acknowledged_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     applied_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     revoked_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     attempt_count: Mapped[int] = mapped_column(Integer, default=0)

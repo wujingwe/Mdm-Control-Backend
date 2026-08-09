@@ -7,6 +7,8 @@ class Settings(BaseSettings):
     webhook_url: str = "http://localhost:3000/api/v1/revalidate"
     revalidation_secret: str = ""
 
+    sse_secret: str = ""
+
     sso_jwks_url: str = ""
     sso_issuer: str = ""
     sso_audience: str = ""

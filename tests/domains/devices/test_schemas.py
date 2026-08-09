@@ -6,6 +6,7 @@ from pydantic import ValidationError
 from app.domains.devices.schemas import (
     Certificate,
     Cellular,
+    DeviceReportIn,
     DeviceResponse,
     DeviceUpdate,
     Network,
@@ -209,3 +210,133 @@ class TestDeviceUpdateSchema:
     def test_update_invalid_status(self) -> None:
         with pytest.raises(ValidationError):
             DeviceUpdate(status="INVALID")
+
+
+class TestDeviceReportInSchema:
+    def test_required_fields(self) -> None:
+        data = DeviceReportIn(connection_status="Connected", status="Enrolled")
+        assert data.connection_status == "Connected"
+        assert data.status == "Enrolled"
+        assert data.commands is None
+        assert data.profile_assignments is None
+        assert data.mobile_app_assignments is None
+
+    def test_missing_required_fields(self) -> None:
+        with pytest.raises(ValidationError):
+            DeviceReportIn()
+
+    def test_commands_population(self) -> None:
+        data = DeviceReportIn(
+            connection_status="Connected",
+            status="Enrolled",
+            commands=[{"command_id": 1, "status": "COMPLETED", "result_message": "done"}],
+        )
+        assert data.commands is not None
+        assert data.commands[0].command_id == 1
+        assert data.commands[0].status == "COMPLETED"
+
+    def test_invalid_command_status(self) -> None:
+        with pytest.raises(ValidationError):
+            DeviceReportIn(
+                connection_status="Connected",
+                status="Enrolled",
+                commands=[{"command_id": 1, "status": "NOPE"}],
+            )
+
+    def test_profile_assignments_population(self) -> None:
+        data = DeviceReportIn(
+            connection_status="Connected",
+            status="Enrolled",
+            profile_assignments=[
+                {"assignment_id": 7, "status": "APPLIED", "result_message": "applied"},
+            ],
+        )
+        assert data.profile_assignments is not None
+        assert data.profile_assignments[0].assignment_id == 7
+        assert data.profile_assignments[0].status == "APPLIED"
+        assert data.profile_assignments[0].result_message == "applied"
+
+    def test_profile_assignments_omit_result_message(self) -> None:
+        data = DeviceReportIn(
+            connection_status="Connected",
+            status="Enrolled",
+            profile_assignments=[{"assignment_id": 7, "status": "SENT"}],
+        )
+        assert data.profile_assignments is not None
+        assert data.profile_assignments[0].result_message is None
+
+    def test_invalid_profile_assignment_status(self) -> None:
+        with pytest.raises(ValidationError):
+            DeviceReportIn(
+                connection_status="Connected",
+                status="Enrolled",
+                profile_assignments=[{"assignment_id": 7, "status": "NOPE"}],
+            )
+
+    def test_profile_assignment_missing_id(self) -> None:
+        with pytest.raises(ValidationError):
+            DeviceReportIn(
+                connection_status="Connected",
+                status="Enrolled",
+                profile_assignments=[{"status": "APPLIED"}],
+            )
+
+    def test_mobile_app_assignments_population(self) -> None:
+        data = DeviceReportIn(
+            connection_status="Connected",
+            status="Enrolled",
+            mobile_app_assignments=[
+                {"assignment_id": 9, "status": "FAILED", "result_message": "install error"},
+            ],
+        )
+        assert data.mobile_app_assignments is not None
+        assert data.mobile_app_assignments[0].assignment_id == 9
+        assert data.mobile_app_assignments[0].status == "FAILED"
+        assert data.mobile_app_assignments[0].result_message == "install error"
+
+    def test_invalid_mobile_app_assignment_status(self) -> None:
+        with pytest.raises(ValidationError):
+            DeviceReportIn(
+                connection_status="Connected",
+                status="Enrolled",
+                mobile_app_assignments=[{"assignment_id": 9, "status": "NOPE"}],
+            )
+
+    def test_mobile_app_assignment_missing_id(self) -> None:
+        with pytest.raises(ValidationError):
+            DeviceReportIn(
+                connection_status="Connected",
+                status="Enrolled",
+                mobile_app_assignments=[{"status": "APPLIED"}],
+            )
+
+    def test_all_report_items_together(self) -> None:
+        data = DeviceReportIn(
+            connection_status="Connected",
+            status="Enrolled",
+            commands=[{"command_id": 1, "status": "COMPLETED"}],
+            profile_assignments=[{"assignment_id": 7, "status": "APPLIED"}],
+            mobile_app_assignments=[{"assignment_id": 9, "status": "APPLIED"}],
+        )
+        assert data.commands is not None and len(data.commands) == 1
+        assert data.profile_assignments is not None and len(data.profile_assignments) == 1
+        assert data.mobile_app_assignments is not None and len(data.mobile_app_assignments) == 1
+
+    def test_dump_excludes_report_lists_when_absent(self) -> None:
+        data = DeviceReportIn(connection_status="Connected", status="Enrolled")
+        dumped = data.model_dump(exclude_unset=True)
+        assert "commands" not in dumped
+        assert "profile_assignments" not in dumped
+        assert "mobile_app_assignments" not in dumped
+
+    def test_camel_case_alias_population(self) -> None:
+        data = DeviceReportIn.model_validate(
+            {
+                "connectionStatus": "Connected",
+                "status": "Enrolled",
+                "profileAssignments": [{"assignmentId": 7, "status": "APPLIED"}],
+                "mobileAppAssignments": [{"assignmentId": 9, "status": "APPLIED"}],
+            }
+        )
+        assert data.profile_assignments is not None and data.profile_assignments[0].assignment_id == 7
+        assert data.mobile_app_assignments is not None and data.mobile_app_assignments[0].assignment_id == 9

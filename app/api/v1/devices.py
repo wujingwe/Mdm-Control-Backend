@@ -3,8 +3,19 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from app.domains.commands.schemas import CommandCreate, CommandResponse, CommandStatusUpdate
 from app.domains.commands.services import CommandService
 from app.infra.common.schemas import PaginatedResponse
-from app.dependencies import get_command_service, get_device_service, require_permission
-from app.domains.devices.schemas import DeviceResponse, DeviceUpdate
+from app.dependencies import (
+    get_command_service,
+    get_device_service,
+    require_permission,
+    require_sse_secret,
+)
+from app.domains.devices.schemas import (
+    DeviceAuthResponse,
+    DeviceRegisterRequest,
+    DeviceReportIn,
+    DeviceResponse,
+    DeviceUpdate,
+)
 from app.domains.devices.services import DeviceService
 from app.domains.users.models import User
 
@@ -24,6 +35,41 @@ async def list_devices(
         skip=skip,
         limit=limit,
     )
+
+
+@router.get("/by-serial/{serial_number}", response_model=DeviceAuthResponse)
+async def get_device_auth_by_serial(
+    serial_number: str,
+    service: DeviceService = Depends(get_device_service),
+) -> DeviceAuthResponse:
+    result = await service.get_auth_by_serial(serial_number)
+    if result is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Device not found")
+    return result
+
+
+@router.post("/{serial_number}/register", response_model=DeviceResponse)
+async def register_device(
+    serial_number: str,
+    data: DeviceRegisterRequest,
+    service: DeviceService = Depends(get_device_service),
+    _secret: None = Depends(require_sse_secret),
+) -> DeviceResponse:
+    device = await service.register(serial_number, data)
+    return DeviceResponse.model_validate(device)
+
+
+@router.put("/{serial_number}/report", response_model=DeviceResponse)
+async def report_device(
+    serial_number: str,
+    data: DeviceReportIn,
+    service: DeviceService = Depends(get_device_service),
+    _secret: None = Depends(require_sse_secret),
+) -> DeviceResponse:
+    device = await service.report_in(serial_number, data)
+    if device is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Device not found")
+    return DeviceResponse.model_validate(device)
 
 
 @router.get("/{device_id}", response_model=DeviceResponse)

@@ -35,6 +35,25 @@ class DeviceRepository:
         result = await self._db.execute(stmt, execution_options={"populate_existing": True})
         return result.scalar_one_or_none()
 
+    async def get_by_serial(self, serial_number: str) -> Device | None:
+        stmt = select(Device).where(Device.serial_number == serial_number)
+        result = await self._db.execute(stmt)
+        return result.scalar_one_or_none()
+
+    async def update_by_serial(self, serial_number: str, values: dict[str, Any]) -> Device | None:
+        device = await self.get_by_serial(serial_number)
+        if device is None:
+            return None
+        for field_name, value in values.items():
+            setattr(device, field_name, value)
+        device.updated_at = utcnow()
+        try:
+            await self._db.commit()
+        except IntegrityError as err:
+            await self._db.rollback()
+            raise ConflictError("Resource update violates a constraint") from err
+        return device
+
     async def create(self, data: dict[str, Any]) -> Device:
         instance = Device(**data)
         self._db.add(instance)

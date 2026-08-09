@@ -1,10 +1,100 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "MdM Control Backend",
+    "title": "tMDM Control Backend",
     "version": "1.0.0"
   },
   "paths": {
+    "/api/v1/auth/jwks": {
+      "get": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Dev Jwks",
+        "operationId": "dev_jwks_api_v1_auth_jwks_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Dev Jwks Api V1 Auth Jwks Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/me": {
+      "get": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Current User",
+        "operationId": "current_user_api_v1_auth_me_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/auth/dev-token": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Create Dev Token",
+        "operationId": "create_dev_token_api_v1_auth_dev_token_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DevTokenRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DevTokenResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/devices": {
       "get": {
         "tags": [
@@ -30,7 +120,7 @@
             "required": false,
             "schema": {
               "type": "integer",
-              "maximum": 5000,
+              "maximum": 1000,
               "minimum": 1,
               "default": 100,
               "title": "Limit"
@@ -44,6 +134,184 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/PaginatedResponse_DeviceResponse_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/devices/by-serial/{serial_number}": {
+      "get": {
+        "tags": [
+          "Devices"
+        ],
+        "summary": "Get Device Auth By Serial",
+        "operationId": "get_device_auth_by_serial_api_v1_devices_by_serial__serial_number__get",
+        "parameters": [
+          {
+            "name": "serial_number",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Serial Number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeviceAuthResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/devices/{serial_number}/register": {
+      "post": {
+        "tags": [
+          "Devices"
+        ],
+        "summary": "Register Device",
+        "operationId": "register_device_api_v1_devices__serial_number__register_post",
+        "parameters": [
+          {
+            "name": "serial_number",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Serial Number"
+            }
+          },
+          {
+            "name": "X-SSE-SECRET",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Sse-Secret"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeviceRegisterRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeviceResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/devices/{serial_number}/report": {
+      "put": {
+        "tags": [
+          "Devices"
+        ],
+        "summary": "Report Device",
+        "operationId": "report_device_api_v1_devices__serial_number__report_put",
+        "parameters": [
+          {
+            "name": "serial_number",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Serial Number"
+            }
+          },
+          {
+            "name": "X-SSE-SECRET",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Sse-Secret"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeviceReportIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeviceResponse"
                 }
               }
             }
@@ -108,6 +376,11 @@
         ],
         "summary": "Update Device",
         "operationId": "update_device_api_v1_devices__device_id__put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "device_id",
@@ -136,52 +409,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/DeviceResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/devices/{device_id}/check-in": {
-      "post": {
-        "tags": [
-          "Devices"
-        ],
-        "summary": "Device Check In",
-        "operationId": "device_check_in_api_v1_devices__device_id__check_in_post",
-        "parameters": [
-          {
-            "name": "device_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "title": "Device Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "additionalProperties": {
-                    "type": "string"
-                  },
-                  "title": "Response Device Check In Api V1 Devices  Device Id  Check In Post"
                 }
               }
             }
@@ -235,7 +462,7 @@
               "type": "integer",
               "maximum": 1000,
               "minimum": 1,
-              "default": 50,
+              "default": 100,
               "title": "Limit"
             }
           }
@@ -269,6 +496,11 @@
         ],
         "summary": "Execute Command",
         "operationId": "execute_command_api_v1_devices__device_id__commands_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "device_id",
@@ -365,6 +597,72 @@
         }
       }
     },
+    "/api/v1/devices/{device_id}/commands/{command_id}/status": {
+      "put": {
+        "tags": [
+          "Devices"
+        ],
+        "summary": "Update Command Status",
+        "operationId": "update_command_status_api_v1_devices__device_id__commands__command_id__status_put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "device_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Device Id"
+            }
+          },
+          {
+            "name": "command_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Command Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CommandStatusUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommandResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/profiles": {
       "get": {
         "tags": [
@@ -426,6 +724,11 @@
         ],
         "summary": "Create Profile",
         "operationId": "create_profile_api_v1_profiles_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -507,6 +810,11 @@
         ],
         "summary": "Update Profile",
         "operationId": "update_profile_api_v1_profiles__profile_id__put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "profile_id",
@@ -557,6 +865,11 @@
         ],
         "summary": "Delete Profile",
         "operationId": "delete_profile_api_v1_profiles__profile_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "profile_id",
@@ -571,98 +884,6 @@
         "responses": {
           "204": {
             "description": "Successful Response"
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/profiles/{profile_id}/scope": {
-      "get": {
-        "tags": [
-          "Profiles"
-        ],
-        "summary": "Get Profile Scope",
-        "operationId": "get_profile_scope_api_v1_profiles__profile_id__scope_get",
-        "parameters": [
-          {
-            "name": "profile_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "title": "Profile Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Scope-Output"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      },
-      "put": {
-        "tags": [
-          "Profiles"
-        ],
-        "summary": "Set Profile Scope",
-        "operationId": "set_profile_scope_api_v1_profiles__profile_id__scope_put",
-        "parameters": [
-          {
-            "name": "profile_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "title": "Profile Id"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/Scope-Input"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Scope-Output"
-                }
-              }
-            }
           },
           "422": {
             "description": "Validation Error",
@@ -730,6 +951,11 @@
         ],
         "summary": "Update Assignment Status",
         "operationId": "update_assignment_status_api_v1_profiles__profile_id__assignments__device_id__status_put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "profile_id",
@@ -845,6 +1071,11 @@
         ],
         "summary": "Create Smart Group",
         "operationId": "create_smart_group_api_v1_smart_groups_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -926,6 +1157,11 @@
         ],
         "summary": "Update Smart Group",
         "operationId": "update_smart_group_api_v1_smart_groups__group_id__put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "group_id",
@@ -976,6 +1212,11 @@
         ],
         "summary": "Delete Smart Group",
         "operationId": "delete_smart_group_api_v1_smart_groups__group_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "group_id",
@@ -1065,6 +1306,11 @@
         ],
         "summary": "Create Static Group",
         "operationId": "create_static_group_api_v1_static_groups_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -1146,6 +1392,11 @@
         ],
         "summary": "Update Static Group",
         "operationId": "update_static_group_api_v1_static_groups__group_id__put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "group_id",
@@ -1196,6 +1447,11 @@
         ],
         "summary": "Delete Static Group",
         "operationId": "delete_static_group_api_v1_static_groups__group_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "group_id",
@@ -1285,6 +1541,11 @@
         ],
         "summary": "Create User",
         "operationId": "create_user_api_v1_users_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -1366,6 +1627,11 @@
         ],
         "summary": "Update User",
         "operationId": "update_user_api_v1_users__user_id__put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "user_id",
@@ -1416,6 +1682,11 @@
         ],
         "summary": "Delete User",
         "operationId": "delete_user_api_v1_users__user_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "user_id",
@@ -1486,27 +1757,6 @@
         }
       }
     },
-    "/api/v1/metrics/fleet": {
-      "get": {
-        "tags": [
-          "Metrics"
-        ],
-        "summary": "Fleet Metrics",
-        "operationId": "fleet_metrics_api_v1_metrics_fleet_get",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/FleetMetricsResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/v1/inventory-search": {
       "get": {
         "tags": [
@@ -1568,6 +1818,11 @@
         ],
         "summary": "Create Inventory Search",
         "operationId": "create_inventory_search_api_v1_inventory_search_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -1649,6 +1904,11 @@
         ],
         "summary": "Update Inventory Search",
         "operationId": "update_inventory_search_api_v1_inventory_search__search_id__put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "search_id",
@@ -1699,6 +1959,11 @@
         ],
         "summary": "Delete Inventory Search",
         "operationId": "delete_inventory_search_api_v1_inventory_search__search_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "search_id",
@@ -1833,6 +2098,11 @@
         ],
         "summary": "Create Extension Attribute",
         "operationId": "create_extension_attribute_api_v1_extension_attributes_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -1914,6 +2184,11 @@
         ],
         "summary": "Update Extension Attribute",
         "operationId": "update_extension_attribute_api_v1_extension_attributes__attribute_id__put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "attribute_id",
@@ -1964,6 +2239,11 @@
         ],
         "summary": "Delete Extension Attribute",
         "operationId": "delete_extension_attribute_api_v1_extension_attributes__attribute_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "attribute_id",
@@ -2053,6 +2333,11 @@
         ],
         "summary": "Create Mobile App",
         "operationId": "create_mobile_app_api_v1_mobile_apps_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -2134,6 +2419,11 @@
         ],
         "summary": "Update Mobile App",
         "operationId": "update_mobile_app_api_v1_mobile_apps__mobile_app_id__put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "mobile_app_id",
@@ -2184,6 +2474,11 @@
         ],
         "summary": "Delete Mobile App",
         "operationId": "delete_mobile_app_api_v1_mobile_apps__mobile_app_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "mobile_app_id",
@@ -2198,6 +2493,118 @@
         "responses": {
           "204": {
             "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/mobile-apps/{mobile_app_id}/assignments": {
+      "get": {
+        "tags": [
+          "MobileApps"
+        ],
+        "summary": "List Mobile App Assignments",
+        "operationId": "list_mobile_app_assignments_api_v1_mobile_apps__mobile_app_id__assignments_get",
+        "parameters": [
+          {
+            "name": "mobile_app_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Mobile App Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MobileAppAssignmentResponse"
+                  },
+                  "title": "Response List Mobile App Assignments Api V1 Mobile Apps  Mobile App Id  Assignments Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/mobile-apps/{mobile_app_id}/assignments/{device_id}/status": {
+      "put": {
+        "tags": [
+          "MobileApps"
+        ],
+        "summary": "Update Mobile App Assignment Status",
+        "operationId": "update_mobile_app_assignment_status_api_v1_mobile_apps__mobile_app_id__assignments__device_id__status_put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "mobile_app_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Mobile App Id"
+            }
+          },
+          {
+            "name": "device_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Device Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MobileAppStatusUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MobileAppAssignmentResponse"
+                }
+              }
+            }
           },
           "422": {
             "description": "Validation Error",
@@ -2288,76 +2695,7 @@
         ],
         "title": "AirplaneModeState"
       },
-      "ApplicationPolicy-Input": {
-        "properties": {
-          "packageName": {
-            "type": "string",
-            "title": "Packagename"
-          },
-          "installType": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/InstallType"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "defaultPermissionPolicy": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/PermissionPolicy"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "permissionGrants": {
-            "anyOf": [
-              {
-                "items": {
-                  "$ref": "#/components/schemas/PermissionGrant"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Permissiongrants"
-          },
-          "disabled": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Disabled"
-          },
-          "minimumVersionCode": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Minimumversioncode"
-          }
-        },
-        "type": "object",
-        "required": [
-          "packageName"
-        ],
-        "title": "ApplicationPolicy"
-      },
-      "ApplicationPolicy-Output": {
+      "ApplicationPolicy": {
         "properties": {
           "packageName": {
             "type": "string",
@@ -2440,30 +2778,30 @@
             "type": "integer",
             "title": "Id"
           },
-          "profile_id": {
+          "profileId": {
             "type": "integer",
-            "title": "Profile Id"
+            "title": "Profileid"
           },
-          "device_id": {
+          "deviceId": {
             "type": "integer",
-            "title": "Device Id"
+            "title": "Deviceid"
           },
           "status": {
             "$ref": "#/components/schemas/AssignmentStatus"
           },
-          "desired_state": {
+          "desiredState": {
             "$ref": "#/components/schemas/AssignmentDesiredState"
           },
-          "profile_version": {
+          "profileVersion": {
             "type": "integer",
-            "title": "Profile Version"
+            "title": "Profileversion"
           },
-          "assigned_at": {
+          "assignedAt": {
             "type": "string",
             "format": "date-time",
-            "title": "Assigned At"
+            "title": "Assignedat"
           },
-          "applied_at": {
+          "appliedAt": {
             "anyOf": [
               {
                 "type": "string",
@@ -2473,9 +2811,9 @@
                 "type": "null"
               }
             ],
-            "title": "Applied At"
+            "title": "Appliedat"
           },
-          "revoked_at": {
+          "revokedAt": {
             "anyOf": [
               {
                 "type": "string",
@@ -2485,14 +2823,14 @@
                 "type": "null"
               }
             ],
-            "title": "Revoked At"
+            "title": "Revokedat"
           },
-          "attempt_count": {
+          "attemptCount": {
             "type": "integer",
-            "title": "Attempt Count",
+            "title": "Attemptcount",
             "default": 0
           },
-          "last_attempt_at": {
+          "lastAttemptAt": {
             "anyOf": [
               {
                 "type": "string",
@@ -2502,9 +2840,9 @@
                 "type": "null"
               }
             ],
-            "title": "Last Attempt At"
+            "title": "Lastattemptat"
           },
-          "last_error": {
+          "lastError": {
             "anyOf": [
               {
                 "type": "string"
@@ -2513,9 +2851,9 @@
                 "type": "null"
               }
             ],
-            "title": "Last Error"
+            "title": "Lasterror"
           },
-          "message_id": {
+          "messageId": {
             "anyOf": [
               {
                 "type": "string"
@@ -2524,30 +2862,24 @@
                 "type": "null"
               }
             ],
-            "title": "Message Id"
+            "title": "Messageid"
           },
-          "updated_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Updated At"
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updatedat"
           }
         },
         "type": "object",
         "required": [
           "id",
-          "profile_id",
-          "device_id",
+          "profileId",
+          "deviceId",
           "status",
-          "desired_state",
-          "profile_version",
-          "assigned_at"
+          "desiredState",
+          "profileVersion",
+          "assignedAt",
+          "updatedAt"
         ],
         "title": "AssignmentResponse"
       },
@@ -2559,8 +2891,7 @@
           "APPLIED",
           "FAILED",
           "REVOKE_PENDING",
-          "REVOKED",
-          "REMOVED"
+          "REVOKED"
         ],
         "title": "AssignmentStatus"
       },
@@ -2605,7 +2936,7 @@
             ],
             "title": "Carrier"
           },
-          "ip_address": {
+          "ipAddress": {
             "anyOf": [
               {
                 "type": "string"
@@ -2614,7 +2945,7 @@
                 "type": "null"
               }
             ],
-            "title": "Ip Address"
+            "title": "Ipaddress"
           },
           "gateway": {
             "anyOf": [
@@ -2663,7 +2994,7 @@
             ],
             "title": "Imsi"
           },
-          "signal_strength": {
+          "signalStrength": {
             "anyOf": [
               {
                 "type": "integer"
@@ -2672,9 +3003,9 @@
                 "type": "null"
               }
             ],
-            "title": "Signal Strength"
+            "title": "Signalstrength"
           },
-          "connection_type": {
+          "connectionType": {
             "anyOf": [
               {
                 "type": "string"
@@ -2683,7 +3014,7 @@
                 "type": "null"
               }
             ],
-            "title": "Connection Type"
+            "title": "Connectiontype"
           },
           "roaming": {
             "anyOf": [
@@ -2711,7 +3042,7 @@
       },
       "Certificate": {
         "properties": {
-          "common_name": {
+          "commonName": {
             "anyOf": [
               {
                 "type": "string"
@@ -2720,7 +3051,7 @@
                 "type": "null"
               }
             ],
-            "title": "Common Name"
+            "title": "Commonname"
           },
           "issuer": {
             "anyOf": [
@@ -2766,7 +3097,7 @@
             ],
             "title": "Fingerprint"
           },
-          "serial_number": {
+          "serialNumber": {
             "anyOf": [
               {
                 "type": "string"
@@ -2775,7 +3106,7 @@
                 "type": "null"
               }
             ],
-            "title": "Serial Number"
+            "title": "Serialnumber"
           }
         },
         "type": "object",
@@ -2783,33 +3114,26 @@
       },
       "CommandCreate": {
         "properties": {
-          "command_type": {
+          "commandType": {
             "$ref": "#/components/schemas/CommandType"
           }
         },
         "type": "object",
         "required": [
-          "command_type"
+          "commandType"
         ],
         "title": "CommandCreate"
       },
-      "CommandResponse": {
+      "CommandReportIn": {
         "properties": {
-          "id": {
+          "commandId": {
             "type": "integer",
-            "title": "Id"
-          },
-          "device_id": {
-            "type": "integer",
-            "title": "Device Id"
-          },
-          "command_type": {
-            "$ref": "#/components/schemas/CommandType"
+            "title": "Commandid"
           },
           "status": {
             "$ref": "#/components/schemas/CommandStatus"
           },
-          "result_message": {
+          "resultMessage": {
             "anyOf": [
               {
                 "type": "string"
@@ -2818,25 +3142,43 @@
                 "type": "null"
               }
             ],
-            "title": "Result Message"
+            "title": "Resultmessage"
+          }
+        },
+        "type": "object",
+        "required": [
+          "commandId",
+          "status"
+        ],
+        "title": "CommandReportIn"
+      },
+      "CommandResponse": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
           },
-          "created_by": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Created By"
+          "deviceId": {
+            "type": "integer",
+            "title": "Deviceid"
           },
-          "created_at": {
+          "commandType": {
+            "$ref": "#/components/schemas/CommandType"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "createdBy": {
+            "type": "integer",
+            "title": "Createdby"
+          },
+          "createdAt": {
             "type": "string",
             "format": "date-time",
-            "title": "Created At"
+            "title": "Createdat"
           },
-          "sent_at": {
+          "sentAt": {
             "anyOf": [
               {
                 "type": "string",
@@ -2846,9 +3188,9 @@
                 "type": "null"
               }
             ],
-            "title": "Sent At"
+            "title": "Sentat"
           },
-          "acknowledged_at": {
+          "acknowledgedAt": {
             "anyOf": [
               {
                 "type": "string",
@@ -2858,9 +3200,9 @@
                 "type": "null"
               }
             ],
-            "title": "Acknowledged At"
+            "title": "Acknowledgedat"
           },
-          "completed_at": {
+          "completedAt": {
             "anyOf": [
               {
                 "type": "string",
@@ -2870,16 +3212,39 @@
                 "type": "null"
               }
             ],
-            "title": "Completed At"
+            "title": "Completedat"
+          },
+          "resultMessage": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resultmessage"
+          },
+          "rabbitmqMessageId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rabbitmqmessageid"
           }
         },
         "type": "object",
         "required": [
           "id",
-          "device_id",
-          "command_type",
+          "deviceId",
+          "commandType",
           "status",
-          "created_at"
+          "createdBy",
+          "createdAt"
         ],
         "title": "CommandResponse"
       },
@@ -2896,6 +3261,29 @@
         ],
         "title": "CommandStatus",
         "description": "Lifecycle states of a device command.\n\nFlow: PENDING \u2192 SENT \u2192 ACKNOWLEDGED \u2192 IN_PROGRESS \u2192 COMPLETED/FAILED\n      CANCELLED can be reached from PENDING or SENT."
+      },
+      "CommandStatusUpdate": {
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/CommandStatus"
+          },
+          "resultMessage": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resultmessage"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "CommandStatusUpdate"
       },
       "CommandType": {
         "type": "string",
@@ -2946,20 +3334,31 @@
             "type": "string",
             "title": "Value"
           },
-          "and_or": {
+          "andOr": {
             "type": "string",
-            "title": "And Or",
+            "title": "Andor",
             "default": "AND"
           },
-          "left_parentheses": {
+          "leftParentheses": {
             "type": "boolean",
-            "title": "Left Parentheses",
+            "title": "Leftparentheses",
             "default": false
           },
-          "right_parentheses": {
+          "rightParentheses": {
             "type": "boolean",
-            "title": "Right Parentheses",
+            "title": "Rightparentheses",
             "default": false
+          },
+          "extensionAttributeId": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Extensionattributeid"
           }
         },
         "type": "object",
@@ -2981,6 +3380,48 @@
         ],
         "title": "CriteriaType"
       },
+      "DevTokenRequest": {
+        "properties": {
+          "email": {
+            "type": "string",
+            "title": "Email"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "default": ""
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "email"
+        ],
+        "title": "DevTokenRequest"
+      },
+      "DevTokenResponse": {
+        "properties": {
+          "access_token": {
+            "type": "string",
+            "title": "Access Token"
+          },
+          "token_type": {
+            "type": "string",
+            "title": "Token Type",
+            "default": "Bearer"
+          },
+          "expires_in": {
+            "type": "integer",
+            "title": "Expires In",
+            "default": 3600
+          }
+        },
+        "type": "object",
+        "required": [
+          "access_token"
+        ],
+        "title": "DevTokenResponse"
+      },
       "DeveloperSettings": {
         "type": "integer",
         "enum": [
@@ -2990,7 +3431,37 @@
         ],
         "title": "DeveloperSettings"
       },
-      "DeviceConnectivityManagement-Input": {
+      "DeviceAuthResponse": {
+        "properties": {
+          "serialNumber": {
+            "type": "string",
+            "title": "Serialnumber"
+          },
+          "enrolled": {
+            "type": "boolean",
+            "title": "Enrolled"
+          },
+          "certValidUntil": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Certvaliduntil"
+          }
+        },
+        "type": "object",
+        "required": [
+          "serialNumber",
+          "enrolled"
+        ],
+        "title": "DeviceAuthResponse"
+      },
+      "DeviceConnectivityManagement": {
         "properties": {
           "usbDataAccess": {
             "anyOf": [
@@ -3045,7 +3516,7 @@
           "wifiRoamingPolicy": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/WifiRoamingPolicy-Input"
+                "$ref": "#/components/schemas/WifiRoamingPolicy"
               },
               {
                 "type": "null"
@@ -3065,128 +3536,6 @@
         },
         "type": "object",
         "title": "DeviceConnectivityManagement"
-      },
-      "DeviceConnectivityManagement-Output": {
-        "properties": {
-          "usbDataAccess": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/UsbDataAccess"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "configureWifi": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/ConfigureWifi"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "wifiDirectSettings": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/WifiDirectSettings"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "tetheringSettings": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/TetheringSettings"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "wifiSsidPolicy": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/WifiSsidPolicy"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "wifiRoamingPolicy": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/WifiRoamingPolicy-Output"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "bluetoothSharing": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/BluetoothSharing"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          }
-        },
-        "type": "object",
-        "title": "DeviceConnectivityManagement"
-      },
-      "DeviceExtensionAttributeCreate": {
-        "properties": {
-          "extension_attribute_id": {
-            "type": "integer",
-            "title": "Extension Attribute Id"
-          },
-          "extension_attribute_name": {
-            "type": "string",
-            "title": "Extension Attribute Name"
-          },
-          "value": {
-            "type": "string",
-            "title": "Value"
-          }
-        },
-        "type": "object",
-        "required": [
-          "extension_attribute_id",
-          "extension_attribute_name",
-          "value"
-        ],
-        "title": "DeviceExtensionAttributeCreate"
-      },
-      "DeviceExtensionAttributeResponse": {
-        "properties": {
-          "extension_attribute_id": {
-            "type": "integer",
-            "title": "Extension Attribute Id"
-          },
-          "extension_attribute_name": {
-            "type": "string",
-            "title": "Extension Attribute Name"
-          },
-          "value": {
-            "type": "string",
-            "title": "Value"
-          }
-        },
-        "type": "object",
-        "required": [
-          "extension_attribute_id",
-          "extension_attribute_name",
-          "value"
-        ],
-        "title": "DeviceExtensionAttributeResponse"
       },
       "DeviceRadioState": {
         "properties": {
@@ -3254,114 +3603,15 @@
         "type": "object",
         "title": "DeviceRadioState"
       },
-      "DeviceResponse": {
+      "DeviceRegisterRequest": {
         "properties": {
-          "id": {
-            "type": "integer",
-            "title": "Id"
-          },
           "name": {
             "type": "string",
             "title": "Name"
           },
-          "serial_number": {
+          "osVersion": {
             "type": "string",
-            "title": "Serial Number"
-          },
-          "os_version": {
-            "type": "string",
-            "title": "Os Version"
-          },
-          "connection_status": {
-            "$ref": "#/components/schemas/ConnectionStatus"
-          },
-          "status": {
-            "$ref": "#/components/schemas/DeviceStatus"
-          },
-          "created_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Created At"
-          },
-          "updated_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Updated At"
-          },
-          "last_enrolled_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Last Enrolled At"
-          },
-          "battery_status": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Battery Status"
-          },
-          "total_storage": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Total Storage"
-          },
-          "available_storage": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Available Storage"
-          },
-          "total_memory": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Total Memory"
-          },
-          "available_memory": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Available Memory"
-          },
-          "network": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/Network"
-              },
-              {
-                "additionalProperties": true,
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Network"
+            "title": "Osversion"
           },
           "certificates": {
             "anyOf": [
@@ -3372,7 +3622,252 @@
                 "type": "array"
               },
               {
-                "items": {},
+                "type": "null"
+              }
+            ],
+            "title": "Certificates"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "osVersion"
+        ],
+        "title": "DeviceRegisterRequest"
+      },
+      "DeviceReportIn": {
+        "properties": {
+          "connectionStatus": {
+            "$ref": "#/components/schemas/ConnectionStatus"
+          },
+          "status": {
+            "$ref": "#/components/schemas/DeviceStatus"
+          },
+          "batteryStatus": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Batterystatus"
+          },
+          "totalStorage": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Totalstorage"
+          },
+          "availableStorage": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Availablestorage"
+          },
+          "totalMemory": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Totalmemory"
+          },
+          "availableMemory": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Availablememory"
+          },
+          "network": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Network"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "commands": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/CommandReportIn"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Commands"
+          },
+          "profileAssignments": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ProfileAssignmentReportIn"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Profileassignments"
+          },
+          "mobileAppAssignments": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/MobileAppAssignmentReportIn"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mobileappassignments"
+          }
+        },
+        "type": "object",
+        "required": [
+          "connectionStatus",
+          "status"
+        ],
+        "title": "DeviceReportIn"
+      },
+      "DeviceResponse": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "serialNumber": {
+            "type": "string",
+            "title": "Serialnumber"
+          },
+          "osVersion": {
+            "type": "string",
+            "title": "Osversion"
+          },
+          "connectionStatus": {
+            "$ref": "#/components/schemas/ConnectionStatus"
+          },
+          "status": {
+            "$ref": "#/components/schemas/DeviceStatus"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Createdat"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updatedat"
+          },
+          "lastEnrolledAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Lastenrolledat"
+          },
+          "batteryStatus": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Batterystatus"
+          },
+          "totalStorage": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Totalstorage"
+          },
+          "availableStorage": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Availablestorage"
+          },
+          "totalMemory": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Totalmemory"
+          },
+          "availableMemory": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Availablememory"
+          },
+          "network": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Network"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "certificates": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/Certificate"
+                },
                 "type": "array"
               },
               {
@@ -3381,11 +3876,11 @@
             ],
             "title": "Certificates"
           },
-          "extension_attributes": {
+          "extensionAttributeValues": {
             "anyOf": [
               {
                 "items": {
-                  "$ref": "#/components/schemas/DeviceExtensionAttributeResponse"
+                  "$ref": "#/components/schemas/ExtensionAttributeValueResponse"
                 },
                 "type": "array"
               },
@@ -3393,20 +3888,48 @@
                 "type": "null"
               }
             ],
-            "title": "Extension Attributes"
+            "title": "Extensionattributevalues"
+          },
+          "profiles": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ProfileResponse"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Profiles"
+          },
+          "mobileApps": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/MobileAppResponse"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mobileapps"
           }
         },
         "type": "object",
         "required": [
           "id",
           "name",
-          "serial_number",
-          "os_version",
-          "connection_status",
+          "serialNumber",
+          "osVersion",
+          "connectionStatus",
           "status",
-          "created_at",
-          "updated_at",
-          "last_enrolled_at"
+          "createdAt",
+          "updatedAt",
+          "lastEnrolledAt"
         ],
         "title": "DeviceResponse"
       },
@@ -3422,7 +3945,7 @@
       },
       "DeviceUpdate": {
         "properties": {
-          "connection_status": {
+          "connectionStatus": {
             "anyOf": [
               {
                 "$ref": "#/components/schemas/ConnectionStatus"
@@ -3442,7 +3965,7 @@
               }
             ]
           },
-          "battery_status": {
+          "batteryStatus": {
             "anyOf": [
               {
                 "type": "integer"
@@ -3451,9 +3974,9 @@
                 "type": "null"
               }
             ],
-            "title": "Battery Status"
+            "title": "Batterystatus"
           },
-          "total_storage": {
+          "totalStorage": {
             "anyOf": [
               {
                 "type": "integer"
@@ -3462,9 +3985,9 @@
                 "type": "null"
               }
             ],
-            "title": "Total Storage"
+            "title": "Totalstorage"
           },
-          "available_storage": {
+          "availableStorage": {
             "anyOf": [
               {
                 "type": "integer"
@@ -3473,9 +3996,9 @@
                 "type": "null"
               }
             ],
-            "title": "Available Storage"
+            "title": "Availablestorage"
           },
-          "total_memory": {
+          "totalMemory": {
             "anyOf": [
               {
                 "type": "integer"
@@ -3484,9 +4007,9 @@
                 "type": "null"
               }
             ],
-            "title": "Total Memory"
+            "title": "Totalmemory"
           },
-          "available_memory": {
+          "availableMemory": {
             "anyOf": [
               {
                 "type": "integer"
@@ -3495,7 +4018,7 @@
                 "type": "null"
               }
             ],
-            "title": "Available Memory"
+            "title": "Availablememory"
           },
           "network": {
             "anyOf": [
@@ -3521,11 +4044,11 @@
             ],
             "title": "Certificates"
           },
-          "extension_attributes": {
+          "extensionAttributeValues": {
             "anyOf": [
               {
                 "items": {
-                  "$ref": "#/components/schemas/DeviceExtensionAttributeCreate"
+                  "$ref": "#/components/schemas/ExtensionAttributeValueCreate"
                 },
                 "type": "array"
               },
@@ -3533,7 +4056,7 @@
                 "type": "null"
               }
             ],
-            "title": "Extension Attributes"
+            "title": "Extensionattributevalues"
           }
         },
         "type": "object",
@@ -3661,29 +4184,6 @@
         "type": "object",
         "title": "Eap"
       },
-      "Exclusion": {
-        "properties": {
-          "scope_type": {
-            "$ref": "#/components/schemas/ScopeType"
-          },
-          "exclude_id": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Exclude Id"
-          }
-        },
-        "type": "object",
-        "required": [
-          "scope_type"
-        ],
-        "title": "Exclusion"
-      },
       "ExtensionAttributeCreate": {
         "properties": {
           "name": {
@@ -3701,13 +4201,13 @@
             ],
             "title": "Description"
           },
-          "data_type": {
+          "dataType": {
             "$ref": "#/components/schemas/ExtensionDataType"
           },
-          "input_type": {
+          "inputType": {
             "$ref": "#/components/schemas/ExtensionInputType"
           },
-          "popup_choices": {
+          "popupChoices": {
             "anyOf": [
               {
                 "items": {
@@ -3719,19 +4219,14 @@
                 "type": "null"
               }
             ],
-            "title": "Popup Choices"
-          },
-          "created_by": {
-            "type": "integer",
-            "title": "Created By",
-            "default": 1
+            "title": "Popupchoices"
           }
         },
         "type": "object",
         "required": [
           "name",
-          "data_type",
-          "input_type"
+          "dataType",
+          "inputType"
         ],
         "title": "ExtensionAttributeCreate"
       },
@@ -3756,13 +4251,13 @@
             ],
             "title": "Description"
           },
-          "data_type": {
+          "dataType": {
             "$ref": "#/components/schemas/ExtensionDataType"
           },
-          "input_type": {
+          "inputType": {
             "$ref": "#/components/schemas/ExtensionInputType"
           },
-          "popup_choices": {
+          "popupChoices": {
             "anyOf": [
               {
                 "items": {
@@ -3774,38 +4269,32 @@
                 "type": "null"
               }
             ],
-            "title": "Popup Choices"
+            "title": "Popupchoices"
           },
-          "created_at": {
+          "createdAt": {
             "type": "string",
             "format": "date-time",
-            "title": "Created At"
+            "title": "Createdat"
           },
-          "created_by": {
+          "createdBy": {
             "type": "integer",
-            "title": "Created By"
+            "title": "Createdby"
           },
-          "updated_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Updated At"
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updatedat"
           }
         },
         "type": "object",
         "required": [
           "id",
           "name",
-          "data_type",
-          "input_type",
-          "created_at",
-          "created_by"
+          "dataType",
+          "inputType",
+          "createdAt",
+          "createdBy",
+          "updatedAt"
         ],
         "title": "ExtensionAttributeResponse"
       },
@@ -3833,7 +4322,7 @@
             ],
             "title": "Description"
           },
-          "data_type": {
+          "dataType": {
             "anyOf": [
               {
                 "$ref": "#/components/schemas/ExtensionDataType"
@@ -3843,7 +4332,7 @@
               }
             ]
           },
-          "input_type": {
+          "inputType": {
             "anyOf": [
               {
                 "$ref": "#/components/schemas/ExtensionInputType"
@@ -3853,7 +4342,7 @@
               }
             ]
           },
-          "popup_choices": {
+          "popupChoices": {
             "anyOf": [
               {
                 "items": {
@@ -3865,11 +4354,57 @@
                 "type": "null"
               }
             ],
-            "title": "Popup Choices"
+            "title": "Popupchoices"
           }
         },
         "type": "object",
         "title": "ExtensionAttributeUpdate"
+      },
+      "ExtensionAttributeValueCreate": {
+        "properties": {
+          "extensionAttributeId": {
+            "type": "integer",
+            "title": "Extensionattributeid"
+          },
+          "extensionAttributeName": {
+            "type": "string",
+            "title": "Extensionattributename"
+          },
+          "value": {
+            "type": "string",
+            "title": "Value"
+          }
+        },
+        "type": "object",
+        "required": [
+          "extensionAttributeId",
+          "extensionAttributeName",
+          "value"
+        ],
+        "title": "ExtensionAttributeValueCreate"
+      },
+      "ExtensionAttributeValueResponse": {
+        "properties": {
+          "extensionAttributeId": {
+            "type": "integer",
+            "title": "Extensionattributeid"
+          },
+          "extensionAttributeName": {
+            "type": "string",
+            "title": "Extensionattributename"
+          },
+          "value": {
+            "type": "string",
+            "title": "Value"
+          }
+        },
+        "type": "object",
+        "required": [
+          "extensionAttributeId",
+          "extensionAttributeName",
+          "value"
+        ],
+        "title": "ExtensionAttributeValueResponse"
       },
       "ExtensionDataType": {
         "type": "string",
@@ -3887,29 +4422,6 @@
           "Pop-up menu"
         ],
         "title": "ExtensionInputType"
-      },
-      "FleetMetricsResponse": {
-        "properties": {
-          "total_devices": {
-            "type": "integer",
-            "title": "Total Devices"
-          },
-          "online_devices": {
-            "type": "integer",
-            "title": "Online Devices"
-          },
-          "pending_profiles": {
-            "type": "integer",
-            "title": "Pending Profiles"
-          }
-        },
-        "type": "object",
-        "required": [
-          "total_devices",
-          "online_devices",
-          "pending_profiles"
-        ],
-        "title": "FleetMetricsResponse"
       },
       "HTTPValidationError": {
         "properties": {
@@ -3961,17 +4473,12 @@
             "type": "array",
             "minItems": 1,
             "title": "Criteria"
-          },
-          "created_by": {
-            "type": "integer",
-            "title": "Created By"
           }
         },
         "type": "object",
         "required": [
           "name",
-          "criteria",
-          "created_by"
+          "criteria"
         ],
         "title": "InventorySearchCreate"
       },
@@ -4021,28 +4528,28 @@
             "title": "Criteria",
             "default": []
           },
-          "created_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Created At"
-          },
-          "created_by": {
+          "createdBy": {
             "type": "integer",
-            "title": "Created By"
+            "title": "Createdby"
           },
-          "updated_at": {
+          "createdAt": {
             "type": "string",
             "format": "date-time",
-            "title": "Updated At"
+            "title": "Createdat"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updatedat"
           }
         },
         "type": "object",
         "required": [
           "id",
           "name",
-          "created_at",
-          "created_by",
-          "updated_at"
+          "createdBy",
+          "createdAt",
+          "updatedAt"
         ],
         "title": "InventorySearchResponse"
       },
@@ -4155,6 +4662,145 @@
         ],
         "title": "MinimumWifiSecurityLevel"
       },
+      "MobileAppAssignmentReportIn": {
+        "properties": {
+          "assignmentId": {
+            "type": "integer",
+            "title": "Assignmentid"
+          },
+          "status": {
+            "$ref": "#/components/schemas/AssignmentStatus"
+          },
+          "resultMessage": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resultmessage"
+          }
+        },
+        "type": "object",
+        "required": [
+          "assignmentId",
+          "status"
+        ],
+        "title": "MobileAppAssignmentReportIn"
+      },
+      "MobileAppAssignmentResponse": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "mobileAppId": {
+            "type": "integer",
+            "title": "Mobileappid"
+          },
+          "deviceId": {
+            "type": "integer",
+            "title": "Deviceid"
+          },
+          "status": {
+            "$ref": "#/components/schemas/AssignmentStatus"
+          },
+          "desiredState": {
+            "$ref": "#/components/schemas/AssignmentDesiredState"
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          },
+          "assignedAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Assignedat"
+          },
+          "appliedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Appliedat"
+          },
+          "revokedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Revokedat"
+          },
+          "attemptCount": {
+            "type": "integer",
+            "title": "Attemptcount",
+            "default": 0
+          },
+          "lastAttemptAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lastattemptat"
+          },
+          "lastError": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lasterror"
+          },
+          "messageId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Messageid"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updatedat"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "mobileAppId",
+          "deviceId",
+          "status",
+          "desiredState",
+          "version",
+          "assignedAt",
+          "updatedAt"
+        ],
+        "title": "MobileAppAssignmentResponse"
+      },
       "MobileAppCreate": {
         "properties": {
           "name": {
@@ -4165,24 +4811,24 @@
             "type": "boolean",
             "title": "Enabled"
           },
-          "version": {
+          "packageVersion": {
             "type": "string",
-            "title": "Version"
+            "title": "Packageversion"
           },
-          "package_name": {
+          "packageName": {
             "type": "string",
-            "title": "Package Name"
+            "title": "Packagename"
           },
           "scope": {
-            "$ref": "#/components/schemas/Scope-Input"
+            "$ref": "#/components/schemas/Scope"
           }
         },
         "type": "object",
         "required": [
           "name",
           "enabled",
-          "version",
-          "package_name",
+          "packageVersion",
+          "packageName",
           "scope"
         ],
         "title": "MobileAppCreate"
@@ -4201,16 +4847,34 @@
             "type": "boolean",
             "title": "Enabled"
           },
-          "version": {
+          "packageVersion": {
             "type": "string",
+            "title": "Packageversion"
+          },
+          "packageName": {
+            "type": "string",
+            "title": "Packagename"
+          },
+          "version": {
+            "type": "integer",
             "title": "Version"
           },
-          "package_name": {
-            "type": "string",
-            "title": "Package Name"
-          },
           "scope": {
-            "$ref": "#/components/schemas/Scope-Output"
+            "$ref": "#/components/schemas/Scope"
+          },
+          "createdBy": {
+            "type": "integer",
+            "title": "Createdby"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Createdat"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updatedat"
           }
         },
         "type": "object",
@@ -4218,11 +4882,27 @@
           "id",
           "name",
           "enabled",
+          "packageVersion",
+          "packageName",
           "version",
-          "package_name",
-          "scope"
+          "scope",
+          "createdBy",
+          "createdAt",
+          "updatedAt"
         ],
         "title": "MobileAppResponse"
+      },
+      "MobileAppStatusUpdate": {
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/AssignmentStatus"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "MobileAppStatusUpdate"
       },
       "MobileAppUpdate": {
         "properties": {
@@ -4248,7 +4928,7 @@
             ],
             "title": "Enabled"
           },
-          "version": {
+          "packageVersion": {
             "anyOf": [
               {
                 "type": "string"
@@ -4257,12 +4937,12 @@
                 "type": "null"
               }
             ],
-            "title": "Version"
+            "title": "Packageversion"
           },
           "scope": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/Scope-Input"
+                "$ref": "#/components/schemas/Scope"
               },
               {
                 "type": "null"
@@ -4333,7 +5013,7 @@
         ],
         "title": "NetworkCertificate"
       },
-      "NetworkConfiguration-Input": {
+      "NetworkConfiguration": {
         "properties": {
           "guid": {
             "type": "string",
@@ -4371,85 +5051,13 @@
         ],
         "title": "NetworkConfiguration"
       },
-      "NetworkConfiguration-Output": {
-        "properties": {
-          "guid": {
-            "type": "string",
-            "title": "Guid"
-          },
-          "name": {
-            "type": "string",
-            "title": "Name"
-          },
-          "proxySettings": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/ProxySettings"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "wifi": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/WiFi"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          }
-        },
-        "type": "object",
-        "required": [
-          "guid",
-          "name"
-        ],
-        "title": "NetworkConfiguration"
-      },
-      "OpenNetworkConfiguration-Input": {
+      "OpenNetworkConfiguration": {
         "properties": {
           "networkConfigurations": {
             "anyOf": [
               {
                 "items": {
-                  "$ref": "#/components/schemas/NetworkConfiguration-Input"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Networkconfigurations"
-          },
-          "certificates": {
-            "anyOf": [
-              {
-                "items": {
-                  "$ref": "#/components/schemas/NetworkCertificate"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Certificates"
-          }
-        },
-        "type": "object",
-        "title": "OpenNetworkConfiguration"
-      },
-      "OpenNetworkConfiguration-Output": {
-        "properties": {
-          "networkConfigurations": {
-            "anyOf": [
-              {
-                "items": {
-                  "$ref": "#/components/schemas/NetworkConfiguration-Output"
+                  "$ref": "#/components/schemas/NetworkConfiguration"
                 },
                 "type": "array"
               },
@@ -4783,13 +5391,13 @@
         ],
         "title": "PermissionPolicy"
       },
-      "Policy-Input": {
+      "Policy": {
         "properties": {
           "applications": {
             "anyOf": [
               {
                 "items": {
-                  "$ref": "#/components/schemas/ApplicationPolicy-Input"
+                  "$ref": "#/components/schemas/ApplicationPolicy"
                 },
                 "type": "array"
               },
@@ -4827,7 +5435,7 @@
           "openNetworkConfiguration": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/OpenNetworkConfiguration-Input"
+                "$ref": "#/components/schemas/OpenNetworkConfiguration"
               },
               {
                 "type": "null"
@@ -5163,432 +5771,7 @@
           "deviceConnectivityManagement": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/DeviceConnectivityManagement-Input"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "deviceRadioState": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/DeviceRadioState"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "printingPolicy": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/PrintingPolicy"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "wipeDataFlags": {
-            "anyOf": [
-              {
-                "items": {
-                  "$ref": "#/components/schemas/WipeDataFlag"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Wipedataflags"
-          }
-        },
-        "type": "object",
-        "title": "Policy"
-      },
-      "Policy-Output": {
-        "properties": {
-          "applications": {
-            "anyOf": [
-              {
-                "items": {
-                  "$ref": "#/components/schemas/ApplicationPolicy-Output"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Applications"
-          },
-          "screenCaptureDisabled": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Screencapturedisabled"
-          },
-          "keyguardDisabledFeatures": {
-            "anyOf": [
-              {
-                "items": {
-                  "$ref": "#/components/schemas/KeyguardDisabledFeature"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Keyguarddisabledfeatures"
-          },
-          "openNetworkConfiguration": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/OpenNetworkConfiguration-Output"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "addUserDisabled": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Adduserdisabled"
-          },
-          "adjustVolumeDisabled": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Adjustvolumedisabled"
-          },
-          "factoryResetDisabled": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Factoryresetdisabled"
-          },
-          "installAppsDisabled": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Installappsdisabled"
-          },
-          "mountPhysicalMediaDisabled": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Mountphysicalmediadisabled"
-          },
-          "modifyAccountsDisabled": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Modifyaccountsdisabled"
-          },
-          "uninstallAppsDisabled": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Uninstallappsdisabled"
-          },
-          "statusBarDisabled": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Statusbardisabled"
-          },
-          "bluetoothContactSharingDisabled": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Bluetoothcontactsharingdisabled"
-          },
-          "shortSupportMessage": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/UserFacingMessage"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "longSupportMessage": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/UserFacingMessage"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "bluetoothConfigDisabled": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Bluetoothconfigdisabled"
-          },
-          "cellBroadcastsConfigDisabled": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Cellbroadcastsconfigdisabled"
-          },
-          "credentialsConfigDisabled": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Credentialsconfigdisabled"
-          },
-          "mobileNetworksConfigDisabled": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Mobilenetworksconfigdisabled"
-          },
-          "vpnConfigDisabled": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Vpnconfigdisabled"
-          },
-          "networkResetDisabled": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Networkresetdisabled"
-          },
-          "outgoingBeamDisabled": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Outgoingbeamdisabled"
-          },
-          "outgoingCallsDisabled": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Outgoingcallsdisabled"
-          },
-          "removeUserDisabled": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Removeuserdisabled"
-          },
-          "shareLocationDisabled": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Sharelocationdisabled"
-          },
-          "smsDisabled": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Smsdisabled"
-          },
-          "dataRoamingDisabled": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Dataroamingdisabled"
-          },
-          "locationMode": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/LocationMode"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "bluetoothDisabled": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Bluetoothdisabled"
-          },
-          "permissionGrants": {
-            "anyOf": [
-              {
-                "items": {
-                  "$ref": "#/components/schemas/PermissionGrant"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Permissiongrants"
-          },
-          "advancedSecurityOverrides": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/AdvancedSecurityOverrides"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "autoDateAndTimeZone": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/AutoDateAndTimeZone"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "cameraAccess": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/CameraAccess"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "microphoneAccess": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/MicrophoneAccess"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "deviceConnectivityManagement": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/DeviceConnectivityManagement-Output"
+                "$ref": "#/components/schemas/DeviceConnectivityManagement"
               },
               {
                 "type": "null"
@@ -5642,6 +5825,34 @@
         ],
         "title": "PrintingPolicy"
       },
+      "ProfileAssignmentReportIn": {
+        "properties": {
+          "assignmentId": {
+            "type": "integer",
+            "title": "Assignmentid"
+          },
+          "status": {
+            "$ref": "#/components/schemas/AssignmentStatus"
+          },
+          "resultMessage": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resultmessage"
+          }
+        },
+        "type": "object",
+        "required": [
+          "assignmentId",
+          "status"
+        ],
+        "title": "ProfileAssignmentReportIn"
+      },
       "ProfileCreate": {
         "properties": {
           "name": {
@@ -5660,15 +5871,10 @@
             "title": "Description"
           },
           "policy": {
-            "$ref": "#/components/schemas/Policy-Input"
+            "$ref": "#/components/schemas/Policy"
           },
           "scope": {
-            "$ref": "#/components/schemas/Scope-Input"
-          },
-          "created_by": {
-            "type": "integer",
-            "title": "Created By",
-            "default": 1
+            "$ref": "#/components/schemas/Scope"
           }
         },
         "type": "object",
@@ -5705,38 +5911,24 @@
             "title": "Version"
           },
           "policy": {
-            "$ref": "#/components/schemas/Policy-Output"
+            "$ref": "#/components/schemas/Policy"
           },
           "scope": {
-            "$ref": "#/components/schemas/Scope-Output"
+            "$ref": "#/components/schemas/Scope"
           },
-          "created_at": {
+          "createdBy": {
+            "type": "integer",
+            "title": "Createdby"
+          },
+          "createdAt": {
             "type": "string",
             "format": "date-time",
-            "title": "Created At"
+            "title": "Createdat"
           },
-          "created_by": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Created By"
-          },
-          "updated_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Updated At"
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updatedat"
           }
         },
         "type": "object",
@@ -5746,7 +5938,9 @@
           "version",
           "policy",
           "scope",
-          "created_at"
+          "createdBy",
+          "createdAt",
+          "updatedAt"
         ],
         "title": "ProfileResponse"
       },
@@ -5777,7 +5971,7 @@
           "policy": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/Policy-Input"
+                "$ref": "#/components/schemas/Policy"
               },
               {
                 "type": "null"
@@ -5787,7 +5981,7 @@
           "scope": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/Scope-Input"
+                "$ref": "#/components/schemas/Scope"
               },
               {
                 "type": "null"
@@ -5820,11 +6014,11 @@
         ],
         "title": "ProxySettings"
       },
-      "Scope-Input": {
+      "Scope": {
         "properties": {
           "targets": {
             "items": {
-              "$ref": "#/components/schemas/Target"
+              "$ref": "#/components/schemas/ScopeTarget"
             },
             "type": "array",
             "title": "Targets",
@@ -5832,7 +6026,7 @@
           },
           "exclusions": {
             "items": {
-              "$ref": "#/components/schemas/Exclusion"
+              "$ref": "#/components/schemas/ScopeExclusion"
             },
             "type": "array",
             "title": "Exclusions",
@@ -5842,27 +6036,51 @@
         "type": "object",
         "title": "Scope"
       },
-      "Scope-Output": {
+      "ScopeExclusion": {
         "properties": {
-          "targets": {
-            "items": {
-              "$ref": "#/components/schemas/Target"
-            },
-            "type": "array",
-            "title": "Targets",
-            "default": []
+          "scopeType": {
+            "$ref": "#/components/schemas/ScopeType"
           },
-          "exclusions": {
-            "items": {
-              "$ref": "#/components/schemas/Exclusion"
-            },
-            "type": "array",
-            "title": "Exclusions",
-            "default": []
+          "excludeId": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Excludeid"
           }
         },
         "type": "object",
-        "title": "Scope"
+        "required": [
+          "scopeType"
+        ],
+        "title": "ScopeExclusion"
+      },
+      "ScopeTarget": {
+        "properties": {
+          "scopeType": {
+            "$ref": "#/components/schemas/ScopeType"
+          },
+          "targetId": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Targetid"
+          }
+        },
+        "type": "object",
+        "required": [
+          "scopeType"
+        ],
+        "title": "ScopeTarget"
       },
       "ScopeType": {
         "type": "string",
@@ -5898,11 +6116,6 @@
             "type": "array",
             "minItems": 1,
             "title": "Criteria"
-          },
-          "created_by": {
-            "type": "integer",
-            "title": "Created By",
-            "default": 1
           }
         },
         "type": "object",
@@ -5934,47 +6147,35 @@
             "title": "Description"
           },
           "criteria": {
-            "anyOf": [
-              {
-                "items": {
-                  "$ref": "#/components/schemas/Criteria"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "items": {
+              "$ref": "#/components/schemas/Criteria"
+            },
+            "type": "array",
             "title": "Criteria"
           },
-          "created_at": {
+          "createdBy": {
+            "type": "integer",
+            "title": "Createdby"
+          },
+          "createdAt": {
             "type": "string",
             "format": "date-time",
-            "title": "Created At"
+            "title": "Createdat"
           },
-          "created_by": {
-            "type": "integer",
-            "title": "Created By"
-          },
-          "updated_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Updated At"
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updatedat"
           }
         },
         "type": "object",
         "required": [
           "id",
           "name",
-          "created_at",
-          "created_by"
+          "criteria",
+          "createdBy",
+          "createdAt",
+          "updatedAt"
         ],
         "title": "SmartGroupResponse"
       },
@@ -6037,18 +6238,13 @@
             ],
             "title": "Description"
           },
-          "device_serial_numbers": {
+          "deviceSerialNumbers": {
             "items": {
               "type": "string"
             },
             "type": "array",
-            "title": "Device Serial Numbers",
+            "title": "Deviceserialnumbers",
             "default": []
-          },
-          "created_by": {
-            "type": "integer",
-            "title": "Created By",
-            "default": 1
           }
         },
         "type": "object",
@@ -6078,26 +6274,19 @@
             ],
             "title": "Description"
           },
-          "created_at": {
+          "createdBy": {
+            "type": "integer",
+            "title": "Createdby"
+          },
+          "createdAt": {
             "type": "string",
             "format": "date-time",
-            "title": "Created At"
+            "title": "Createdat"
           },
-          "created_by": {
-            "type": "integer",
-            "title": "Created By"
-          },
-          "updated_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Updated At"
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updatedat"
           },
           "devices": {
             "items": {
@@ -6111,8 +6300,9 @@
         "required": [
           "id",
           "name",
-          "created_at",
-          "created_by",
+          "createdBy",
+          "createdAt",
+          "updatedAt",
           "devices"
         ],
         "title": "StaticGroupResponse"
@@ -6141,7 +6331,7 @@
             ],
             "title": "Description"
           },
-          "device_serial_numbers": {
+          "deviceSerialNumbers": {
             "anyOf": [
               {
                 "items": {
@@ -6153,7 +6343,7 @@
                 "type": "null"
               }
             ],
-            "title": "Device Serial Numbers"
+            "title": "Deviceserialnumbers"
           }
         },
         "type": "object",
@@ -6170,29 +6360,6 @@
           "status"
         ],
         "title": "StatusUpdate"
-      },
-      "Target": {
-        "properties": {
-          "scope_type": {
-            "$ref": "#/components/schemas/ScopeType"
-          },
-          "target_id": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Target Id"
-          }
-        },
-        "type": "object",
-        "required": [
-          "scope_type"
-        ],
-        "title": "Target"
       },
       "TetheringSettings": {
         "type": "integer",
@@ -6243,13 +6410,14 @@
             "type": "string",
             "title": "Name"
           },
-          "password": {
-            "type": "string",
-            "title": "Password"
-          },
           "permissions": {
             "items": {
-              "type": "string"
+              "type": "string",
+              "enum": [
+                "admin",
+                "editor",
+                "viewer"
+              ]
             },
             "type": "array",
             "uniqueItems": true,
@@ -6262,8 +6430,7 @@
         "type": "object",
         "required": [
           "email",
-          "name",
-          "password"
+          "name"
         ],
         "title": "UserCreate"
       },
@@ -6319,18 +6486,28 @@
           },
           "permissions": {
             "items": {
-              "type": "string"
+              "type": "string",
+              "enum": [
+                "admin",
+                "editor",
+                "viewer"
+              ]
             },
             "type": "array",
             "uniqueItems": true,
             "title": "Permissions"
           },
-          "created_at": {
+          "createdAt": {
             "type": "string",
             "format": "date-time",
-            "title": "Created At"
+            "title": "Createdat"
           },
-          "last_login": {
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updatedat"
+          },
+          "lastLoginAt": {
             "anyOf": [
               {
                 "type": "string",
@@ -6340,7 +6517,7 @@
                 "type": "null"
               }
             ],
-            "title": "Last Login"
+            "title": "Lastloginat"
           }
         },
         "type": "object",
@@ -6349,7 +6526,8 @@
           "email",
           "name",
           "permissions",
-          "created_at"
+          "createdAt",
+          "updatedAt"
         ],
         "title": "UserResponse"
       },
@@ -6377,22 +6555,16 @@
             ],
             "title": "Name"
           },
-          "password": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Password"
-          },
           "permissions": {
             "anyOf": [
               {
                 "items": {
-                  "type": "string"
+                  "type": "string",
+                  "enum": [
+                    "admin",
+                    "editor",
+                    "viewer"
+                  ]
                 },
                 "type": "array",
                 "uniqueItems": true
@@ -6554,7 +6726,7 @@
             ],
             "title": "Bssid"
           },
-          "ip_address": {
+          "ipAddress": {
             "anyOf": [
               {
                 "type": "string"
@@ -6563,7 +6735,7 @@
                 "type": "null"
               }
             ],
-            "title": "Ip Address"
+            "title": "Ipaddress"
           },
           "gateway": {
             "anyOf": [
@@ -6590,7 +6762,7 @@
             ],
             "title": "Dns"
           },
-          "mac_address": {
+          "macAddress": {
             "anyOf": [
               {
                 "type": "string"
@@ -6599,7 +6771,7 @@
                 "type": "null"
               }
             ],
-            "title": "Mac Address"
+            "title": "Macaddress"
           },
           "proxy": {
             "anyOf": [
@@ -6612,7 +6784,7 @@
             ],
             "title": "Proxy"
           },
-          "signal_strength": {
+          "signalStrength": {
             "anyOf": [
               {
                 "type": "integer"
@@ -6621,7 +6793,7 @@
                 "type": "null"
               }
             ],
-            "title": "Signal Strength"
+            "title": "Signalstrength"
           }
         },
         "type": "object",
@@ -6646,23 +6818,7 @@
         ],
         "title": "WifiRoamingMode"
       },
-      "WifiRoamingPolicy-Input": {
-        "properties": {
-          "wifiRoamingSettings": {
-            "items": {
-              "$ref": "#/components/schemas/WifiRoamingSetting"
-            },
-            "type": "array",
-            "title": "Wifiroamingsettings"
-          }
-        },
-        "type": "object",
-        "required": [
-          "wifiRoamingSettings"
-        ],
-        "title": "WifiRoamingPolicy"
-      },
-      "WifiRoamingPolicy-Output": {
+      "WifiRoamingPolicy": {
         "properties": {
           "wifiRoamingSettings": {
             "items": {
@@ -6754,6 +6910,12 @@
           1
         ],
         "title": "WipeDataFlag"
+      }
+    },
+    "securitySchemes": {
+      "HTTPBearer": {
+        "type": "http",
+        "scheme": "bearer"
       }
     }
   }

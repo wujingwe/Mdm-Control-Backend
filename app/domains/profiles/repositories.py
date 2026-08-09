@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from typing import Any
 
 from sqlalchemy import select, func, update, delete
 from sqlalchemy.exc import IntegrityError
@@ -120,6 +121,30 @@ class ProfileRepository:
         )
         result = await self._db.execute(stmt)
         return result.scalar_one_or_none()
+
+    async def get_assignment_by_id(self, assignment_id: int) -> ProfileAssignment | None:
+        stmt = select(ProfileAssignment).where(ProfileAssignment.id == assignment_id)
+        result = await self._db.execute(stmt)
+        return result.scalar_one_or_none()
+
+    async def update_assignment_report(
+        self,
+        assignment_id: int,
+        status: AssignmentStatus,
+        result_message: str | None = None,
+    ) -> None:
+        """Record a device's reported status for an assignment."""
+        now = datetime.now(timezone.utc)
+        values: dict[str, Any] = {"status": status}
+        if status == AssignmentStatus.SENT:
+            values["acknowledged_at"] = now
+        elif status == AssignmentStatus.APPLIED:
+            values["completed_at"] = now
+            values["applied_at"] = now
+        values["last_error"] = result_message if status == AssignmentStatus.FAILED else None
+        stmt = update(ProfileAssignment).where(ProfileAssignment.id == assignment_id).values(**values)
+        await self._db.execute(stmt)
+        await self._db.commit()
 
     async def upsert_assignment(self, data: AssignmentUpsert) -> ProfileAssignment:
         latest = await self.get_assignment(data.profile_id, data.device_id)

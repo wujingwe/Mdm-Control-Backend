@@ -517,6 +517,143 @@ class TestProfileRepository:
         updated = await repo._db.get(type(assignment), assignment.id)
         assert updated.status == AssignmentStatus.FAILED
 
+    async def test_get_assignment_by_id(self, db_session: AsyncSession) -> None:
+        repo = ProfileRepository(db_session)
+        profile = await repo.create(ProfileCreate(name="GetById", policy=Policy(), scope=Scope()), created_by=1)
+        assignment = await repo.upsert_assignment(
+            AssignmentUpsert(profile_id=profile.id, device_id=1, status=AssignmentStatus.PENDING, profile_version=1)
+        )
+        result = await repo.get_assignment_by_id(assignment.id)
+        assert result is not None
+        assert result.id == assignment.id
+
+    async def test_get_assignment_by_id_not_found(self, db_session: AsyncSession) -> None:
+        repo = ProfileRepository(db_session)
+        assert await repo.get_assignment_by_id(999) is None
+
+    async def test_update_assignment_report_applied(self, db_session: AsyncSession) -> None:
+        repo = ProfileRepository(db_session)
+        profile = await repo.create(ProfileCreate(name="ReportApplied", policy=Policy(), scope=Scope()), created_by=1)
+        assignment = await repo.upsert_assignment(
+            AssignmentUpsert(
+                profile_id=profile.id,
+                device_id=1,
+                status=AssignmentStatus.SENT,
+                desired_state=AssignmentDesiredState.PRESENT,
+                profile_version=1,
+            )
+        )
+        await repo.update_assignment_report(assignment.id, AssignmentStatus.APPLIED, "applied")
+        updated = await repo.get_assignment_by_id(assignment.id)
+        assert updated is not None
+        assert updated.status == AssignmentStatus.APPLIED
+        assert updated.completed_at is not None
+        assert updated.applied_at is not None
+        assert updated.acknowledged_at is None
+        assert updated.last_error is None
+
+    async def test_update_assignment_report_acknowledged(self, db_session: AsyncSession) -> None:
+        repo = ProfileRepository(db_session)
+        profile = await repo.create(ProfileCreate(name="ReportSent", policy=Policy(), scope=Scope()), created_by=1)
+        assignment = await repo.upsert_assignment(
+            AssignmentUpsert(
+                profile_id=profile.id,
+                device_id=1,
+                status=AssignmentStatus.SENT,
+                desired_state=AssignmentDesiredState.PRESENT,
+                profile_version=1,
+            )
+        )
+        await repo.update_assignment_report(assignment.id, AssignmentStatus.SENT)
+        updated = await repo.get_assignment_by_id(assignment.id)
+        assert updated is not None
+        assert updated.status == AssignmentStatus.SENT
+        assert updated.acknowledged_at is not None
+        assert updated.completed_at is None
+
+    async def test_update_assignment_report_failed(self, db_session: AsyncSession) -> None:
+        repo = ProfileRepository(db_session)
+        profile = await repo.create(ProfileCreate(name="ReportFailed", policy=Policy(), scope=Scope()), created_by=1)
+        assignment = await repo.upsert_assignment(
+            AssignmentUpsert(
+                profile_id=profile.id,
+                device_id=1,
+                status=AssignmentStatus.PENDING,
+                desired_state=AssignmentDesiredState.PRESENT,
+                profile_version=1,
+            )
+        )
+        await repo.update_assignment_report(assignment.id, AssignmentStatus.FAILED, "apply error")
+        updated = await repo.get_assignment_by_id(assignment.id)
+        assert updated is not None
+        assert updated.status == AssignmentStatus.FAILED
+        assert updated.last_error == "apply error"
+        assert updated.acknowledged_at is None
+        assert updated.completed_at is None
+
+    async def test_update_assignment_report_unknown_assignment_is_noop(self, db_session: AsyncSession) -> None:
+        repo = ProfileRepository(db_session)
+        await repo.update_assignment_report(999, AssignmentStatus.APPLIED, "nope")
+
+    async def test_update_assignment_report_failed_clears_on_success(self, db_session: AsyncSession) -> None:
+        repo = ProfileRepository(db_session)
+        profile = await repo.create(ProfileCreate(name="ClearErr", policy=Policy(), scope=Scope()), created_by=1)
+        assignment = await repo.upsert_assignment(
+            AssignmentUpsert(
+                profile_id=profile.id,
+                device_id=1,
+                status=AssignmentStatus.PENDING,
+                desired_state=AssignmentDesiredState.PRESENT,
+                profile_version=1,
+            )
+        )
+        await repo.update_assignment_report(assignment.id, AssignmentStatus.FAILED, "apply error")
+        await repo.update_assignment_report(assignment.id, AssignmentStatus.APPLIED)
+        updated = await repo.get_assignment_by_id(assignment.id)
+        assert updated is not None
+        assert updated.status == AssignmentStatus.APPLIED
+        assert updated.last_error is None
+
+    async def test_update_assignment_report_acknowledgement_preserved(self, db_session: AsyncSession) -> None:
+        repo = ProfileRepository(db_session)
+        profile = await repo.create(ProfileCreate(name="AckPres", policy=Policy(), scope=Scope()), created_by=1)
+        assignment = await repo.upsert_assignment(
+            AssignmentUpsert(
+                profile_id=profile.id,
+                device_id=1,
+                status=AssignmentStatus.PENDING,
+                desired_state=AssignmentDesiredState.PRESENT,
+                profile_version=1,
+            )
+        )
+        await repo.update_assignment_report(assignment.id, AssignmentStatus.SENT)
+        await repo.update_assignment_report(assignment.id, AssignmentStatus.APPLIED)
+        updated = await repo.get_assignment_by_id(assignment.id)
+        assert updated is not None
+        assert updated.status == AssignmentStatus.APPLIED
+        assert updated.acknowledged_at is not None
+        assert updated.completed_at is not None
+
+    async def test_update_assignment_report_revoked(self, db_session: AsyncSession) -> None:
+        repo = ProfileRepository(db_session)
+        profile = await repo.create(ProfileCreate(name="ReportRevoked", policy=Policy(), scope=Scope()), created_by=1)
+        assignment = await repo.upsert_assignment(
+            AssignmentUpsert(
+                profile_id=profile.id,
+                device_id=1,
+                status=AssignmentStatus.REVOKE_PENDING,
+                desired_state=AssignmentDesiredState.ABSENT,
+                profile_version=1,
+            )
+        )
+        await repo.update_assignment_report(assignment.id, AssignmentStatus.REVOKED)
+        updated = await repo.get_assignment_by_id(assignment.id)
+        assert updated is not None
+        assert updated.status == AssignmentStatus.REVOKED
+        assert updated.acknowledged_at is None
+        assert updated.completed_at is None
+        assert updated.last_error is None
+
     async def test_list_profiles_referencing(self, db_session: AsyncSession) -> None:
         repo = ProfileRepository(db_session)
         await repo.create(

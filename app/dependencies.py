@@ -2,11 +2,12 @@ import logging
 from collections.abc import AsyncGenerator
 from typing import Any, Callable, Awaitable
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, Header, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domains.commands.repositories import CommandRepository
 from app.domains.commands.services import CommandService
+from app.infra.config.settings import settings
 from app.infra.core.security import verify_token
 from app.infra.core.database import async_session
 from app.domains.devices.repositories import DeviceRepository
@@ -70,6 +71,13 @@ def require_permission(
     return _check
 
 
+def require_sse_secret(x_sse_secret: str | None = Header(default=None, alias="X-SSE-SECRET")) -> None:
+    if not settings.sse_secret:
+        return
+    if x_sse_secret != settings.sse_secret:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid SSE secret")
+
+
 def get_reconciliation_service(db: AsyncSession = Depends(get_db)) -> ReconciliationService:
     return ReconciliationService(ProfileRepository(db), MobileAppRepository(db))
 
@@ -78,7 +86,13 @@ def get_device_service(
     db: AsyncSession = Depends(get_db),
     reconciliation_service: ReconciliationService = Depends(get_reconciliation_service),
 ) -> DeviceService:
-    return DeviceService(DeviceRepository(db), reconciliation_service)
+    return DeviceService(
+        DeviceRepository(db),
+        reconciliation_service,
+        CommandRepository(db),
+        ProfileRepository(db),
+        MobileAppRepository(db),
+    )
 
 
 def get_smart_group_service(

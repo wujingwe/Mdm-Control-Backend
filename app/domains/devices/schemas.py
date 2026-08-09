@@ -1,8 +1,10 @@
 from datetime import datetime
 
 
+from app.domains.commands.enums import CommandStatus
 from app.domains.devices.enums import ConnectionStatus, DeviceStatus
-from app.domains.mobile_apps.schemas import MobileAppResponse
+from app.domains.mobile_apps.schemas import MobileAppAssignmentReportIn, MobileAppResponse
+from app.domains.profiles.enums import AssignmentStatus
 from app.domains.profiles.schemas.profile import ProfileResponse
 from app.infra.common.schemas import CamelModel
 
@@ -89,3 +91,41 @@ class DeviceUpdate(CamelModel):
     network: Network | None = None
     certificates: list[Certificate] | None = None
     extension_attribute_values: list[ExtensionAttributeValueCreate] | None = None
+
+
+class DeviceAuthResponse(CamelModel):
+    serial_number: str
+    enrolled: bool
+    cert_valid_until: datetime
+
+
+class DeviceRegisterRequest(CamelModel):
+    name: str
+    os_version: str
+    certificates: list[Certificate] | None = None
+
+
+class CommandReportIn(CamelModel):
+    command_id: int
+    status: CommandStatus
+    result_message: str | None = None
+
+
+class ProfileAssignmentReportIn(CamelModel):
+    assignment_id: int
+    status: AssignmentStatus
+    result_message: str | None = None
+
+
+class DeviceReportIn(CamelModel):
+    connection_status: ConnectionStatus
+    status: DeviceStatus
+    battery_status: int | None = None
+    total_storage: int | None = None
+    available_storage: int | None = None
+    total_memory: int | None = None
+    available_memory: int | None = None
+    network: Network | None = None
+    commands: list[CommandReportIn] | None = None
+    profile_assignments: list[ProfileAssignmentReportIn] | None = None
+    mobile_app_assignments: list[MobileAppAssignmentReportIn] | None = None

@@ -623,6 +623,164 @@ class TestMobileAppRepository:
         repo = MobileAppRepository(db_session)
         await repo.mark_assignment_failed(999, "error")
 
+    async def test_get_assignment_by_id(self, db_session: AsyncSession) -> None:
+        repo = MobileAppRepository(db_session)
+        app = await repo.create(
+            MobileAppCreate(name="App", enabled=True, package_version="1.0", package_name="com.app", scope=Scope()),
+            created_by=1,
+        )
+        assignment = await repo.upsert_assignment(
+            MobileAppAssignmentUpsert(mobile_app_id=app.id, device_id=100, status=AssignmentStatus.PENDING, version=1)
+        )
+        result = await repo.get_assignment_by_id(assignment.id)
+        assert result is not None
+        assert result.id == assignment.id
+
+    async def test_get_assignment_by_id_not_found(self, db_session: AsyncSession) -> None:
+        repo = MobileAppRepository(db_session)
+        assert await repo.get_assignment_by_id(999) is None
+
+    async def test_update_assignment_report_applied(self, db_session: AsyncSession) -> None:
+        repo = MobileAppRepository(db_session)
+        app = await repo.create(
+            MobileAppCreate(name="App", enabled=True, package_version="1.0", package_name="com.app", scope=Scope()),
+            created_by=1,
+        )
+        assignment = await repo.upsert_assignment(
+            MobileAppAssignmentUpsert(
+                mobile_app_id=app.id,
+                device_id=100,
+                status=AssignmentStatus.SENT,
+                desired_state=AssignmentDesiredState.PRESENT,
+                version=1,
+            )
+        )
+        await repo.update_assignment_report(assignment.id, AssignmentStatus.APPLIED, "applied")
+        updated = await repo.get_assignment_by_id(assignment.id)
+        assert updated is not None
+        assert updated.status == AssignmentStatus.APPLIED
+        assert updated.completed_at is not None
+        assert updated.applied_at is not None
+        assert updated.acknowledged_at is None
+        assert updated.last_error is None
+
+    async def test_update_assignment_report_acknowledged(self, db_session: AsyncSession) -> None:
+        repo = MobileAppRepository(db_session)
+        app = await repo.create(
+            MobileAppCreate(name="App", enabled=True, package_version="1.0", package_name="com.app", scope=Scope()),
+            created_by=1,
+        )
+        assignment = await repo.upsert_assignment(
+            MobileAppAssignmentUpsert(
+                mobile_app_id=app.id,
+                device_id=100,
+                status=AssignmentStatus.SENT,
+                desired_state=AssignmentDesiredState.PRESENT,
+                version=1,
+            )
+        )
+        await repo.update_assignment_report(assignment.id, AssignmentStatus.SENT)
+        updated = await repo.get_assignment_by_id(assignment.id)
+        assert updated is not None
+        assert updated.status == AssignmentStatus.SENT
+        assert updated.acknowledged_at is not None
+        assert updated.completed_at is None
+
+    async def test_update_assignment_report_failed(self, db_session: AsyncSession) -> None:
+        repo = MobileAppRepository(db_session)
+        app = await repo.create(
+            MobileAppCreate(name="App", enabled=True, package_version="1.0", package_name="com.app", scope=Scope()),
+            created_by=1,
+        )
+        assignment = await repo.upsert_assignment(
+            MobileAppAssignmentUpsert(
+                mobile_app_id=app.id,
+                device_id=100,
+                status=AssignmentStatus.PENDING,
+                desired_state=AssignmentDesiredState.PRESENT,
+                version=1,
+            )
+        )
+        await repo.update_assignment_report(assignment.id, AssignmentStatus.FAILED, "install error")
+        updated = await repo.get_assignment_by_id(assignment.id)
+        assert updated is not None
+        assert updated.status == AssignmentStatus.FAILED
+        assert updated.last_error == "install error"
+        assert updated.acknowledged_at is None
+        assert updated.completed_at is None
+
+    async def test_update_assignment_report_unknown_assignment_is_noop(self, db_session: AsyncSession) -> None:
+        repo = MobileAppRepository(db_session)
+        await repo.update_assignment_report(999, AssignmentStatus.APPLIED, "nope")
+
+    async def test_update_assignment_report_failed_clears_on_success(self, db_session: AsyncSession) -> None:
+        repo = MobileAppRepository(db_session)
+        app = await repo.create(
+            MobileAppCreate(name="App", enabled=True, package_version="1.0", package_name="com.app", scope=Scope()),
+            created_by=1,
+        )
+        assignment = await repo.upsert_assignment(
+            MobileAppAssignmentUpsert(
+                mobile_app_id=app.id,
+                device_id=100,
+                status=AssignmentStatus.PENDING,
+                desired_state=AssignmentDesiredState.PRESENT,
+                version=1,
+            )
+        )
+        await repo.update_assignment_report(assignment.id, AssignmentStatus.FAILED, "install error")
+        await repo.update_assignment_report(assignment.id, AssignmentStatus.APPLIED)
+        updated = await repo.get_assignment_by_id(assignment.id)
+        assert updated is not None
+        assert updated.status == AssignmentStatus.APPLIED
+        assert updated.last_error is None
+
+    async def test_update_assignment_report_acknowledgement_preserved(self, db_session: AsyncSession) -> None:
+        repo = MobileAppRepository(db_session)
+        app = await repo.create(
+            MobileAppCreate(name="App", enabled=True, package_version="1.0", package_name="com.app", scope=Scope()),
+            created_by=1,
+        )
+        assignment = await repo.upsert_assignment(
+            MobileAppAssignmentUpsert(
+                mobile_app_id=app.id,
+                device_id=100,
+                status=AssignmentStatus.PENDING,
+                desired_state=AssignmentDesiredState.PRESENT,
+                version=1,
+            )
+        )
+        await repo.update_assignment_report(assignment.id, AssignmentStatus.SENT)
+        await repo.update_assignment_report(assignment.id, AssignmentStatus.APPLIED)
+        updated = await repo.get_assignment_by_id(assignment.id)
+        assert updated is not None
+        assert updated.status == AssignmentStatus.APPLIED
+        assert updated.acknowledged_at is not None
+        assert updated.completed_at is not None
+
+    async def test_update_assignment_report_revoked(self, db_session: AsyncSession) -> None:
+        repo = MobileAppRepository(db_session)
+        app = await repo.create(
+            MobileAppCreate(name="App", enabled=True, package_version="1.0", package_name="com.app", scope=Scope()),
+            created_by=1,
+        )
+        assignment = await repo.upsert_assignment(
+            MobileAppAssignmentUpsert(
+                mobile_app_id=app.id,
+                device_id=100,
+                status=AssignmentStatus.REVOKE_PENDING,
+                desired_state=AssignmentDesiredState.ABSENT,
+                version=1,
+            )
+        )
+        await repo.update_assignment_report(assignment.id, AssignmentStatus.REVOKED)
+        updated = await repo.get_assignment_by_id(assignment.id)
+        assert updated is not None
+        assert updated.status == AssignmentStatus.REVOKED
+        assert updated.acknowledged_at is None
+        assert updated.completed_at is None
+        assert updated.last_error is None
+
     async def test_get_max_assignment_version(self, db_session: AsyncSession) -> None:
         repo = MobileAppRepository(db_session)
         app = await repo.create(

@@ -1,10 +1,17 @@
 from unittest.mock import AsyncMock, MagicMock
 
 from app.dependencies import get_reconciliation_service
+from app.domains.commands.enums import CommandType
+from app.domains.commands.repositories import CommandRepository
+from app.domains.commands.schemas import CommandCreate
 from app.domains.extension_attributes.enums import ExtensionDataType, ExtensionInputType
 from app.domains.devices.models import Device
 from app.domains.devices.repositories import DeviceRepository
 from app.domains.devices.schemas import Certificate, DeviceUpdate, Network, Wifi, ExtensionAttributeValueCreate
+from app.domains.mobile_apps.models import MobileApp, MobileAppAssignment
+from app.domains.profiles.enums import AssignmentDesiredState, AssignmentStatus
+from app.domains.profiles.models import Profile, ProfileAssignment
+from app.domains.shared.scope import Scope
 from app.main import app
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -499,6 +506,621 @@ class TestDevicesAPI:
 
         assert resp.status_code == 200
         reconciliation_service.recalculate_profiles_for_device.assert_not_called()
+
+
+class TestDeviceRegisterReportAPI:
+    async def test_register_creates_device(self, client: AsyncClient) -> None:
+        resp = await client.post(
+            "/api/v1/devices/SN-REG-001/register",
+            json={
+                "name": "Pixel 9",
+                "osVersion": "15.0",
+                "certificates": [{"commonName": "SN-REG-001", "expiry": "2027-01-01T00:00:00Z"}],
+            },
+        )
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["serialNumber"] == "SN-REG-001"
+        assert body["status"] == "Enrolled"
+        assert body["certificates"][0]["commonName"] == "SN-REG-001"
+
+    async def test_register_idempotent_upsert(self, client: AsyncClient) -> None:
+        for _ in range(2):
+            resp = await client.post(
+                "/api/v1/devices/SN-REG-002/register",
+                json={
+                    "name": "Pixel 9",
+                    "osVersion": "15.0",
+                },
+            )
+            assert resp.status_code == 200
+            body = resp.json()
+            assert body["serialNumber"] == "SN-REG-002"
+            assert body["status"] == "Enrolled"
+
+    async def test_register_re_enroll_updates(self, client: AsyncClient, db_session: AsyncSession) -> None:
+        repo = DeviceRepository(db_session)
+        await repo.create(
+            {
+                "name": "Old",
+                "serial_number": "SN-REG-003",
+                "os_version": "14.0",
+                "connection_status": "Connected",
+                "status": "Enrolled",
+            }
+        )
+        resp = await client.post(
+            "/api/v1/devices/SN-REG-003/register",
+            json={
+                "name": "New Name",
+                "osVersion": "15.0",
+                "certificates": [{"commonName": "SN-REG-003"}],
+            },
+        )
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["name"] == "New Name"
+        assert body["osVersion"] == "15.0"
+        assert body["certificates"][0]["commonName"] == "SN-REG-003"
+
+    async def test_report_in_updates_status(self, client: AsyncClient, db_session: AsyncSession) -> None:
+        repo = DeviceRepository(db_session)
+        device = await repo.create(
+            {
+                "name": "Pixel",
+                "serial_number": "SN-RPT-001",
+                "os_version": "15.0",
+                "connection_status": "Connected",
+                "status": "Enrolled",
+            }
+        )
+        resp = await client.put(
+            f"/api/v1/devices/{device.serial_number}/report",
+            json={
+                "connectionStatus": "Disconnected",
+                "status": "Enrolled",
+                "batteryStatus": 42,
+                "network": {"wifi": {"ssid": "Office"}},
+            },
+        )
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["serialNumber"] == "SN-RPT-001"
+        assert body["connectionStatus"] == "Disconnected"
+        assert body["batteryStatus"] == 42
+        assert body["network"]["wifi"]["ssid"] == "Office"
+
+    async def test_report_in_unknown_serial_is_404(self, client: AsyncClient) -> None:
+        resp = await client.put(
+            "/api/v1/devices/SN-UNKNOWN/report",
+            json={"connectionStatus": "Connected", "status": "Enrolled"},
+        )
+        assert resp.status_code == 404
+        assert resp.json()["detail"] == "Device not found"
+
+    async def test_report_in_updates_command_status(self, client: AsyncClient, db_session: AsyncSession) -> None:
+        device_repo = DeviceRepository(db_session)
+        device = await device_repo.create(
+            {
+                "name": "Pixel",
+                "serial_number": "SN-RPT-CMD-001",
+                "os_version": "15.0",
+                "connection_status": "Connected",
+                "status": "Enrolled",
+            }
+        )
+        command_repo = CommandRepository(db_session)
+        command = await command_repo.create(
+            device.id,
+            CommandCreate(command_type=CommandType.RESTART),
+            created_by=1,
+        )
+        resp = await client.put(
+            f"/api/v1/devices/{device.serial_number}/report",
+            json={
+                "connectionStatus": "Connected",
+                "status": "Enrolled",
+                "commands": [
+                    {
+                        "commandId": command.id,
+                        "status": "COMPLETED",
+                        "resultMessage": "Restarted cleanly",
+                    }
+                ],
+            },
+        )
+        assert resp.status_code == 200
+        await db_session.refresh(command)
+        updated = command
+        assert updated.status.value == "COMPLETED"
+        assert updated.result_message == "Restarted cleanly"
+        assert updated.completed_at is not None
+
+    async def test_report_in_command_for_other_device_ignored(
+        self, client: AsyncClient, db_session: AsyncSession
+    ) -> None:
+        device_repo = DeviceRepository(db_session)
+        device = await device_repo.create(
+            {
+                "name": "Pixel",
+                "serial_number": "SN-RPT-OTHR-001",
+                "os_version": "15.0",
+                "connection_status": "Connected",
+                "status": "Enrolled",
+            }
+        )
+        other = await device_repo.create(
+            {
+                "name": "Other",
+                "serial_number": "SN-RPT-OTHR-002",
+                "os_version": "15.0",
+                "connection_status": "Connected",
+                "status": "Enrolled",
+            }
+        )
+        command_repo = CommandRepository(db_session)
+        other_command = await command_repo.create(
+            other.id,
+            CommandCreate(command_type=CommandType.LOCK),
+            created_by=1,
+        )
+        resp = await client.put(
+            f"/api/v1/devices/{device.serial_number}/report",
+            json={
+                "connectionStatus": "Connected",
+                "status": "Enrolled",
+                "commands": [{"commandId": other_command.id, "status": "COMPLETED"}],
+            },
+        )
+        assert resp.status_code == 200
+        await db_session.refresh(other_command)
+        untouched = other_command
+        assert untouched.status.value == "PENDING"
+
+    async def test_report_in_invalid_status_is_422(self, client: AsyncClient, db_session: AsyncSession) -> None:
+        repo = DeviceRepository(db_session)
+        device = await repo.create(
+            {
+                "name": "Pixel",
+                "serial_number": "SN-RPT-002",
+                "os_version": "15.0",
+                "connection_status": "Connected",
+                "status": "Enrolled",
+            }
+        )
+        resp = await client.put(
+            f"/api/v1/devices/{device.serial_number}/report",
+            json={"status": "INVALID_STATUS"},
+        )
+        assert resp.status_code == 422
+
+    async def test_report_in_updates_profile_assignment_status(
+        self, client: AsyncClient, db_session: AsyncSession
+    ) -> None:
+        device_repo = DeviceRepository(db_session)
+        device = await device_repo.create(
+            {
+                "name": "Pixel",
+                "serial_number": "SN-RPT-PROF-001",
+                "os_version": "15.0",
+                "connection_status": "Connected",
+                "status": "Enrolled",
+            }
+        )
+        profile = Profile(name="Wifi Profile", policy={}, scope=Scope(), created_by=1)
+        db_session.add(profile)
+        await db_session.commit()
+        await db_session.refresh(profile)
+        assignment = ProfileAssignment(
+            profile_id=profile.id,
+            device_id=device.id,
+            status=AssignmentStatus.SENT,
+            desired_state=AssignmentDesiredState.PRESENT,
+            profile_version=1,
+        )
+        db_session.add(assignment)
+        await db_session.commit()
+        await db_session.refresh(assignment)
+
+        resp = await client.put(
+            f"/api/v1/devices/{device.serial_number}/report",
+            json={
+                "connectionStatus": "Connected",
+                "status": "Enrolled",
+                "profileAssignments": [
+                    {
+                        "assignmentId": assignment.id,
+                        "status": "APPLIED",
+                        "resultMessage": "Profile applied",
+                    }
+                ],
+            },
+        )
+        assert resp.status_code == 200
+        await db_session.refresh(assignment)
+        assert assignment.status.value == "APPLIED"
+        assert assignment.completed_at is not None
+        assert assignment.applied_at is not None
+        assert assignment.acknowledged_at is None
+        assert assignment.last_error is None
+
+    async def test_report_in_assignment_for_other_device_ignored(
+        self, client: AsyncClient, db_session: AsyncSession
+    ) -> None:
+        device_repo = DeviceRepository(db_session)
+        device = await device_repo.create(
+            {
+                "name": "Pixel",
+                "serial_number": "SN-RPT-PROF-OTHR-001",
+                "os_version": "15.0",
+                "connection_status": "Connected",
+                "status": "Enrolled",
+            }
+        )
+        other = await device_repo.create(
+            {
+                "name": "Other",
+                "serial_number": "SN-RPT-PROF-OTHR-002",
+                "os_version": "15.0",
+                "connection_status": "Connected",
+                "status": "Enrolled",
+            }
+        )
+        profile = Profile(name="Other Profile", policy={}, scope=Scope(), created_by=1)
+        db_session.add(profile)
+        await db_session.commit()
+        await db_session.refresh(profile)
+        assignment = ProfileAssignment(
+            profile_id=profile.id,
+            device_id=other.id,
+            status=AssignmentStatus.SENT,
+            desired_state=AssignmentDesiredState.PRESENT,
+            profile_version=1,
+        )
+        db_session.add(assignment)
+        await db_session.commit()
+        await db_session.refresh(assignment)
+
+        resp = await client.put(
+            f"/api/v1/devices/{device.serial_number}/report",
+            json={
+                "connectionStatus": "Connected",
+                "status": "Enrolled",
+                "profileAssignments": [{"assignmentId": assignment.id, "status": "APPLIED"}],
+            },
+        )
+        assert resp.status_code == 200
+        await db_session.refresh(assignment)
+        assert assignment.status.value == "SENT"
+        assert assignment.completed_at is None
+        assert assignment.acknowledged_at is None
+
+    async def test_report_in_updates_mobile_app_assignment_status(
+        self, client: AsyncClient, db_session: AsyncSession
+    ) -> None:
+        device_repo = DeviceRepository(db_session)
+        device = await device_repo.create(
+            {
+                "name": "Pixel",
+                "serial_number": "SN-RPT-APP-001",
+                "os_version": "15.0",
+                "connection_status": "Connected",
+                "status": "Enrolled",
+            }
+        )
+        app = MobileApp(
+            name="Outlook",
+            enabled=True,
+            package_version="4.75.0",
+            package_name="com.microsoft.office.outlook",
+            scope=Scope(),
+            created_by=1,
+        )
+        db_session.add(app)
+        await db_session.commit()
+        await db_session.refresh(app)
+        assignment = MobileAppAssignment(
+            mobile_app_id=app.id,
+            device_id=device.id,
+            status=AssignmentStatus.SENT,
+            desired_state=AssignmentDesiredState.PRESENT,
+            version=1,
+        )
+        db_session.add(assignment)
+        await db_session.commit()
+        await db_session.refresh(assignment)
+
+        resp = await client.put(
+            f"/api/v1/devices/{device.serial_number}/report",
+            json={
+                "connectionStatus": "Connected",
+                "status": "Enrolled",
+                "mobileAppAssignments": [
+                    {
+                        "assignmentId": assignment.id,
+                        "status": "APPLIED",
+                        "resultMessage": "App installed",
+                    }
+                ],
+            },
+        )
+        assert resp.status_code == 200
+        await db_session.refresh(assignment)
+        assert assignment.status.value == "APPLIED"
+        assert assignment.completed_at is not None
+        assert assignment.applied_at is not None
+        assert assignment.acknowledged_at is None
+        assert assignment.last_error is None
+
+    async def test_report_in_mobile_app_assignment_for_other_device_ignored(
+        self, client: AsyncClient, db_session: AsyncSession
+    ) -> None:
+        device_repo = DeviceRepository(db_session)
+        device = await device_repo.create(
+            {
+                "name": "Pixel",
+                "serial_number": "SN-RPT-APP-OTHR-001",
+                "os_version": "15.0",
+                "connection_status": "Connected",
+                "status": "Enrolled",
+            }
+        )
+        other = await device_repo.create(
+            {
+                "name": "Other",
+                "serial_number": "SN-RPT-APP-OTHR-002",
+                "os_version": "15.0",
+                "connection_status": "Connected",
+                "status": "Enrolled",
+            }
+        )
+        app = MobileApp(
+            name="Other App",
+            enabled=True,
+            package_version="1.0",
+            package_name="com.other.app",
+            scope=Scope(),
+            created_by=1,
+        )
+        db_session.add(app)
+        await db_session.commit()
+        await db_session.refresh(app)
+        assignment = MobileAppAssignment(
+            mobile_app_id=app.id,
+            device_id=other.id,
+            status=AssignmentStatus.SENT,
+            desired_state=AssignmentDesiredState.PRESENT,
+            version=1,
+        )
+        db_session.add(assignment)
+        await db_session.commit()
+        await db_session.refresh(assignment)
+
+        resp = await client.put(
+            f"/api/v1/devices/{device.serial_number}/report",
+            json={
+                "connectionStatus": "Connected",
+                "status": "Enrolled",
+                "mobileAppAssignments": [{"assignmentId": assignment.id, "status": "APPLIED"}],
+            },
+        )
+        assert resp.status_code == 200
+        await db_session.refresh(assignment)
+        assert assignment.status.value == "SENT"
+        assert assignment.completed_at is None
+        assert assignment.acknowledged_at is None
+
+    async def test_report_in_invalid_profile_assignment_status_is_422(
+        self, client: AsyncClient, db_session: AsyncSession
+    ) -> None:
+        device_repo = DeviceRepository(db_session)
+        device = await device_repo.create(
+            {
+                "name": "Pixel",
+                "serial_number": "SN-RPT-PROF-INV-001",
+                "os_version": "15.0",
+                "connection_status": "Connected",
+                "status": "Enrolled",
+            }
+        )
+        resp = await client.put(
+            f"/api/v1/devices/{device.serial_number}/report",
+            json={
+                "connectionStatus": "Connected",
+                "status": "Enrolled",
+                "profileAssignments": [{"assignmentId": 7, "status": "NOPE"}],
+            },
+        )
+        assert resp.status_code == 422
+
+    async def test_report_in_invalid_mobile_app_assignment_status_is_422(
+        self, client: AsyncClient, db_session: AsyncSession
+    ) -> None:
+        device_repo = DeviceRepository(db_session)
+        device = await device_repo.create(
+            {
+                "name": "Pixel",
+                "serial_number": "SN-RPT-APP-INV-001",
+                "os_version": "15.0",
+                "connection_status": "Connected",
+                "status": "Enrolled",
+            }
+        )
+        resp = await client.put(
+            f"/api/v1/devices/{device.serial_number}/report",
+            json={
+                "connectionStatus": "Connected",
+                "status": "Enrolled",
+                "mobileAppAssignments": [{"assignmentId": 9, "status": "NOPE"}],
+            },
+        )
+        assert resp.status_code == 422
+
+    async def test_report_in_profile_assignment_sent_sets_acknowledged_at(
+        self, client: AsyncClient, db_session: AsyncSession
+    ) -> None:
+        device_repo = DeviceRepository(db_session)
+        device = await device_repo.create(
+            {
+                "name": "Pixel",
+                "serial_number": "SN-RPT-PROF-SENT-001",
+                "os_version": "15.0",
+                "connection_status": "Connected",
+                "status": "Enrolled",
+            }
+        )
+        profile = Profile(name="Sent Profile", policy={}, scope=Scope(), created_by=1)
+        db_session.add(profile)
+        await db_session.commit()
+        await db_session.refresh(profile)
+        assignment = ProfileAssignment(
+            profile_id=profile.id,
+            device_id=device.id,
+            status=AssignmentStatus.PENDING,
+            desired_state=AssignmentDesiredState.PRESENT,
+            profile_version=1,
+        )
+        db_session.add(assignment)
+        await db_session.commit()
+        await db_session.refresh(assignment)
+
+        resp = await client.put(
+            f"/api/v1/devices/{device.serial_number}/report",
+            json={
+                "connectionStatus": "Connected",
+                "status": "Enrolled",
+                "profileAssignments": [{"assignmentId": assignment.id, "status": "SENT"}],
+            },
+        )
+        assert resp.status_code == 200
+        await db_session.refresh(assignment)
+        assert assignment.status.value == "SENT"
+        assert assignment.acknowledged_at is not None
+        assert assignment.completed_at is None
+        assert assignment.last_error is None
+
+    async def test_report_in_profile_assignment_failed_sets_last_error(
+        self, client: AsyncClient, db_session: AsyncSession
+    ) -> None:
+        device_repo = DeviceRepository(db_session)
+        device = await device_repo.create(
+            {
+                "name": "Pixel",
+                "serial_number": "SN-RPT-PROF-FAIL-001",
+                "os_version": "15.0",
+                "connection_status": "Connected",
+                "status": "Enrolled",
+            }
+        )
+        profile = Profile(name="Fail Profile", policy={}, scope=Scope(), created_by=1)
+        db_session.add(profile)
+        await db_session.commit()
+        await db_session.refresh(profile)
+        assignment = ProfileAssignment(
+            profile_id=profile.id,
+            device_id=device.id,
+            status=AssignmentStatus.SENT,
+            desired_state=AssignmentDesiredState.PRESENT,
+            profile_version=1,
+        )
+        db_session.add(assignment)
+        await db_session.commit()
+        await db_session.refresh(assignment)
+
+        resp = await client.put(
+            f"/api/v1/devices/{device.serial_number}/report",
+            json={
+                "connectionStatus": "Connected",
+                "status": "Enrolled",
+                "profileAssignments": [
+                    {"assignmentId": assignment.id, "status": "FAILED", "resultMessage": "apply error"}
+                ],
+            },
+        )
+        assert resp.status_code == 200
+        await db_session.refresh(assignment)
+        assert assignment.status.value == "FAILED"
+        assert assignment.last_error == "apply error"
+        assert assignment.completed_at is None
+
+    async def test_report_in_combined_commands_and_assignments(
+        self, client: AsyncClient, db_session: AsyncSession
+    ) -> None:
+        device_repo = DeviceRepository(db_session)
+        device = await device_repo.create(
+            {
+                "name": "Pixel",
+                "serial_number": "SN-RPT-ALL-001",
+                "os_version": "15.0",
+                "connection_status": "Connected",
+                "status": "Enrolled",
+            }
+        )
+        command_repo = CommandRepository(db_session)
+        command = await command_repo.create(
+            device.id,
+            CommandCreate(command_type=CommandType.RESTART),
+            created_by=1,
+        )
+        profile = Profile(name="Combined Profile", policy={}, scope=Scope(), created_by=1)
+        db_session.add(profile)
+        await db_session.commit()
+        await db_session.refresh(profile)
+        prof_assignment = ProfileAssignment(
+            profile_id=profile.id,
+            device_id=device.id,
+            status=AssignmentStatus.SENT,
+            desired_state=AssignmentDesiredState.PRESENT,
+            profile_version=1,
+        )
+        db_session.add(prof_assignment)
+        app = MobileApp(
+            name="Combined App",
+            enabled=True,
+            package_version="1.0",
+            package_name="com.combined.app",
+            scope=Scope(),
+            created_by=1,
+        )
+        db_session.add(app)
+        await db_session.commit()
+        await db_session.refresh(app)
+        app_assignment = MobileAppAssignment(
+            mobile_app_id=app.id,
+            device_id=device.id,
+            status=AssignmentStatus.SENT,
+            desired_state=AssignmentDesiredState.PRESENT,
+            version=1,
+        )
+        db_session.add(app_assignment)
+        await db_session.commit()
+        await db_session.refresh(prof_assignment)
+        await db_session.refresh(app_assignment)
+
+        resp = await client.put(
+            f"/api/v1/devices/{device.serial_number}/report",
+            json={
+                "connectionStatus": "Connected",
+                "status": "Enrolled",
+                "commands": [{"commandId": command.id, "status": "COMPLETED", "resultMessage": "done"}],
+                "profileAssignments": [
+                    {"assignmentId": prof_assignment.id, "status": "APPLIED", "resultMessage": "applied"}
+                ],
+                "mobileAppAssignments": [
+                    {"assignmentId": app_assignment.id, "status": "APPLIED", "resultMessage": "installed"}
+                ],
+            },
+        )
+        assert resp.status_code == 200
+        await db_session.refresh(command)
+        await db_session.refresh(prof_assignment)
+        await db_session.refresh(app_assignment)
+        assert command.status.value == "COMPLETED"
+        assert command.completed_at is not None
+        assert prof_assignment.status.value == "APPLIED"
+        assert prof_assignment.completed_at is not None
+        assert app_assignment.status.value == "APPLIED"
+        assert app_assignment.completed_at is not None
 
 
 class TestCommandsAPI:

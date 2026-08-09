@@ -14,4 +14,5 @@ exchange = RabbitExchange(
     "tmdm.sse.messages",
     type=ExchangeType.TOPIC,
     durable=True,
+    arguments={"alternate-exchange": "tmdm.unroutable"},
 )
