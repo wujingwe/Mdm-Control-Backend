@@ -6,7 +6,14 @@ from app.domains.commands.repositories import CommandRepository
 from app.domains.devices.enums import ConnectionStatus, DeviceStatus
 from app.domains.devices.models import Device
 from app.domains.devices.repositories import DeviceRepository
-from app.domains.devices.schemas import DeviceAuthResponse, DeviceRegisterRequest, DeviceReportIn, DeviceUpdate
+from app.domains.devices.schemas import (
+    DeviceAuthResponse,
+    DeviceCreate,
+    DevicePatch,
+    DeviceRegisterRequest,
+    DeviceReportIn,
+    DeviceUpdate,
+)
 from app.domains.mobile_apps.repositories import MobileAppRepository
 from app.domains.profiles.repositories import ProfileRepository
 from app.domains.shared.reconciliation_service import ReconciliationService
@@ -86,27 +93,28 @@ class DeviceService:
         now = utcnow()
         if existing is None:
             return await self.repo.create(
-                {
-                    "name": data.name,
-                    "serial_number": serial_number,
-                    "os_version": data.os_version,
-                    "connection_status": ConnectionStatus.UNKNOWN,
-                    "status": DeviceStatus.ENROLLED,
-                    "last_enrolled_at": now,
-                    "certificates": data.certificates,
-                }
+                DeviceCreate(
+                    name=data.name,
+                    serial_number=serial_number,
+                    os_version=data.os_version,
+                    connection_status=ConnectionStatus.UNKNOWN,
+                    status=DeviceStatus.ENROLLED,
+                    last_enrolled_at=now,
+                    certificates=data.certificates,
+                )
             )
         device = await self.repo.update_by_serial(
             serial_number,
-            {
-                "name": data.name,
-                "os_version": data.os_version,
-                "status": DeviceStatus.ENROLLED,
-                "last_enrolled_at": now,
-                "certificates": data.certificates,
-            },
+            DevicePatch(
+                name=data.name,
+                os_version=data.os_version,
+                status=DeviceStatus.ENROLLED,
+                last_enrolled_at=now,
+                certificates=data.certificates,
+            ),
         )
-        assert device is not None
+        if device is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Device not found")
         await self.reconciliation_service.recalculate_profiles_for_device(device.id)
         await self.reconciliation_service.recalculate_mobile_apps_for_device(device.id)
         return device
@@ -137,8 +145,9 @@ class DeviceService:
         )
         if not fields:
             return device
-        updated = await self.repo.update_by_serial(serial_number, fields)
-        assert updated is not None
+        updated = await self.repo.update_by_serial(serial_number, DevicePatch(**fields))
+        if updated is None:
+            return device
         if data.model_fields_set & RECONCILIATION_TRIGGER_FIELDS:
             await self.reconciliation_service.recalculate_profiles_for_device(device.id)
             await self.reconciliation_service.recalculate_mobile_apps_for_device(device.id)

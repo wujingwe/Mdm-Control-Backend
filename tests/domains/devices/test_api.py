@@ -7,7 +7,15 @@ from app.domains.commands.schemas import CommandCreate
 from app.domains.extension_attributes.enums import ExtensionDataType, ExtensionInputType
 from app.domains.devices.models import Device
 from app.domains.devices.repositories import DeviceRepository
-from app.domains.devices.schemas import Certificate, DeviceUpdate, Network, Wifi, ExtensionAttributeValueCreate
+from app.domains.devices.enums import ConnectionStatus, DeviceStatus
+from app.domains.devices.schemas import (
+    Certificate,
+    DeviceCreate,
+    DeviceUpdate,
+    Network,
+    Wifi,
+    ExtensionAttributeValueCreate,
+)
 from app.domains.mobile_apps.models import MobileApp, MobileAppAssignment
 from app.domains.profiles.enums import AssignmentDesiredState, AssignmentStatus
 from app.domains.profiles.models import Profile, ProfileAssignment
@@ -31,22 +39,22 @@ class TestDevicesAPI:
     async def test_list_returns_multiple(self, client: AsyncClient, db_session: AsyncSession) -> None:
         repo = DeviceRepository(db_session)
         await repo.create(
-            {
-                "name": "A",
-                "serial_number": "SN-A",
-                "os_version": "15.0",
-                "connection_status": "Connected",
-                "status": "Enrolled",
-            }
+            DeviceCreate(
+                name="A",
+                serial_number="SN-A",
+                os_version="15.0",
+                connection_status=ConnectionStatus.CONNECTED,
+                status=DeviceStatus.ENROLLED,
+            )
         )
         await repo.create(
-            {
-                "name": "B",
-                "serial_number": "SN-B",
-                "os_version": "15.0",
-                "connection_status": "Disconnected",
-                "status": "Enrolled",
-            }
+            DeviceCreate(
+                name="B",
+                serial_number="SN-B",
+                os_version="15.0",
+                connection_status=ConnectionStatus.DISCONNECTED,
+                status=DeviceStatus.ENROLLED,
+            )
         )
         resp = await client.get("/api/v1/devices")
         assert resp.status_code == 200
@@ -58,13 +66,13 @@ class TestDevicesAPI:
         repo = DeviceRepository(db_session)
         for i in range(5):
             await repo.create(
-                {
-                    "name": f"Dev{i}",
-                    "serial_number": f"SN-{i:03d}",
-                    "os_version": "15.0",
-                    "connection_status": "Connected",
-                    "status": "Enrolled",
-                }
+                DeviceCreate(
+                    name=f"Dev{i}",
+                    serial_number=f"SN-{i:03d}",
+                    os_version="15.0",
+                    connection_status=ConnectionStatus.CONNECTED,
+                    status=DeviceStatus.ENROLLED,
+                )
             )
         resp = await client.get("/api/v1/devices?skip=0&limit=2")
         assert resp.status_code == 200
@@ -76,13 +84,13 @@ class TestDevicesAPI:
         repo = DeviceRepository(db_session)
         for i in range(5):
             await repo.create(
-                {
-                    "name": f"Dev{i}",
-                    "serial_number": f"SN-{i:03d}",
-                    "os_version": "15.0",
-                    "connection_status": "Connected",
-                    "status": "Enrolled",
-                }
+                DeviceCreate(
+                    name=f"Dev{i}",
+                    serial_number=f"SN-{i:03d}",
+                    os_version="15.0",
+                    connection_status=ConnectionStatus.CONNECTED,
+                    status=DeviceStatus.ENROLLED,
+                )
             )
         resp = await client.get("/api/v1/devices?skip=3&limit=2")
         assert resp.status_code == 200
@@ -93,13 +101,13 @@ class TestDevicesAPI:
     async def test_get_device(self, client: AsyncClient, db_session: AsyncSession) -> None:
         repo = DeviceRepository(db_session)
         device = await repo.create(
-            {
-                "name": "MacBook",
-                "serial_number": "SN-GET-001",
-                "os_version": "15.0",
-                "connection_status": "Connected",
-                "status": "Enrolled",
-            }
+            DeviceCreate(
+                name="MacBook",
+                serial_number="SN-GET-001",
+                os_version="15.0",
+                connection_status=ConnectionStatus.CONNECTED,
+                status=DeviceStatus.ENROLLED,
+            )
         )
         resp = await client.get(f"/api/v1/devices/{device.id}")
         assert resp.status_code == 200
@@ -115,15 +123,15 @@ class TestDevicesAPI:
     async def test_device_response_shape(self, client: AsyncClient, db_session: AsyncSession) -> None:
         repo = DeviceRepository(db_session)
         device = await repo.create(
-            {
-                "name": "MacBook",
-                "serial_number": "SN-API-001",
-                "os_version": "15.0",
-                "connection_status": "Connected",
-                "status": "Enrolled",
-                "network": Network(wifi=Wifi(ssid="Office")),
-                "certificates": [Certificate(common_name="example.com")],
-            }
+            DeviceCreate(
+                name="MacBook",
+                serial_number="SN-API-001",
+                os_version="15.0",
+                connection_status=ConnectionStatus.CONNECTED,
+                status=DeviceStatus.ENROLLED,
+                network=Network(wifi=Wifi(ssid="Office")),
+                certificates=[Certificate(common_name="example.com")],
+            )
         )
         resp = await client.get(f"/api/v1/devices/{device.id}")
         assert resp.status_code == 200
@@ -140,13 +148,13 @@ class TestDevicesAPI:
     async def test_device_response_optional_fields(self, client: AsyncClient, db_session: AsyncSession) -> None:
         repo = DeviceRepository(db_session)
         device = await repo.create(
-            {
-                "name": "Basic",
-                "serial_number": "SN-BAS-001",
-                "os_version": "15.0",
-                "connection_status": "Connected",
-                "status": "Enrolled",
-            }
+            DeviceCreate(
+                name="Basic",
+                serial_number="SN-BAS-001",
+                os_version="15.0",
+                connection_status=ConnectionStatus.CONNECTED,
+                status=DeviceStatus.ENROLLED,
+            )
         )
         resp = await client.get(f"/api/v1/devices/{device.id}")
         assert resp.status_code == 200
@@ -159,13 +167,13 @@ class TestDevicesAPI:
     async def test_update_device(self, client: AsyncClient, db_session: AsyncSession) -> None:
         repo = DeviceRepository(db_session)
         device = await repo.create(
-            {
-                "name": "MacBook",
-                "serial_number": "SN-UPD-001",
-                "os_version": "15.0",
-                "connection_status": "Connected",
-                "status": "Enrolled",
-            }
+            DeviceCreate(
+                name="MacBook",
+                serial_number="SN-UPD-001",
+                os_version="15.0",
+                connection_status=ConnectionStatus.CONNECTED,
+                status=DeviceStatus.ENROLLED,
+            )
         )
         resp = await client.put(
             f"/api/v1/devices/{device.id}",
@@ -191,13 +199,13 @@ class TestDevicesAPI:
     async def test_update_device_network(self, client: AsyncClient, db_session: AsyncSession) -> None:
         repo = DeviceRepository(db_session)
         device = await repo.create(
-            {
-                "name": "MacBook",
-                "serial_number": "SN-NET-001",
-                "os_version": "15.0",
-                "connection_status": "Connected",
-                "status": "Enrolled",
-            }
+            DeviceCreate(
+                name="MacBook",
+                serial_number="SN-NET-001",
+                os_version="15.0",
+                connection_status=ConnectionStatus.CONNECTED,
+                status=DeviceStatus.ENROLLED,
+            )
         )
         resp = await client.put(
             f"/api/v1/devices/{device.id}",
@@ -218,14 +226,14 @@ class TestDevicesAPI:
     async def test_update_device_clear_network(self, client: AsyncClient, db_session: AsyncSession) -> None:
         repo = DeviceRepository(db_session)
         device = await repo.create(
-            {
-                "name": "MacBook",
-                "serial_number": "SN-CN-001",
-                "os_version": "15.0",
-                "connection_status": "Connected",
-                "status": "Enrolled",
-                "network": Network(wifi=Wifi(ssid="Old")),
-            }
+            DeviceCreate(
+                name="MacBook",
+                serial_number="SN-CN-001",
+                os_version="15.0",
+                connection_status=ConnectionStatus.CONNECTED,
+                status=DeviceStatus.ENROLLED,
+                network=Network(wifi=Wifi(ssid="Old")),
+            )
         )
         resp = await client.put(
             f"/api/v1/devices/{device.id}",
@@ -248,13 +256,13 @@ class TestDevicesAPI:
 
         repo = DeviceRepository(db_session)
         device = await repo.create(
-            {
-                "name": "MacBook",
-                "serial_number": "SN-EXT-001",
-                "os_version": "15.0",
-                "connection_status": "Connected",
-                "status": "Enrolled",
-            }
+            DeviceCreate(
+                name="MacBook",
+                serial_number="SN-EXT-001",
+                os_version="15.0",
+                connection_status=ConnectionStatus.CONNECTED,
+                status=DeviceStatus.ENROLLED,
+            )
         )
 
         resp = await client.put(
@@ -291,13 +299,13 @@ class TestDevicesAPI:
 
         repo = DeviceRepository(db_session)
         device = await repo.create(
-            {
-                "name": "MacBook",
-                "serial_number": "SN-CLR-001",
-                "os_version": "15.0",
-                "connection_status": "Connected",
-                "status": "Enrolled",
-            }
+            DeviceCreate(
+                name="MacBook",
+                serial_number="SN-CLR-001",
+                os_version="15.0",
+                connection_status=ConnectionStatus.CONNECTED,
+                status=DeviceStatus.ENROLLED,
+            )
         )
         await repo.update(
             device.id,
@@ -325,13 +333,13 @@ class TestDevicesAPI:
     async def test_update_device_certificates(self, client: AsyncClient, db_session: AsyncSession) -> None:
         repo = DeviceRepository(db_session)
         device = await repo.create(
-            {
-                "name": "MacBook",
-                "serial_number": "SN-CRT-001",
-                "os_version": "15.0",
-                "connection_status": "Connected",
-                "status": "Enrolled",
-            }
+            DeviceCreate(
+                name="MacBook",
+                serial_number="SN-CRT-001",
+                os_version="15.0",
+                connection_status=ConnectionStatus.CONNECTED,
+                status=DeviceStatus.ENROLLED,
+            )
         )
 
         resp = await client.put(
@@ -351,14 +359,14 @@ class TestDevicesAPI:
     async def test_update_device_clear_certificates(self, client: AsyncClient, db_session: AsyncSession) -> None:
         repo = DeviceRepository(db_session)
         device = await repo.create(
-            {
-                "name": "MacBook",
-                "serial_number": "SN-CC-001",
-                "os_version": "15.0",
-                "connection_status": "Connected",
-                "status": "Enrolled",
-                "certificates": [Certificate(common_name="old.com")],
-            }
+            DeviceCreate(
+                name="MacBook",
+                serial_number="SN-CC-001",
+                os_version="15.0",
+                connection_status=ConnectionStatus.CONNECTED,
+                status=DeviceStatus.ENROLLED,
+                certificates=[Certificate(common_name="old.com")],
+            )
         )
         resp = await client.put(
             f"/api/v1/devices/{device.id}",
@@ -370,13 +378,13 @@ class TestDevicesAPI:
     async def test_update_device_multiple_fields(self, client: AsyncClient, db_session: AsyncSession) -> None:
         repo = DeviceRepository(db_session)
         device = await repo.create(
-            {
-                "name": "MacBook",
-                "serial_number": "SN-MUL-001",
-                "os_version": "15.0",
-                "connection_status": "Connected",
-                "status": "Enrolled",
-            }
+            DeviceCreate(
+                name="MacBook",
+                serial_number="SN-MUL-001",
+                os_version="15.0",
+                connection_status=ConnectionStatus.CONNECTED,
+                status=DeviceStatus.ENROLLED,
+            )
         )
 
         resp = await client.put(
@@ -398,13 +406,13 @@ class TestDevicesAPI:
     async def test_update_device_invalid_connection_status(self, client: AsyncClient, db_session: AsyncSession) -> None:
         repo = DeviceRepository(db_session)
         device = await repo.create(
-            {
-                "name": "MacBook",
-                "serial_number": "SN-INV-001",
-                "os_version": "15.0",
-                "connection_status": "Connected",
-                "status": "Enrolled",
-            }
+            DeviceCreate(
+                name="MacBook",
+                serial_number="SN-INV-001",
+                os_version="15.0",
+                connection_status=ConnectionStatus.CONNECTED,
+                status=DeviceStatus.ENROLLED,
+            )
         )
         resp = await client.put(
             f"/api/v1/devices/{device.id}",
@@ -415,13 +423,13 @@ class TestDevicesAPI:
     async def test_update_device_invalid_status(self, client: AsyncClient, db_session: AsyncSession) -> None:
         repo = DeviceRepository(db_session)
         device = await repo.create(
-            {
-                "name": "MacBook",
-                "serial_number": "SN-INV-002",
-                "os_version": "15.0",
-                "connection_status": "Connected",
-                "status": "Enrolled",
-            }
+            DeviceCreate(
+                name="MacBook",
+                serial_number="SN-INV-002",
+                os_version="15.0",
+                connection_status=ConnectionStatus.CONNECTED,
+                status=DeviceStatus.ENROLLED,
+            )
         )
         resp = await client.put(
             f"/api/v1/devices/{device.id}",
@@ -432,13 +440,13 @@ class TestDevicesAPI:
     async def test_update_device_empty_body(self, client: AsyncClient, db_session: AsyncSession) -> None:
         repo = DeviceRepository(db_session)
         device = await repo.create(
-            {
-                "name": "MacBook",
-                "serial_number": "SN-EMP-001",
-                "os_version": "15.0",
-                "connection_status": "Connected",
-                "status": "Enrolled",
-            }
+            DeviceCreate(
+                name="MacBook",
+                serial_number="SN-EMP-001",
+                os_version="15.0",
+                connection_status=ConnectionStatus.CONNECTED,
+                status=DeviceStatus.ENROLLED,
+            )
         )
 
         resp = await client.put(
@@ -453,13 +461,13 @@ class TestDevicesAPI:
     async def test_update_device_triggers_reconciler(self, client: AsyncClient, db_session: AsyncSession) -> None:
         repo = DeviceRepository(db_session)
         device = await repo.create(
-            {
-                "name": "Triggers",
-                "serial_number": "SN-TRG-001",
-                "os_version": "15.0",
-                "connection_status": "Connected",
-                "status": "Enrolled",
-            }
+            DeviceCreate(
+                name="Triggers",
+                serial_number="SN-TRG-001",
+                os_version="15.0",
+                connection_status=ConnectionStatus.CONNECTED,
+                status=DeviceStatus.ENROLLED,
+            )
         )
 
         reconciliation_service = MagicMock()
@@ -483,13 +491,13 @@ class TestDevicesAPI:
     ) -> None:
         repo = DeviceRepository(db_session)
         device = await repo.create(
-            {
-                "name": "NoTrigger",
-                "serial_number": "SN-NTRG-001",
-                "os_version": "15.0",
-                "connection_status": "Connected",
-                "status": "Enrolled",
-            }
+            DeviceCreate(
+                name="NoTrigger",
+                serial_number="SN-NTRG-001",
+                os_version="15.0",
+                connection_status=ConnectionStatus.CONNECTED,
+                status=DeviceStatus.ENROLLED,
+            )
         )
 
         reconciliation_service = MagicMock()
@@ -541,13 +549,13 @@ class TestDeviceRegisterReportAPI:
     async def test_register_re_enroll_updates(self, client: AsyncClient, db_session: AsyncSession) -> None:
         repo = DeviceRepository(db_session)
         await repo.create(
-            {
-                "name": "Old",
-                "serial_number": "SN-REG-003",
-                "os_version": "14.0",
-                "connection_status": "Connected",
-                "status": "Enrolled",
-            }
+            DeviceCreate(
+                name="Old",
+                serial_number="SN-REG-003",
+                os_version="14.0",
+                connection_status=ConnectionStatus.CONNECTED,
+                status=DeviceStatus.ENROLLED,
+            )
         )
         resp = await client.post(
             "/api/v1/devices/SN-REG-003/register",
@@ -566,13 +574,13 @@ class TestDeviceRegisterReportAPI:
     async def test_report_in_updates_status(self, client: AsyncClient, db_session: AsyncSession) -> None:
         repo = DeviceRepository(db_session)
         device = await repo.create(
-            {
-                "name": "Pixel",
-                "serial_number": "SN-RPT-001",
-                "os_version": "15.0",
-                "connection_status": "Connected",
-                "status": "Enrolled",
-            }
+            DeviceCreate(
+                name="Pixel",
+                serial_number="SN-RPT-001",
+                os_version="15.0",
+                connection_status=ConnectionStatus.CONNECTED,
+                status=DeviceStatus.ENROLLED,
+            )
         )
         resp = await client.put(
             f"/api/v1/devices/{device.serial_number}/report",
@@ -601,13 +609,13 @@ class TestDeviceRegisterReportAPI:
     async def test_report_in_updates_command_status(self, client: AsyncClient, db_session: AsyncSession) -> None:
         device_repo = DeviceRepository(db_session)
         device = await device_repo.create(
-            {
-                "name": "Pixel",
-                "serial_number": "SN-RPT-CMD-001",
-                "os_version": "15.0",
-                "connection_status": "Connected",
-                "status": "Enrolled",
-            }
+            DeviceCreate(
+                name="Pixel",
+                serial_number="SN-RPT-CMD-001",
+                os_version="15.0",
+                connection_status=ConnectionStatus.CONNECTED,
+                status=DeviceStatus.ENROLLED,
+            )
         )
         command_repo = CommandRepository(db_session)
         command = await command_repo.create(
@@ -641,22 +649,22 @@ class TestDeviceRegisterReportAPI:
     ) -> None:
         device_repo = DeviceRepository(db_session)
         device = await device_repo.create(
-            {
-                "name": "Pixel",
-                "serial_number": "SN-RPT-OTHR-001",
-                "os_version": "15.0",
-                "connection_status": "Connected",
-                "status": "Enrolled",
-            }
+            DeviceCreate(
+                name="Pixel",
+                serial_number="SN-RPT-OTHR-001",
+                os_version="15.0",
+                connection_status=ConnectionStatus.CONNECTED,
+                status=DeviceStatus.ENROLLED,
+            )
         )
         other = await device_repo.create(
-            {
-                "name": "Other",
-                "serial_number": "SN-RPT-OTHR-002",
-                "os_version": "15.0",
-                "connection_status": "Connected",
-                "status": "Enrolled",
-            }
+            DeviceCreate(
+                name="Other",
+                serial_number="SN-RPT-OTHR-002",
+                os_version="15.0",
+                connection_status=ConnectionStatus.CONNECTED,
+                status=DeviceStatus.ENROLLED,
+            )
         )
         command_repo = CommandRepository(db_session)
         other_command = await command_repo.create(
@@ -680,13 +688,13 @@ class TestDeviceRegisterReportAPI:
     async def test_report_in_invalid_status_is_422(self, client: AsyncClient, db_session: AsyncSession) -> None:
         repo = DeviceRepository(db_session)
         device = await repo.create(
-            {
-                "name": "Pixel",
-                "serial_number": "SN-RPT-002",
-                "os_version": "15.0",
-                "connection_status": "Connected",
-                "status": "Enrolled",
-            }
+            DeviceCreate(
+                name="Pixel",
+                serial_number="SN-RPT-002",
+                os_version="15.0",
+                connection_status=ConnectionStatus.CONNECTED,
+                status=DeviceStatus.ENROLLED,
+            )
         )
         resp = await client.put(
             f"/api/v1/devices/{device.serial_number}/report",
@@ -699,13 +707,13 @@ class TestDeviceRegisterReportAPI:
     ) -> None:
         device_repo = DeviceRepository(db_session)
         device = await device_repo.create(
-            {
-                "name": "Pixel",
-                "serial_number": "SN-RPT-PROF-001",
-                "os_version": "15.0",
-                "connection_status": "Connected",
-                "status": "Enrolled",
-            }
+            DeviceCreate(
+                name="Pixel",
+                serial_number="SN-RPT-PROF-001",
+                os_version="15.0",
+                connection_status=ConnectionStatus.CONNECTED,
+                status=DeviceStatus.ENROLLED,
+            )
         )
         profile = Profile(name="Wifi Profile", policy={}, scope=Scope(), created_by=1)
         db_session.add(profile)
@@ -749,22 +757,22 @@ class TestDeviceRegisterReportAPI:
     ) -> None:
         device_repo = DeviceRepository(db_session)
         device = await device_repo.create(
-            {
-                "name": "Pixel",
-                "serial_number": "SN-RPT-PROF-OTHR-001",
-                "os_version": "15.0",
-                "connection_status": "Connected",
-                "status": "Enrolled",
-            }
+            DeviceCreate(
+                name="Pixel",
+                serial_number="SN-RPT-PROF-OTHR-001",
+                os_version="15.0",
+                connection_status=ConnectionStatus.CONNECTED,
+                status=DeviceStatus.ENROLLED,
+            )
         )
         other = await device_repo.create(
-            {
-                "name": "Other",
-                "serial_number": "SN-RPT-PROF-OTHR-002",
-                "os_version": "15.0",
-                "connection_status": "Connected",
-                "status": "Enrolled",
-            }
+            DeviceCreate(
+                name="Other",
+                serial_number="SN-RPT-PROF-OTHR-002",
+                os_version="15.0",
+                connection_status=ConnectionStatus.CONNECTED,
+                status=DeviceStatus.ENROLLED,
+            )
         )
         profile = Profile(name="Other Profile", policy={}, scope=Scope(), created_by=1)
         db_session.add(profile)
@@ -800,13 +808,13 @@ class TestDeviceRegisterReportAPI:
     ) -> None:
         device_repo = DeviceRepository(db_session)
         device = await device_repo.create(
-            {
-                "name": "Pixel",
-                "serial_number": "SN-RPT-APP-001",
-                "os_version": "15.0",
-                "connection_status": "Connected",
-                "status": "Enrolled",
-            }
+            DeviceCreate(
+                name="Pixel",
+                serial_number="SN-RPT-APP-001",
+                os_version="15.0",
+                connection_status=ConnectionStatus.CONNECTED,
+                status=DeviceStatus.ENROLLED,
+            )
         )
         app = MobileApp(
             name="Outlook",
@@ -857,22 +865,22 @@ class TestDeviceRegisterReportAPI:
     ) -> None:
         device_repo = DeviceRepository(db_session)
         device = await device_repo.create(
-            {
-                "name": "Pixel",
-                "serial_number": "SN-RPT-APP-OTHR-001",
-                "os_version": "15.0",
-                "connection_status": "Connected",
-                "status": "Enrolled",
-            }
+            DeviceCreate(
+                name="Pixel",
+                serial_number="SN-RPT-APP-OTHR-001",
+                os_version="15.0",
+                connection_status=ConnectionStatus.CONNECTED,
+                status=DeviceStatus.ENROLLED,
+            )
         )
         other = await device_repo.create(
-            {
-                "name": "Other",
-                "serial_number": "SN-RPT-APP-OTHR-002",
-                "os_version": "15.0",
-                "connection_status": "Connected",
-                "status": "Enrolled",
-            }
+            DeviceCreate(
+                name="Other",
+                serial_number="SN-RPT-APP-OTHR-002",
+                os_version="15.0",
+                connection_status=ConnectionStatus.CONNECTED,
+                status=DeviceStatus.ENROLLED,
+            )
         )
         app = MobileApp(
             name="Other App",
@@ -915,13 +923,13 @@ class TestDeviceRegisterReportAPI:
     ) -> None:
         device_repo = DeviceRepository(db_session)
         device = await device_repo.create(
-            {
-                "name": "Pixel",
-                "serial_number": "SN-RPT-PROF-INV-001",
-                "os_version": "15.0",
-                "connection_status": "Connected",
-                "status": "Enrolled",
-            }
+            DeviceCreate(
+                name="Pixel",
+                serial_number="SN-RPT-PROF-INV-001",
+                os_version="15.0",
+                connection_status=ConnectionStatus.CONNECTED,
+                status=DeviceStatus.ENROLLED,
+            )
         )
         resp = await client.put(
             f"/api/v1/devices/{device.serial_number}/report",
@@ -938,13 +946,13 @@ class TestDeviceRegisterReportAPI:
     ) -> None:
         device_repo = DeviceRepository(db_session)
         device = await device_repo.create(
-            {
-                "name": "Pixel",
-                "serial_number": "SN-RPT-APP-INV-001",
-                "os_version": "15.0",
-                "connection_status": "Connected",
-                "status": "Enrolled",
-            }
+            DeviceCreate(
+                name="Pixel",
+                serial_number="SN-RPT-APP-INV-001",
+                os_version="15.0",
+                connection_status=ConnectionStatus.CONNECTED,
+                status=DeviceStatus.ENROLLED,
+            )
         )
         resp = await client.put(
             f"/api/v1/devices/{device.serial_number}/report",
@@ -961,13 +969,13 @@ class TestDeviceRegisterReportAPI:
     ) -> None:
         device_repo = DeviceRepository(db_session)
         device = await device_repo.create(
-            {
-                "name": "Pixel",
-                "serial_number": "SN-RPT-PROF-SENT-001",
-                "os_version": "15.0",
-                "connection_status": "Connected",
-                "status": "Enrolled",
-            }
+            DeviceCreate(
+                name="Pixel",
+                serial_number="SN-RPT-PROF-SENT-001",
+                os_version="15.0",
+                connection_status=ConnectionStatus.CONNECTED,
+                status=DeviceStatus.ENROLLED,
+            )
         )
         profile = Profile(name="Sent Profile", policy={}, scope=Scope(), created_by=1)
         db_session.add(profile)
@@ -1004,13 +1012,13 @@ class TestDeviceRegisterReportAPI:
     ) -> None:
         device_repo = DeviceRepository(db_session)
         device = await device_repo.create(
-            {
-                "name": "Pixel",
-                "serial_number": "SN-RPT-PROF-FAIL-001",
-                "os_version": "15.0",
-                "connection_status": "Connected",
-                "status": "Enrolled",
-            }
+            DeviceCreate(
+                name="Pixel",
+                serial_number="SN-RPT-PROF-FAIL-001",
+                os_version="15.0",
+                connection_status=ConnectionStatus.CONNECTED,
+                status=DeviceStatus.ENROLLED,
+            )
         )
         profile = Profile(name="Fail Profile", policy={}, scope=Scope(), created_by=1)
         db_session.add(profile)
@@ -1048,13 +1056,13 @@ class TestDeviceRegisterReportAPI:
     ) -> None:
         device_repo = DeviceRepository(db_session)
         device = await device_repo.create(
-            {
-                "name": "Pixel",
-                "serial_number": "SN-RPT-ALL-001",
-                "os_version": "15.0",
-                "connection_status": "Connected",
-                "status": "Enrolled",
-            }
+            DeviceCreate(
+                name="Pixel",
+                serial_number="SN-RPT-ALL-001",
+                os_version="15.0",
+                connection_status=ConnectionStatus.CONNECTED,
+                status=DeviceStatus.ENROLLED,
+            )
         )
         command_repo = CommandRepository(db_session)
         command = await command_repo.create(
@@ -1127,13 +1135,13 @@ class TestCommandsAPI:
     async def _create_device(self, db_session: AsyncSession) -> Device:
         repo = DeviceRepository(db_session)
         return await repo.create(
-            {
-                "name": "CmdDevice",
-                "serial_number": "SN-CMD-001",
-                "os_version": "15.0",
-                "connection_status": "Connected",
-                "status": "Enrolled",
-            }
+            DeviceCreate(
+                name="CmdDevice",
+                serial_number="SN-CMD-001",
+                os_version="15.0",
+                connection_status=ConnectionStatus.CONNECTED,
+                status=DeviceStatus.ENROLLED,
+            )
         )
 
     async def test_list_empty(self, client: AsyncClient, db_session: AsyncSession) -> None:

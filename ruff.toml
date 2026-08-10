@@ -36,7 +36,7 @@ target-version = "py312"
 
 [lint]
 # Enable Pyflakes (`F`) and a subset of the pycodestyle (`E`) codes by default.
-select = ["E4", "E7", "E9", "F"]
+select = ["E4", "E7", "E9", "F", "S101"]
 ignore = []
 
 # Allow fix for all enabled rules (when `--fix`) is provided.
@@ -45,6 +45,10 @@ unfixable = []
 
 # Allow unused variables when underscore-prefixed.
 dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+
+[lint.per-file-ignores]
+# `assert` is fine in tests; production code must not rely on it.
+"tests/**" = ["S101"]
 
 [format]
 # Like Black, use double quotes for strings.

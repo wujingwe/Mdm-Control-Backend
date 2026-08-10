@@ -1,6 +1,6 @@
 import logging
 from datetime import datetime, timezone
-from typing import Any
+from typing import TypeVar
 
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -15,6 +15,15 @@ from app.domains.inventory_search.models import InventorySearch
 from app.domains.mobile_apps.models import MobileApp, MobileAppAssignment
 from app.domains.profiles.enums import AssignmentDesiredState, AssignmentStatus
 from app.domains.profiles.models import Profile, ProfileAssignment
+from app.domains.profiles.schemas.policy import (
+    BluetoothSharing,
+    CameraAccess,
+    DeviceConnectivityManagement,
+    LocationMode,
+    Policy,
+    TetheringSettings,
+    UsbDataAccess,
+)
 from app.domains.smart_groups.models import SmartGroup
 from app.domains.static_groups.models import StaticGroup
 from app.domains.static_groups.models import StaticGroupDevice
@@ -346,24 +355,32 @@ PROFILES = [
         name="Standard Compliance",
         description="Standard compliance settings for all managed devices",
         version=1,
-        policy={
-            "passwordPolicy": {"minLength": 6, "requireAlphanumeric": True},
-            "encryptionRequired": True,
-            "allowAppInstallation": True,
-        },
+        policy=Policy(
+            locationMode=LocationMode.LOCATION_ENFORCED,
+            screenCaptureDisabled=True,
+            cameraAccess=CameraAccess.CAMERA_ACCESS_ENFORCED,
+            deviceConnectivityManagement=DeviceConnectivityManagement(
+                bluetoothSharing=BluetoothSharing.BLUETOOTH_SHARING_ALLOWED,
+                tetheringSettings=TetheringSettings.ALLOW_ALL_TETHERING,
+                usbDataAccess=UsbDataAccess.ALLOW_USB_DATA_TRANSFER,
+            ),
+        ),
         created_by=1,
     ),
     Profile(
         name="Executive Security",
         description="Enhanced security profile for executive devices",
         version=1,
-        policy={
-            "passwordPolicy": {"minLength": 10, "requireComplexity": True},
-            "encryptionRequired": True,
-            "allowAppInstallation": False,
-            "allowScreenCapture": False,
-            "allowBluetooth": False,
-        },
+        policy=Policy(
+            locationMode=LocationMode.LOCATION_ENFORCED,
+            screenCaptureDisabled=True,
+            cameraAccess=CameraAccess.CAMERA_ACCESS_DISABLED,
+            deviceConnectivityManagement=DeviceConnectivityManagement(
+                bluetoothSharing=BluetoothSharing.BLUETOOTH_SHARING_DISALLOWED,
+                tetheringSettings=TetheringSettings.DISALLOW_ALL_TETHERING,
+                usbDataAccess=UsbDataAccess.DISALLOW_USB_DATA_TRANSFER,
+            ),
+        ),
         created_by=1,
     ),
 ]
@@ -388,14 +405,21 @@ MOBILE_APPS = [
 ]
 
 
-async def _seed_records(session: AsyncSession, model: Any, records: list[Any], key_attr: str) -> list[int]:
+SeedModel = TypeVar("SeedModel", bound=Base)
+
+
+async def _seed_records(
+    session: AsyncSession, model: type[SeedModel], records: list[SeedModel], key_attr: str
+) -> list[int]:
     keys = [getattr(r, key_attr) for r in records]
     existing = set((await session.execute(select(getattr(model, key_attr)))).scalars())
     missing = [r for r in records if getattr(r, key_attr) not in existing]
     if missing:
         session.add_all(missing)
         await session.flush()
-    result = await session.execute(select(model.id, getattr(model, key_attr)).where(getattr(model, key_attr).in_(keys)))
+    result = await session.execute(
+        select(getattr(model, "id"), getattr(model, key_attr)).where(getattr(model, key_attr).in_(keys))
+    )
     by_key = {key: record_id for record_id, key in result.all()}
     return [by_key[k] for k in keys]
 

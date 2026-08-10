@@ -18,6 +18,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.infra.core.base import Base, utcnow
 from app.domains.profiles.enums import AssignmentDesiredState, AssignmentStatus
+from app.domains.profiles.schemas.policy import Policy
 from app.domains.shared.scope import Scope
 from app.domains.users.models import User
 
@@ -39,6 +40,23 @@ class ScopeColumnType(TypeDecorator[Scope]):
         return Scope.model_validate(value)
 
 
+class PolicyColumnType(TypeDecorator[Policy]):
+    impl = JSON
+    cache_ok = True
+
+    def process_bind_param(self, value: Policy | dict[str, Any] | None, dialect: Dialect) -> dict[str, Any] | None:
+        if value is None:
+            return None
+        if isinstance(value, dict):
+            return value
+        return value.model_dump()
+
+    def process_result_value(self, value: dict[str, Any] | None, dialect: Dialect) -> Policy | None:
+        if value is None:
+            return None
+        return Policy.model_validate(value)
+
+
 class Profile(Base):
     __tablename__ = "profiles"
     __table_args__ = (Index("ix_profiles_created_by", "created_by"),)
@@ -47,7 +65,7 @@ class Profile(Base):
     name: Mapped[str] = mapped_column(String(100), unique=True)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     version: Mapped[int] = mapped_column(Integer, default=1)
-    policy: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    policy: Mapped[Policy] = mapped_column(PolicyColumnType, default=Policy)
     scope: Mapped[Scope] = mapped_column(ScopeColumnType, default=Scope)
     created_by: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"))
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)

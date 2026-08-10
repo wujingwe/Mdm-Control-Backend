@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from dataclasses import dataclass
 
 from app.domains.commands.enums import CommandStatus
 from app.domains.commands.models import Command
@@ -10,6 +11,12 @@ from app.domains.devices.repositories import DeviceRepository
 from app.infra.messaging.producer import rabbitmq_producer
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass(slots=True)
+class CommandDispatchResult:
+    command: Command
+    message_id: str | None = None
 
 
 class CommandService:
@@ -22,13 +29,13 @@ class CommandService:
         device_id: int,
         data: CommandCreate,
         created_by: int,
-    ) -> dict[str, object]:
+    ) -> CommandDispatchResult:
         command = await self.repo.create(device_id, data, created_by)
 
         serial = await self.device_repo.get_serial_number(device_id)
         if not serial:
             logger.warning("Device %s not found when publishing command", device_id)
-            return {"command": command, "message_id": None}
+            return CommandDispatchResult(command)
 
         try:
             message_id = await rabbitmq_producer.publish_device_command(
@@ -38,12 +45,10 @@ class CommandService:
                 parameters={},
             )
             updated = await self.repo.mark_sent(command.id, message_id)
-            if updated is not None:
-                return {"command": updated, "message_id": message_id}
-            return {"command": command, "message_id": message_id}
+            return CommandDispatchResult(updated if updated is not None else command, message_id)
         except Exception:
             logger.exception("Failed to publish command %s", command.id)
-            return {"command": command, "message_id": None}
+            return CommandDispatchResult(command)
 
     async def get_command(self, command_id: int) -> Command | None:
         return await self.repo.get_by_id(command_id)

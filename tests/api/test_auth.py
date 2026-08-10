@@ -1,4 +1,3 @@
-import json
 from unittest.mock import patch
 
 import jwt
@@ -74,7 +73,7 @@ async def test_dev_token_mints_verifiable_jwt(client: AsyncClient, db_session: A
     token = response.json()["access_token"]
     assert response.json()["token_type"] == "Bearer"
     kid = jwt.get_unverified_header(token)["kid"]
-    signing_key = jwt.PyJWKSet.from_json(json.dumps(get_jwks()))[kid]
+    signing_key = jwt.PyJWKSet.from_json(get_jwks().model_dump_json())[kid]
     payload = jwt.decode(
         token,
         signing_key.key,

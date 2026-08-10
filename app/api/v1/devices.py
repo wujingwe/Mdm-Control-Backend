@@ -140,8 +140,7 @@ async def execute_command(
     current_user: User = Depends(require_permission("editor")),
 ) -> CommandResponse:
     result = await service.trigger_command(device_id, data, current_user.id)
-    command = result["command"]
-    return CommandResponse.model_validate(command)
+    return CommandResponse.model_validate(result.command)
 
 
 @router.put("/{device_id}/commands/{command_id}/status", response_model=CommandResponse)

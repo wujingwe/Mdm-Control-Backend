@@ -1,6 +1,4 @@
 from datetime import datetime, timezone
-from typing import Any
-
 from sqlalchemy import select, func, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -93,7 +91,7 @@ class CommandRepository:
         result_message: str | None = None,
     ) -> Command | None:
         now = datetime.now(timezone.utc)
-        values: dict[str, Any] = {"status": status}
+        values: dict[str, CommandStatus | str | datetime] = {"status": status}
         if result_message is not None:
             values["result_message"] = result_message
         if status == CommandStatus.COMPLETED:

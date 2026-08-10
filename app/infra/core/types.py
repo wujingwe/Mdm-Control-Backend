@@ -34,9 +34,9 @@ class NetworkInfoType(JsonType[dict[str, Any], Network]):
     cache_ok = True
 
     def _bind(self, value: Network | dict[str, Any]) -> dict[str, Any]:
-        if isinstance(value, dict):
-            return value
-        return value.model_dump()
+        if isinstance(value, Network):
+            return value.model_dump()
+        return value
 
     def _result(self, value: dict[str, Any]) -> Network:
         return Network.model_validate(value)
@@ -46,7 +46,7 @@ class CertificateListType(JsonType[list[dict[str, Any]], list[Certificate]]):
     cache_ok = True
 
     def _bind(self, value: list[Certificate] | list[dict[str, Any]]) -> list[dict[str, Any]]:
-        return [c if isinstance(c, dict) else c.model_dump() for c in value]
+        return [c.model_dump() if isinstance(c, Certificate) else c for c in value]
 
     def _result(self, value: list[dict[str, Any]]) -> list[Certificate]:
         return [Certificate.model_validate(c) for c in value]

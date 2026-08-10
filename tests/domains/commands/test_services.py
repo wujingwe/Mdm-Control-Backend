@@ -32,8 +32,8 @@ class TestCommandService:
         with patch("app.domains.commands.services.rabbitmq_producer") as mock_producer:
             mock_producer.publish_device_command = AsyncMock(return_value="msg-123")
             result = await svc.trigger_command(device_id=1, data=data, created_by=1)
-            assert result["command"].id == 1
-            assert result["message_id"] == "msg-123"
+            assert result.command.id == 1
+            assert result.message_id == "msg-123"
             repo.create.assert_called_once_with(1, data, 1)
             device_repo.get_serial_number.assert_called_once_with(1)
             mock_producer.publish_device_command.assert_called_once_with(
@@ -49,7 +49,7 @@ class TestCommandService:
         with patch("app.domains.commands.services.rabbitmq_producer") as mock_producer:
             mock_producer.publish_device_command = AsyncMock(side_effect=RuntimeError("MQ down"))
             result = await svc.trigger_command(device_id=1, data=data, created_by=1)
-            assert result["message_id"] is None
+            assert result.message_id is None
             repo.mark_sent.assert_not_called()
 
     async def test_trigger_command_device_not_found(self, repo: MagicMock, device_repo: MagicMock) -> None:
@@ -58,7 +58,7 @@ class TestCommandService:
         data = CommandCreate(command_type=CommandType.LOCK)
         with patch("app.domains.commands.services.rabbitmq_producer") as mock_producer:
             result = await svc.trigger_command(device_id=999, data=data, created_by=1)
-            assert result["message_id"] is None
+            assert result.message_id is None
             mock_producer.publish_device_command.assert_not_called()
 
     async def test_get_command(self, repo: MagicMock, device_repo: MagicMock) -> None:

@@ -5,7 +5,7 @@ import pytest
 from fastapi import HTTPException
 from fastapi.security import HTTPAuthorizationCredentials
 
-from app.infra.core.security import verify_token, _fetch_jwks
+from app.infra.core.security import TokenClaims, verify_token, _fetch_jwks
 
 _VALID_JWK = '{"keys": [{"kty": "RSA", "n": "gSf7WLI6BPzA5So5h4ZLF8Yc4mHqT0fY3tR0x0C0hVk", "e": "AQAB"}]}'
 
@@ -16,11 +16,11 @@ class TestSecurity:
         creds = MagicMock(spec=HTTPAuthorizationCredentials)
         creds.credentials = token
         with patch("app.infra.core.security._verify_sso", new_callable=AsyncMock) as mock_verify:
-            mock_verify.return_value = {"sub": "user1", "email": "a@b.com", "roles": ["admin"]}
+            mock_verify.return_value = TokenClaims(sub="user1", email="a@b.com", name="", roles=["admin"])
             result = await verify_token(credentials=creds)
-        assert result["sub"] == "user1"
-        assert result["email"] == "a@b.com"
-        assert result["roles"] == ["admin"]
+        assert result.sub == "user1"
+        assert result.email == "a@b.com"
+        assert result.roles == ["admin"]
 
     async def test_verify_token_invalid(self) -> None:
         creds = MagicMock(spec=HTTPAuthorizationCredentials)
@@ -36,29 +36,29 @@ class TestSecurity:
         creds = MagicMock(spec=HTTPAuthorizationCredentials)
         creds.credentials = token
         with patch("app.infra.core.security._verify_sso", new_callable=AsyncMock) as mock_verify:
-            mock_verify.return_value = {"roles": []}
+            mock_verify.return_value = TokenClaims(sub="", email="", name="", roles=[])
             result = await verify_token(credentials=creds)
-        assert result["sub"] == ""
-        assert result["email"] == ""
-        assert result["name"] == ""
+        assert result.sub == ""
+        assert result.email == ""
+        assert result.name == ""
 
     async def test_verify_token_falls_back_to_preferred_username(self) -> None:
         token = jwt.encode({"sub": "u1", "preferred_username": "aad@b.com"}, "secret", algorithm="HS256")
         creds = MagicMock(spec=HTTPAuthorizationCredentials)
         creds.credentials = token
         with patch("app.infra.core.security._verify_sso", new_callable=AsyncMock) as mock_verify:
-            mock_verify.return_value = {"sub": "u1", "preferred_username": "aad@b.com"}
+            mock_verify.return_value = TokenClaims(sub="u1", email="aad@b.com", name="", roles=[])
             result = await verify_token(credentials=creds)
-        assert result["email"] == "aad@b.com"
+        assert result.email == "aad@b.com"
 
     async def test_verify_token_falls_back_to_upn(self) -> None:
         token = jwt.encode({"sub": "u1", "upn": "domain\\user"}, "secret", algorithm="HS256")
         creds = MagicMock(spec=HTTPAuthorizationCredentials)
         creds.credentials = token
         with patch("app.infra.core.security._verify_sso", new_callable=AsyncMock) as mock_verify:
-            mock_verify.return_value = {"sub": "u1", "upn": "domain\\user"}
+            mock_verify.return_value = TokenClaims(sub="u1", email="domain\\user", name="", roles=[])
             result = await verify_token(credentials=creds)
-        assert result["email"] == "domain\\user"
+        assert result.email == "domain\\user"
 
     async def test_verify_sso_decodes_with_array_audience(self) -> None:
         from unittest.mock import AsyncMock
@@ -94,7 +94,7 @@ class TestSecurity:
                 mock_settings.sso_audience = "tmdm-api"
                 mock_settings.sso_issuer = "issuer"
                 result = await security_module._verify_sso(token)
-        assert result["email"] == "sso@b.com"
+        assert result.email == "sso@b.com"
 
     async def test_fetch_jwks_no_url(self) -> None:
         with patch("app.infra.core.security.settings") as mock_settings:
@@ -104,25 +104,21 @@ class TestSecurity:
         assert exc.value.status_code == 500
 
     async def test_fetch_jwks_from_cache(self) -> None:
-        from app.infra.core.security import _jwks_cache
+        from app.infra.core.security import _JwksCache
 
-        _jwks_cache.clear()
         mock_jwks = object()
-        _jwks_cache["jwks"] = mock_jwks
-        _jwks_cache["fetched_at"] = 9999999999.0
-        result = await _fetch_jwks()
+        with patch("app.infra.core.security._jwks_cache", _JwksCache(jwks=mock_jwks, fetched_at=9999999999.0)):  # type: ignore[arg-type]
+            result = await _fetch_jwks()
         assert result is mock_jwks
 
     async def test_fetch_jwks_fetches_from_server(self) -> None:
-        from app.infra.core.security import _jwks_cache
-
-        _jwks_cache.clear()
         mock_response = MagicMock()
         mock_response.text = _VALID_JWK
 
-        with patch("app.infra.core.security.settings") as mock_settings:
-            mock_settings.sso_jwks_url = "https://example.com/.well-known/jwks.json"
-            with patch("httpx.AsyncClient") as mock_client:
-                mock_client.return_value.__aenter__.return_value.get = AsyncMock(return_value=mock_response)
-                result = await _fetch_jwks()
+        with patch("app.infra.core.security._jwks_cache", None):
+            with patch("app.infra.core.security.settings") as mock_settings:
+                mock_settings.sso_jwks_url = "https://example.com/.well-known/jwks.json"
+                with patch("httpx.AsyncClient") as mock_client:
+                    mock_client.return_value.__aenter__.return_value.get = AsyncMock(return_value=mock_response)
+                    result = await _fetch_jwks()
         assert result is not None

@@ -1,6 +1,6 @@
 import logging
 from collections.abc import AsyncGenerator
-from typing import Any, Callable, Awaitable
+from typing import Callable, Awaitable
 
 from fastapi import Depends, Header, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.domains.commands.repositories import CommandRepository
 from app.domains.commands.services import CommandService
 from app.infra.config.settings import settings
-from app.infra.core.security import verify_token
+from app.infra.core.security import TokenClaims, verify_token
 from app.infra.core.database import async_session
 from app.domains.devices.repositories import DeviceRepository
 from app.domains.devices.services import DeviceService
@@ -42,11 +42,11 @@ def get_user_service(db: AsyncSession = Depends(get_db)) -> UserService:
 
 
 async def get_current_user(
-    token: dict[str, Any] = Depends(verify_token),
+    token: TokenClaims = Depends(verify_token),
     user_service: UserService = Depends(get_user_service),
 ) -> User:
-    user = await user_service.get_user_by_email(token["email"])
-    logger.info("Auth: get_current_user email=%r found=%s", token["email"], user is not None)
+    user = await user_service.get_user_by_email(token.email)
+    logger.info("Auth: get_current_user email=%r found=%s", token.email, user is not None)
     if not user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
     return user

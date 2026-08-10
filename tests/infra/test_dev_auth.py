@@ -1,4 +1,3 @@
-import json
 from unittest.mock import patch
 
 import jwt
@@ -24,12 +23,12 @@ def test_get_jwks_returns_rsa_public_key() -> None:
         with patch("app.infra.core.dev_auth.settings") as mock_settings:
             mock_settings.dev_auth_private_key = _RSA_PEM
             jwks = get_jwks()
-    assert jwks["keys"][0]["kty"] == "RSA"
-    assert jwks["keys"][0]["alg"] == "RS256"
-    assert jwks["keys"][0]["use"] == "sig"
-    assert jwks["keys"][0]["kid"] == "dev-key"
-    assert jwks["keys"][0]["n"]
-    assert jwks["keys"][0]["e"]
+    assert jwks.keys[0].kty == "RSA"
+    assert jwks.keys[0].alg == "RS256"
+    assert jwks.keys[0].use == "sig"
+    assert jwks.keys[0].kid == "dev-key"
+    assert jwks.keys[0].n
+    assert jwks.keys[0].e
 
 
 def test_mint_token_roundtrip() -> None:
@@ -45,7 +44,7 @@ def test_mint_token_roundtrip() -> None:
             )
             jwks = get_jwks()
     kid = jwt.get_unverified_header(token)["kid"]
-    signing_key = jwt.PyJWKSet.from_json(json.dumps(jwks))[kid]
+    signing_key = jwt.PyJWKSet.from_json(jwks.model_dump_json())[kid]
     payload = jwt.decode(
         token,
         signing_key.key,
@@ -63,8 +62,8 @@ def test_mint_token_serializes_jwks() -> None:
     with patch("app.infra.core.dev_auth._private_key", None):
         with patch("app.infra.core.dev_auth.settings") as mock_settings:
             mock_settings.dev_auth_private_key = _RSA_PEM
-            jwks_json = json.dumps(get_jwks())
-    assert "keys" in json.loads(jwks_json)
+            jwks_json = get_jwks().model_dump_json()
+    assert "keys" in jwks_json
 
 
 def test_missing_private_key_fails_clearly() -> None:

@@ -80,6 +80,37 @@ class ExtensionAttributeValueCreate(CamelModel):
     value: str
 
 
+class DeviceCreate(CamelModel):
+    name: str
+    serial_number: str
+    os_version: str
+    connection_status: ConnectionStatus
+    status: DeviceStatus
+    last_enrolled_at: datetime | None = None
+    battery_status: int | None = None
+    total_storage: int | None = None
+    available_storage: int | None = None
+    total_memory: int | None = None
+    available_memory: int | None = None
+    network: Network | None = None
+    certificates: list[Certificate] | None = None
+
+
+class DevicePatch(CamelModel):
+    name: str | None = None
+    os_version: str | None = None
+    connection_status: ConnectionStatus | None = None
+    status: DeviceStatus | None = None
+    last_enrolled_at: datetime | None = None
+    battery_status: int | None = None
+    total_storage: int | None = None
+    available_storage: int | None = None
+    total_memory: int | None = None
+    available_memory: int | None = None
+    network: Network | None = None
+    certificates: list[Certificate] | None = None
+
+
 class DeviceUpdate(CamelModel):
     connection_status: ConnectionStatus | None = None
     status: DeviceStatus | None = None

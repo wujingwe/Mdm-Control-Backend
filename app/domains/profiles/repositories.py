@@ -1,5 +1,4 @@
 from datetime import datetime, timezone
-from typing import Any
 
 from sqlalchemy import select, func, update, delete
 from sqlalchemy.exc import IntegrityError
@@ -135,7 +134,7 @@ class ProfileRepository:
     ) -> None:
         """Record a device's reported status for an assignment."""
         now = datetime.now(timezone.utc)
-        values: dict[str, Any] = {"status": status}
+        values: dict[str, AssignmentStatus | str | datetime | None] = {"status": status}
         if status == AssignmentStatus.SENT:
             values["acknowledged_at"] = now
         elif status == AssignmentStatus.APPLIED:

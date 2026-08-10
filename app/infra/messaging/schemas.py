@@ -2,12 +2,14 @@ from typing import Any, Literal
 
 from pydantic import BaseModel
 
+from app.domains.profiles.schemas.policy import Policy
+
 
 class ProfilePushRequested(BaseModel):
     kind: Literal["profile.push"] = "profile.push"
     serial_number: str
     profile_id: int
-    profile_config: dict[str, Any]
+    profile_config: Policy
     profile_version: int
     assignment_id: int
 

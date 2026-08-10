@@ -1,5 +1,3 @@
-from typing import Any
-
 from sqlalchemy import select, func, delete, insert
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -9,7 +7,7 @@ from app.infra.core.base import utcnow
 from app.infra.core.exceptions import ConflictError
 from app.domains.devices.enums import DeviceStatus
 from app.domains.devices.models import Device, DeviceExtensionAttributeValue
-from app.domains.devices.schemas import DeviceUpdate
+from app.domains.devices.schemas import DeviceCreate, DevicePatch, DeviceUpdate
 from app.domains.static_groups.models import StaticGroupDevice
 
 
@@ -40,11 +38,11 @@ class DeviceRepository:
         result = await self._db.execute(stmt)
         return result.scalar_one_or_none()
 
-    async def update_by_serial(self, serial_number: str, values: dict[str, Any]) -> Device | None:
+    async def update_by_serial(self, serial_number: str, data: DevicePatch) -> Device | None:
         device = await self.get_by_serial(serial_number)
         if device is None:
             return None
-        for field_name, value in values.items():
+        for field_name, value in data.model_dump(exclude_unset=True).items():
             setattr(device, field_name, value)
         device.updated_at = utcnow()
         try:
@@ -54,8 +52,8 @@ class DeviceRepository:
             raise ConflictError("Resource update violates a constraint") from err
         return device
 
-    async def create(self, data: dict[str, Any]) -> Device:
-        instance = Device(**data)
+    async def create(self, data: DeviceCreate) -> Device:
+        instance = Device(**data.model_dump(exclude_unset=True))
         self._db.add(instance)
         try:
             await self._db.commit()

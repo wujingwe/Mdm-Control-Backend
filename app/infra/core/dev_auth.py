@@ -1,14 +1,27 @@
 import base64
 from datetime import datetime, timedelta, timezone
-from typing import Any
 
 import jwt
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 
+from app.infra.common.schemas import CamelModel
 from app.infra.config.settings import settings
 
 DEV_TOKEN_TTL_SECONDS = 3600
+
+
+class JwksKey(CamelModel):
+    kty: str
+    n: str
+    e: str
+    use: str = "sig"
+    alg: str = "RS256"
+    kid: str
+
+
+class JwksResponse(CamelModel):
+    keys: list[JwksKey]
 
 
 def _encode_base64url(data: bytes) -> str:
@@ -38,21 +51,21 @@ def _get_private_key() -> rsa.RSAPrivateKey:
     return _private_key
 
 
-def get_jwks() -> dict[str, Any]:
+def get_jwks() -> JwksResponse:
     public_key = _get_private_key().public_key()
     numbers = public_key.public_numbers()
-    return {
-        "keys": [
-            {
-                "kty": "RSA",
-                "n": _encode_base64url(numbers.n.to_bytes((numbers.n.bit_length() + 7) // 8, "big")),
-                "e": _encode_base64url(numbers.e.to_bytes((numbers.e.bit_length() + 7) // 8, "big")),
-                "use": "sig",
-                "alg": "RS256",
-                "kid": "dev-key",
-            }
+    return JwksResponse(
+        keys=[
+            JwksKey(
+                kty="RSA",
+                n=_encode_base64url(numbers.n.to_bytes((numbers.n.bit_length() + 7) // 8, "big")),
+                e=_encode_base64url(numbers.e.to_bytes((numbers.e.bit_length() + 7) // 8, "big")),
+                use="sig",
+                alg="RS256",
+                kid="dev-key",
+            )
         ]
-    }
+    )
 
 
 def mint_token(

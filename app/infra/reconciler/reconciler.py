@@ -1,7 +1,7 @@
 import logging
-from collections.abc import Awaitable, Callable
+from collections.abc import Awaitable, Callable, Mapping
 from functools import partial
-from typing import Any, Protocol, TypeVar
+from typing import Protocol, TypeVar
 
 from app.domains.devices.repositories import DeviceRepository
 from app.domains.mobile_apps.models import MobileApp, MobileAppAssignment
@@ -20,6 +20,10 @@ logger = logging.getLogger(__name__)
 
 class _AssignmentUpsert(Protocol):
     device_id: int
+
+
+class _Assignment(Protocol):
+    id: int
 
 
 T = TypeVar("T", bound=_AssignmentUpsert)
@@ -266,7 +270,7 @@ class AssignmentReconciler:
     async def _dispatch_messages(
         self,
         device_ids: set[int],
-        assignments: dict[int, Any],
+        assignments: Mapping[int, _Assignment],
         *,
         publish: Callable[..., Awaitable[str]],
         mark_sent: Callable[[int, str], Awaitable[None]],

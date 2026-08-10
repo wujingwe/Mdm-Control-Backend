@@ -4,6 +4,7 @@ import logging
 from typing import Any
 from uuid import uuid4
 
+from app.domains.profiles.schemas.policy import Policy
 from app.infra.messaging.broker import broker, exchange
 from app.infra.messaging.schemas import (
     DeviceCommandRequested,
@@ -45,7 +46,7 @@ class RabbitMQProducer:
         *,
         serial_number: str,
         profile_id: int,
-        profile_config: dict[str, Any],
+        profile_config: Policy,
         profile_version: int,
         assignment_id: int,
     ) -> str:

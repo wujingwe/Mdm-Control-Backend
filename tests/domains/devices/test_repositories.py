@@ -4,6 +4,7 @@ from app.domains.devices.repositories import DeviceRepository
 from app.domains.devices.schemas import (
     Certificate,
     Cellular,
+    DeviceCreate,
     DeviceResponse,
     DeviceUpdate,
     Network,
@@ -12,14 +13,14 @@ from app.domains.devices.schemas import (
 from sqlalchemy.ext.asyncio import AsyncSession
 
 
-def _make_device_data(serial: str = "SN001", name: str = "Test Device") -> dict:
-    return {
-        "name": name,
-        "serial_number": serial,
-        "os_version": "14.0",
-        "connection_status": "Connected",
-        "status": "Enrolled",
-    }
+def _make_device_data(serial: str = "SN001", name: str = "Test Device") -> DeviceCreate:
+    return DeviceCreate(
+        name=name,
+        serial_number=serial,
+        os_version="14.0",
+        connection_status="Connected",
+        status="Enrolled",
+    )
 
 
 class TestDeviceRepository:
@@ -32,14 +33,17 @@ class TestDeviceRepository:
 
     async def test_create_all_fields(self, db_session: AsyncSession) -> None:
         repo = DeviceRepository(db_session)
-        data = _make_device_data()
-        data["battery_status"] = 85
-        data["total_storage"] = 512
-        data["available_storage"] = 256
-        data["total_memory"] = 16
-        data["available_memory"] = 8
-        data["network"] = Network(wifi=Wifi(ssid="Office"))
-        data["certificates"] = [Certificate(common_name="example.com")]
+        data = _make_device_data().model_copy(
+            update={
+                "battery_status": 85,
+                "total_storage": 512,
+                "available_storage": 256,
+                "total_memory": 16,
+                "available_memory": 8,
+                "network": Network(wifi=Wifi(ssid="Office")),
+                "certificates": [Certificate(common_name="example.com")],
+            }
+        )
         device = await repo.create(data)
         assert device.battery_status == 85
         assert device.total_storage == 512
@@ -283,7 +287,9 @@ class TestDeviceRepository:
 
     async def test_update_clear_network(self, db_session: AsyncSession) -> None:
         repo = DeviceRepository(db_session)
-        created = await repo.create({**_make_device_data(), "network": Network(wifi=Wifi(ssid="Office"))})
+        created = await repo.create(
+            _make_device_data().model_copy(update={"network": Network(wifi=Wifi(ssid="Office"))})
+        )
         assert created.network is not None
 
         assert await repo.update(created.id, DeviceUpdate(network=None)) == 1
@@ -315,10 +321,7 @@ class TestDeviceRepository:
     async def test_update_clear_certificates(self, db_session: AsyncSession) -> None:
         repo = DeviceRepository(db_session)
         created = await repo.create(
-            {
-                **_make_device_data(),
-                "certificates": [Certificate(common_name="old.com")],
-            }
+            _make_device_data().model_copy(update={"certificates": [Certificate(common_name="old.com")]})
         )
         assert len(created.certificates) == 1
 
@@ -580,9 +583,12 @@ class TestDeviceRepository:
 
     async def test_create_with_network_and_certificates(self, db_session: AsyncSession) -> None:
         repo = DeviceRepository(db_session)
-        data = _make_device_data()
-        data["network"] = Network(wifi=Wifi(ssid="Office", bssid="00:11:22:33:44:55"))
-        data["certificates"] = [Certificate(common_name="example.com", issuer="CA Inc")]
+        data = _make_device_data().model_copy(
+            update={
+                "network": Network(wifi=Wifi(ssid="Office", bssid="00:11:22:33:44:55")),
+                "certificates": [Certificate(common_name="example.com", issuer="CA Inc")],
+            }
+        )
         device = await repo.create(data)
         assert device.id is not None
         assert device.network is not None

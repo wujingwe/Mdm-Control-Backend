@@ -1,5 +1,7 @@
 from typing import Any, Generic, Protocol, TypeVar
 
+from pydantic import BaseModel
+
 from app.domains.mobile_apps.repositories import MobileAppRepository
 from app.domains.profiles.repositories import ProfileRepository
 from app.domains.shared.reconciliation_service import ReconciliationService
@@ -7,29 +9,33 @@ from app.domains.shared.scope import ScopeType
 from app.infra.core.exceptions import ConflictError
 
 T = TypeVar("T", bound="NamedEntity")
+C = TypeVar("C", bound=BaseModel, contravariant=True)
+U = TypeVar("U", bound=BaseModel, contravariant=True)
 
 
 class NamedEntity(Protocol):
+    # `id`/`name` come from SQLAlchemy models (declared as Mapped), so keep them
+    # structural Any rather than int/str.
     id: Any
     name: Any
 
 
-class GroupRepositoryProtocol(Protocol[T]):
+class GroupRepositoryProtocol(Protocol[T, C, U]):
     async def list(self, skip: int = 0, limit: int = 100) -> list[T]: ...
     async def get_by_id(self, record_id: int) -> T | None: ...
-    async def create(self, data: Any, created_by: int) -> T: ...
-    async def update(self, record_id: int, data: Any) -> int: ...
+    async def create(self, data: C, created_by: int) -> T: ...
+    async def update(self, record_id: int, data: U) -> int: ...
     async def delete(self, record_id: int) -> int: ...
     async def count(self) -> int: ...
 
 
-class GroupScopeService(Generic[T]):
+class GroupScopeService(Generic[T, C, U]):
     scope_type: ScopeType
     entity_label: str
 
     def __init__(
         self,
-        repo: GroupRepositoryProtocol[T],
+        repo: GroupRepositoryProtocol[T, C, U],
         profile_repo: ProfileRepository,
         mobile_app_repo: MobileAppRepository,
         reconciliation_service: ReconciliationService,
@@ -47,13 +53,13 @@ class GroupScopeService(Generic[T]):
     async def get_group(self, group_id: int) -> T | None:
         return await self.repo.get_by_id(group_id)
 
-    async def create_group(self, data: Any, created_by: int) -> T:
+    async def create_group(self, data: C, created_by: int) -> T:
         group = await self.repo.create(data, created_by)
         if group:
             await self.reconciliation_service.recalculate_profiles_for_group(self.scope_type, group.id)
         return group
 
-    async def update_group(self, group_id: int, data: Any) -> int:
+    async def update_group(self, group_id: int, data: U) -> int:
         updated = await self.repo.update(group_id, data)
         if updated:
             await self.reconciliation_service.recalculate_profiles_for_group(self.scope_type, group_id)

@@ -1,5 +1,3 @@
-from typing import Any
-
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy import select
@@ -10,7 +8,7 @@ from app.domains.users.models import User
 from app.infra.config.settings import settings
 from app.dependencies import get_current_user
 from app.domains.users.schemas import UserResponse
-from app.infra.core.dev_auth import DEV_TOKEN_TTL_SECONDS, get_jwks, mint_token
+from app.infra.core.dev_auth import DEV_TOKEN_TTL_SECONDS, JwksResponse, get_jwks, mint_token
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
@@ -29,7 +27,7 @@ class DevTokenResponse(BaseModel):
 
 
 @router.get("/jwks")
-async def dev_jwks() -> dict[str, Any]:
+async def dev_jwks() -> JwksResponse:
     return get_jwks()
 
 
