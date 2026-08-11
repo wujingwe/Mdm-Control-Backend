@@ -2,8 +2,12 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from app.domains.devices.schemas import DeviceReportIn, DeviceUpdate
+from app.domains.commands.enums import CommandStatus
+from app.domains.devices.enums import ConnectionStatus, DeviceStatus
+from app.domains.devices.schemas import DeviceReportIn, DeviceUpdate, Network, Wifi, ProfileAssignmentReportIn, \
+    CommandReportIn
 from app.domains.devices.services import DeviceService
+from app.domains.mobile_apps.schemas import MobileAppAssignmentReportIn
 from app.domains.profiles.enums import AssignmentStatus
 
 
@@ -46,8 +50,8 @@ class TestDeviceService:
         m.recalculate_mobile_apps_for_device = AsyncMock()
         return m
 
+    @staticmethod
     def make_service(
-        self,
         repo: MagicMock,
         reconciliation_service: MagicMock,
         command_repo: MagicMock,
@@ -97,7 +101,7 @@ class TestDeviceService:
     ) -> None:
         repo.update = AsyncMock(return_value=1)
         svc = self.make_service(repo, reconciliation_service, command_repo)
-        data = DeviceUpdate(connection_status="Disconnected")
+        data = DeviceUpdate(connection_status=ConnectionStatus.DISCONNECTED)
         result = await svc.update_device(1, data)
         assert result == 1
         repo.update.assert_called_once_with(1, data)
@@ -109,7 +113,7 @@ class TestDeviceService:
     ) -> None:
         repo.update = AsyncMock(return_value=1)
         svc = self.make_service(repo, reconciliation_service, command_repo)
-        data = DeviceUpdate(network={"wifi": {"ssid": "Guest"}})
+        data = DeviceUpdate(network=Network(wifi=Wifi(ssid="Guest")))
         result = await svc.update_device(1, data)
         assert result == 1
         reconciliation_service.recalculate_profiles_for_device.assert_not_called()
@@ -120,7 +124,7 @@ class TestDeviceService:
     ) -> None:
         repo.update = AsyncMock(return_value=0)
         svc = self.make_service(repo, reconciliation_service, command_repo)
-        result = await svc.update_device(999, DeviceUpdate(connection_status="Disconnected"))
+        result = await svc.update_device(999, DeviceUpdate(connection_status=ConnectionStatus.DISCONNECTED))
         assert result == 0
         repo.update.assert_called_once()
         reconciliation_service.recalculate_profiles_for_device.assert_not_called()
@@ -135,14 +139,14 @@ class TestDeviceService:
         profile_repo.get_assignment_by_id = AsyncMock(return_value=assignment)
         svc = self.make_service(repo, reconciliation_service, command_repo, profile_repo)
         data = DeviceReportIn(
-            connection_status="Connected",
-            status="Enrolled",
+            connection_status=ConnectionStatus.CONNECTED,
+            status=DeviceStatus.ENROLLED,
             profile_assignments=[
-                {
-                    "assignment_id": 7,
-                    "status": "APPLIED",
-                    "result_message": "Profile applied",
-                }
+                ProfileAssignmentReportIn(
+                    assignment_id=7,
+                    status=AssignmentStatus.APPLIED,
+                    result_message="Profile applied",
+                ),
             ],
         )
         await svc.report_in("SN-1", data)
@@ -158,9 +162,14 @@ class TestDeviceService:
         profile_repo.get_assignment_by_id = AsyncMock(return_value=assignment)
         svc = self.make_service(repo, reconciliation_service, command_repo, profile_repo)
         data = DeviceReportIn(
-            connection_status="Connected",
-            status="Enrolled",
-            profile_assignments=[{"assignment_id": 7, "status": "APPLIED"}],
+            connection_status=ConnectionStatus.CONNECTED,
+            status=DeviceStatus.ENROLLED,
+            profile_assignments=[
+                ProfileAssignmentReportIn(
+                    assignment_id=7,
+                    status=AssignmentStatus.APPLIED,
+                ),
+            ],
         )
         await svc.report_in("SN-1", data)
         profile_repo.update_assignment_report.assert_not_called()
@@ -174,9 +183,14 @@ class TestDeviceService:
         profile_repo.get_assignment_by_id = AsyncMock(return_value=None)
         svc = self.make_service(repo, reconciliation_service, command_repo, profile_repo)
         data = DeviceReportIn(
-            connection_status="Connected",
-            status="Enrolled",
-            profile_assignments=[{"assignment_id": 7, "status": "APPLIED"}],
+            connection_status=ConnectionStatus.CONNECTED,
+            status=DeviceStatus.ENROLLED,
+            profile_assignments=[
+                ProfileAssignmentReportIn(
+                    assignment_id=7,
+                    status=AssignmentStatus.APPLIED,
+                ),
+            ],
         )
         await svc.report_in("SN-1", data)
         profile_repo.update_assignment_report.assert_not_called()
@@ -196,14 +210,14 @@ class TestDeviceService:
         mobile_app_repo.get_assignment_by_id = AsyncMock(return_value=assignment)
         svc = self.make_service(repo, reconciliation_service, command_repo, profile_repo, mobile_app_repo)
         data = DeviceReportIn(
-            connection_status="Connected",
-            status="Enrolled",
+            connection_status=ConnectionStatus.CONNECTED,
+            status=DeviceStatus.ENROLLED,
             mobile_app_assignments=[
-                {
-                    "assignment_id": 9,
-                    "status": "APPLIED",
-                    "result_message": "App installed",
-                }
+                MobileAppAssignmentReportIn(
+                    assignment_id=9,
+                    status=AssignmentStatus.APPLIED,
+                    result_message="App installed",
+                ),
             ],
         )
         await svc.report_in("SN-1", data)
@@ -224,9 +238,14 @@ class TestDeviceService:
         mobile_app_repo.get_assignment_by_id = AsyncMock(return_value=assignment)
         svc = self.make_service(repo, reconciliation_service, command_repo, profile_repo, mobile_app_repo)
         data = DeviceReportIn(
-            connection_status="Connected",
-            status="Enrolled",
-            mobile_app_assignments=[{"assignment_id": 9, "status": "APPLIED"}],
+            connection_status=ConnectionStatus.CONNECTED,
+            status=DeviceStatus.ENROLLED,
+            mobile_app_assignments=[
+                MobileAppAssignmentReportIn(
+                    assignment_id=9,
+                    status=AssignmentStatus.APPLIED,
+                ),
+            ],
         )
         await svc.report_in("SN-1", data)
         mobile_app_repo.update_assignment_report.assert_not_called()
@@ -245,9 +264,14 @@ class TestDeviceService:
         mobile_app_repo.get_assignment_by_id = AsyncMock(return_value=None)
         svc = self.make_service(repo, reconciliation_service, command_repo, profile_repo, mobile_app_repo)
         data = DeviceReportIn(
-            connection_status="Connected",
-            status="Enrolled",
-            mobile_app_assignments=[{"assignment_id": 9, "status": "APPLIED"}],
+            connection_status=ConnectionStatus.CONNECTED,
+            status=DeviceStatus.ENROLLED,
+            mobile_app_assignments=[
+                MobileAppAssignmentReportIn(
+                    assignment_id=9,
+                    status=AssignmentStatus.APPLIED,
+                ),
+            ],
         )
         await svc.report_in("SN-1", data)
         mobile_app_repo.update_assignment_report.assert_not_called()
@@ -268,11 +292,26 @@ class TestDeviceService:
         mobile_app_repo.get_assignment_by_id = AsyncMock(return_value=MagicMock(device_id=1))
         svc = self.make_service(repo, reconciliation_service, command_repo, profile_repo, mobile_app_repo)
         data = DeviceReportIn(
-            connection_status="Connected",
-            status="Enrolled",
-            commands=[{"command_id": 1, "status": "COMPLETED"}],
-            profile_assignments=[{"assignment_id": 7, "status": "APPLIED"}],
-            mobile_app_assignments=[{"assignment_id": 9, "status": "APPLIED"}],
+            connection_status=ConnectionStatus.CONNECTED,
+            status=DeviceStatus.ENROLLED,
+            commands=[
+                CommandReportIn(
+                    command_id=1,
+                    status=CommandStatus.COMPLETED,
+                ),
+            ],
+            profile_assignments=[
+                ProfileAssignmentReportIn(
+                    assignment_id=7,
+                    status=AssignmentStatus.APPLIED,
+                ),
+            ],
+            mobile_app_assignments=[
+                MobileAppAssignmentReportIn(
+                    assignment_id=9,
+                    status=AssignmentStatus.APPLIED,
+                ),
+            ],
         )
         await svc.report_in("SN-1", data)
         command_repo.update_status.assert_awaited_once()

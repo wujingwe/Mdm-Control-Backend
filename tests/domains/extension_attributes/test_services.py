@@ -1,5 +1,7 @@
 from unittest.mock import AsyncMock, MagicMock
 import pytest
+
+from app.domains.extension_attributes.enums import ExtensionInputType, ExtensionDataType
 from app.domains.extension_attributes.services import ExtensionAttributeService
 from app.domains.extension_attributes.schemas import (
     ExtensionAttributeCreate,
@@ -49,7 +51,7 @@ class TestExtensionAttributeService:
         repo.create = AsyncMock(return_value=fake)
         svc = ExtensionAttributeService(repo)
         result = await svc.create_attribute(
-            ExtensionAttributeCreate(name="ext1", data_type="string", input_type="Text field"),
+            ExtensionAttributeCreate(name="ext1", data_type=ExtensionDataType.STRING, input_type=ExtensionInputType.TEXT_FIELD),
             created_by=1,
         )
         assert result is fake

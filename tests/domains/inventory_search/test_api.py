@@ -1,9 +1,11 @@
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.domains.devices.criteria import CriteriaType
 from app.domains.devices.models import Device
 from app.domains.inventory_search.schemas import InventorySearchCreate
 from app.domains.inventory_search.repositories import InventorySearchRepository
+from app.infra.criteria import Criteria
 
 
 class TestInventorySearchAPI:
@@ -61,9 +63,9 @@ class TestInventorySearchAPI:
             await repo.create(
                 InventorySearchCreate(
                     name=f"s{i}",
-                    criteria=[{"field": "name", "operator": "is", "type": "string", "value": "test"}],
-                    sort_field="name",
-                    sort_direction="asc",
+                    criteria=[
+                        Criteria(field="name", operator="is", type=CriteriaType.STRING, value="test"),
+                    ],
                 ),
                 created_by=1,
             )

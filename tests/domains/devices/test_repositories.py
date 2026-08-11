@@ -1,4 +1,7 @@
 import pytest
+
+from app.domains.devices.enums import ConnectionStatus, DeviceStatus
+from app.domains.extension_attributes.enums import ExtensionDataType, ExtensionInputType
 from app.infra.core.exceptions import ConflictError
 from app.domains.devices.repositories import DeviceRepository
 from app.domains.devices.schemas import (
@@ -8,7 +11,7 @@ from app.domains.devices.schemas import (
     DeviceResponse,
     DeviceUpdate,
     Network,
-    Wifi,
+    Wifi, ExtensionAttributeValueCreate,
 )
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -18,8 +21,8 @@ def _make_device_data(serial: str = "SN001", name: str = "Test Device") -> Devic
         name=name,
         serial_number=serial,
         os_version="14.0",
-        connection_status="Connected",
-        status="Enrolled",
+        connection_status=ConnectionStatus.CONNECTED,
+        status=DeviceStatus.ENROLLED,
     )
 
 
@@ -70,7 +73,7 @@ class TestDeviceRepository:
 
         ea_repo = ExtensionAttributeRepository(db_session)
         ea = await ea_repo.create(
-            ExtensionAttributeCreate(name="field1", data_type="string", input_type="Text field"),
+            ExtensionAttributeCreate(name="field1", data_type=ExtensionDataType.STRING, input_type=ExtensionInputType.TEXT_FIELD),
             created_by=1,
         )
 
@@ -80,11 +83,11 @@ class TestDeviceRepository:
             device.id,
             DeviceUpdate(
                 extension_attribute_values=[
-                    {
-                        "extension_attribute_id": ea.id,
-                        "extension_attribute_name": "field1",
-                        "value": "v1",
-                    },
+                    ExtensionAttributeValueCreate(
+                        extension_attribute_id=ea.id,
+                        extension_attribute_name="field1",
+                        value="v1",
+                    ),
                 ],
             ),
         )
@@ -255,7 +258,7 @@ class TestDeviceRepository:
         assert (
             await repo.update(
                 created.id,
-                DeviceUpdate(connection_status="Disconnected"),
+                DeviceUpdate(connection_status=ConnectionStatus.DISCONNECTED),
             )
             == 1
         )
@@ -266,7 +269,7 @@ class TestDeviceRepository:
 
     async def test_update_not_found(self, db_session: AsyncSession) -> None:
         repo = DeviceRepository(db_session)
-        assert await repo.update(999, DeviceUpdate(connection_status="Disconnected")) == 0
+        assert await repo.update(999, DeviceUpdate(connection_status=ConnectionStatus.DISCONNECTED)) == 0
 
     async def test_update_network(self, db_session: AsyncSession) -> None:
         repo = DeviceRepository(db_session)
@@ -337,8 +340,8 @@ class TestDeviceRepository:
             await repo.update(
                 created.id,
                 DeviceUpdate(
-                    connection_status="Disconnected",
-                    status="Unenrolled",
+                    connection_status=ConnectionStatus.DISCONNECTED,
+                    status=DeviceStatus.UNENROLLED,
                     battery_status=42,
                     total_storage=512,
                     available_storage=256,
@@ -360,7 +363,7 @@ class TestDeviceRepository:
 
         ea_repo = ExtensionAttributeRepository(db_session)
         ea1 = await ea_repo.create(
-            ExtensionAttributeCreate(name="field1", data_type="string", input_type="Text field"),
+            ExtensionAttributeCreate(name="field1", data_type=ExtensionDataType.STRING, input_type=ExtensionInputType.TEXT_FIELD),
             created_by=1,
         )
 
@@ -372,11 +375,11 @@ class TestDeviceRepository:
                 device.id,
                 DeviceUpdate(
                     extension_attribute_values=[
-                        {
-                            "extension_attribute_id": ea1.id,
-                            "extension_attribute_name": "field1",
-                            "value": "val1",
-                        },
+                        ExtensionAttributeValueCreate(
+                            extension_attribute_id=ea1.id,
+                            extension_attribute_name="field1",
+                            value="val1",
+                        ),
                     ],
                 ),
             )
@@ -393,7 +396,7 @@ class TestDeviceRepository:
 
         ea_repo = ExtensionAttributeRepository(db_session)
         ea1 = await ea_repo.create(
-            ExtensionAttributeCreate(name="field1", data_type="string", input_type="Text field"),
+            ExtensionAttributeCreate(name="field1", data_type=ExtensionDataType.STRING, input_type=ExtensionInputType.TEXT_FIELD),
             created_by=1,
         )
 
@@ -403,11 +406,11 @@ class TestDeviceRepository:
             device.id,
             DeviceUpdate(
                 extension_attribute_values=[
-                    {
-                        "extension_attribute_id": ea1.id,
-                        "extension_attribute_name": "field1",
-                        "value": "val1",
-                    },
+                    ExtensionAttributeValueCreate(
+                        extension_attribute_id=ea1.id,
+                        extension_attribute_name="field1",
+                        value="val1",
+                    ),
                 ],
             ),
         )
@@ -429,7 +432,7 @@ class TestDeviceRepository:
 
         ea_repo = ExtensionAttributeRepository(db_session)
         ea = await ea_repo.create(
-            ExtensionAttributeCreate(name="field1", data_type="string", input_type="Text field"),
+            ExtensionAttributeCreate(name="field1", data_type=ExtensionDataType.STRING, input_type=ExtensionInputType.TEXT_FIELD),
             created_by=1,
         )
 
@@ -442,11 +445,11 @@ class TestDeviceRepository:
                 DeviceUpdate(
                     battery_status=99,
                     extension_attribute_values=[
-                        {
-                            "extension_attribute_id": ea.id,
-                            "extension_attribute_name": "field1",
-                            "value": "val1",
-                        },
+                        ExtensionAttributeValueCreate(
+                            extension_attribute_id=ea.id,
+                            extension_attribute_name="field1",
+                            value="val1",
+                        ),
                     ],
                 ),
             )
@@ -464,14 +467,14 @@ class TestDeviceRepository:
 
         ea_repo = ExtensionAttributeRepository(db_session)
         ea1 = await ea_repo.create(
-            ExtensionAttributeCreate(name="field1", data_type="string", input_type="Text field"),
+            ExtensionAttributeCreate(name="field1", data_type=ExtensionDataType.STRING, input_type=ExtensionInputType.TEXT_FIELD),
             created_by=1,
         )
         ea2 = await ea_repo.create(
             ExtensionAttributeCreate(
                 name="field2",
-                data_type="integer",
-                input_type="Text field",
+                data_type=ExtensionDataType.INTEGER,
+                input_type=ExtensionInputType.TEXT_FIELD,
             ),
             created_by=1,
         )
@@ -482,11 +485,11 @@ class TestDeviceRepository:
             device.id,
             DeviceUpdate(
                 extension_attribute_values=[
-                    {
-                        "extension_attribute_id": ea1.id,
-                        "extension_attribute_name": "field1",
-                        "value": "v1",
-                    },
+                    ExtensionAttributeValueCreate(
+                        extension_attribute_id=ea1.id,
+                        extension_attribute_name="field1",
+                        value="v1",
+                    ),
                 ],
             ),
         )
@@ -496,16 +499,16 @@ class TestDeviceRepository:
                 device.id,
                 DeviceUpdate(
                     extension_attribute_values=[
-                        {
-                            "extension_attribute_id": ea2.id,
-                            "extension_attribute_name": "field2",
-                            "value": "v2",
-                        },
-                        {
-                            "extension_attribute_id": ea1.id,
-                            "extension_attribute_name": "field1",
-                            "value": "v1-new",
-                        },
+                        ExtensionAttributeValueCreate(
+                            extension_attribute_id=ea2.id,
+                            extension_attribute_name="field2",
+                            value="v2",
+                        ),
+                        ExtensionAttributeValueCreate(
+                            extension_attribute_id=ea1.id,
+                            extension_attribute_name="field1",
+                            value="v1-new",
+                        ),
                     ],
                 ),
             )
@@ -538,7 +541,7 @@ class TestDeviceRepository:
 
         ea_repo = ExtensionAttributeRepository(db_session)
         ea = await ea_repo.create(
-            ExtensionAttributeCreate(name="field1", data_type="string", input_type="Text field"),
+            ExtensionAttributeCreate(name="field1", data_type=ExtensionDataType.STRING, input_type=ExtensionInputType.TEXT_FIELD),
             created_by=1,
         )
 
@@ -548,11 +551,11 @@ class TestDeviceRepository:
             device.id,
             DeviceUpdate(
                 extension_attribute_values=[
-                    {
-                        "extension_attribute_id": ea.id,
-                        "extension_attribute_name": "field1",
-                        "value": "v1",
-                    },
+                    ExtensionAttributeValueCreate(
+                        extension_attribute_id=ea.id,
+                        extension_attribute_name="field1",
+                        value="v1",
+                    ),
                 ],
             ),
         )

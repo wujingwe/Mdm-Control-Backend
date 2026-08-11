@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock
 import pytest
 
 from app.infra.messaging.producer import RabbitMQProducer
-from app.domains.profiles.schemas.policy import Policy
+from app.domains.profiles.schemas.policy import Policy, CameraAccess
 
 
 class TestRabbitMQProducer:
@@ -17,7 +17,7 @@ class TestRabbitMQProducer:
         await producer.publish_profile_push(
             serial_number="SER001",
             profile_id=10,
-            profile_config=Policy(cameraDisabled=True),
+            profile_config=Policy(cameraAccess=CameraAccess.CAMERA_ACCESS_DISABLED),
             profile_version=3,
             assignment_id=42,
         )
@@ -30,7 +30,7 @@ class TestRabbitMQProducer:
         assert body.kind == "profile.push"
         assert body.serial_number == "SER001"
         assert body.profile_id == 10
-        assert body.profile_config == Policy(cameraDisabled=True)
+        assert body.profile_config == Policy(cameraAccess=CameraAccess.CAMERA_ACCESS_DISABLED)
         assert body.profile_version == 3
         assert body.assignment_id == 42
 

@@ -1,7 +1,10 @@
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.domains.devices.criteria import CriteriaType
 from app.domains.devices.enums import ConnectionStatus
+from app.domains.devices.schemas import ExtensionAttributeValueCreate
+from app.domains.extension_attributes.enums import ExtensionDataType, ExtensionInputType
 from app.infra.criteria.schemas import Criteria
 from app.domains.devices.models import Device
 from app.domains.inventory_search.repositories import InventorySearchRepository
@@ -95,7 +98,7 @@ async def _search(
                 Criteria(
                     field=field,
                     operator=operator,
-                    type="string",
+                    type=CriteriaType.STRING,
                     value=value,
                     and_or=and_or,
                 )
@@ -263,14 +266,14 @@ class TestSearchConjunctions:
                     Criteria(
                         field="connection_status",
                         operator="is",
-                        type="string",
+                        type=CriteriaType.STRING,
                         value="Connected",
                         and_or="AND",
                     ),
                     Criteria(
                         field="status",
                         operator="is",
-                        type="string",
+                        type=CriteriaType.STRING,
                         value="Enrolled",
                         and_or="AND",
                     ),
@@ -287,14 +290,14 @@ class TestSearchConjunctions:
                     Criteria(
                         field="name",
                         operator="like",
-                        type="string",
+                        type=CriteriaType.STRING,
                         value="Mac",
                         and_or="OR",
                     ),
                     Criteria(
                         field="name",
                         operator="like",
-                        type="string",
+                        type=CriteriaType.STRING,
                         value="iPhone",
                         and_or="AND",
                     ),
@@ -326,21 +329,21 @@ class TestSearchMultiCriteria:
                     Criteria(
                         field="os_version",
                         operator="like",
-                        type="string",
+                        type=CriteriaType.STRING,
                         value="iOS",
                         and_or="AND",
                     ),
                     Criteria(
                         field="status",
                         operator="is",
-                        type="string",
+                        type=CriteriaType.STRING,
                         value="Enrolled",
                         and_or="AND",
                     ),
                     Criteria(
                         field="battery_status",
                         operator="greaterThan",
-                        type="number",
+                        type=CriteriaType.NUMBER,
                         value="5",
                         and_or="AND",
                     ),
@@ -357,14 +360,14 @@ class TestSearchMultiCriteria:
                     Criteria(
                         field="os_version",
                         operator="is",
-                        type="string",
+                        type=CriteriaType.STRING,
                         value="macOS 15.0",
                         and_or="OR",
                     ),
                     Criteria(
                         field="os_version",
                         operator="is",
-                        type="string",
+                        type=CriteriaType.STRING,
                         value="Android 15",
                         and_or="AND",
                     ),
@@ -383,21 +386,21 @@ class TestSearchMultiCriteria:
                     Criteria(
                         field="connection_status",
                         operator="is",
-                        type="string",
+                        type=CriteriaType.STRING,
                         value="Connected",
                         and_or="AND",
                     ),
                     Criteria(
                         field="status",
                         operator="isNot",
-                        type="string",
+                        type=CriteriaType.STRING,
                         value="Pending",
                         and_or="AND",
                     ),
                     Criteria(
                         field="name",
                         operator="notLike",
-                        type="string",
+                        type=CriteriaType.STRING,
                         value="Pixel",
                         and_or="AND",
                     ),
@@ -419,7 +422,7 @@ class TestSearchParentheses:
                     Criteria(
                         field="name",
                         operator="like",
-                        type="string",
+                        type=CriteriaType.STRING,
                         value="Mac",
                         and_or="AND",
                         left_parentheses=True,
@@ -427,7 +430,7 @@ class TestSearchParentheses:
                     Criteria(
                         field="connection_status",
                         operator="is",
-                        type="string",
+                        type=CriteriaType.STRING,
                         value="Connected",
                         and_or="OR",
                         right_parentheses=True,
@@ -435,7 +438,7 @@ class TestSearchParentheses:
                     Criteria(
                         field="os_version",
                         operator="like",
-                        type="string",
+                        type=CriteriaType.STRING,
                         value="iOS",
                         and_or="AND",
                         left_parentheses=True,
@@ -443,7 +446,7 @@ class TestSearchParentheses:
                     Criteria(
                         field="status",
                         operator="is",
-                        type="string",
+                        type=CriteriaType.STRING,
                         value="Enrolled",
                         and_or="AND",
                         right_parentheses=True,
@@ -464,7 +467,7 @@ class TestSearchParentheses:
                     Criteria(
                         field="name",
                         operator="like",
-                        type="string",
+                        type=CriteriaType.STRING,
                         value="Mac",
                         and_or="OR",
                         left_parentheses=True,
@@ -472,7 +475,7 @@ class TestSearchParentheses:
                     Criteria(
                         field="name",
                         operator="like",
-                        type="string",
+                        type=CriteriaType.STRING,
                         value="iPhone",
                         and_or="AND",
                         right_parentheses=True,
@@ -480,7 +483,7 @@ class TestSearchParentheses:
                     Criteria(
                         field="connection_status",
                         operator="is",
-                        type="string",
+                        type=CriteriaType.STRING,
                         value="Connected",
                         and_or="AND",
                     ),
@@ -500,7 +503,7 @@ class TestSearchParentheses:
                     Criteria(
                         field="name",
                         operator="like",
-                        type="string",
+                        type=CriteriaType.STRING,
                         value="Mac",
                         and_or="AND",
                         left_parentheses=True,
@@ -508,7 +511,7 @@ class TestSearchParentheses:
                     Criteria(
                         field="status",
                         operator="is",
-                        type="string",
+                        type=CriteriaType.STRING,
                         value="Enrolled",
                         and_or="AND",
                         right_parentheses=True,
@@ -529,14 +532,14 @@ class TestSearchParentheses:
                     Criteria(
                         field="name",
                         operator="like",
-                        type="string",
+                        type=CriteriaType.STRING,
                         value="Mac",
                         and_or="AND",
                     ),
                     Criteria(
                         field="status",
                         operator="is",
-                        type="string",
+                        type=CriteriaType.STRING,
                         value="Enrolled",
                         and_or="AND",
                     ),
@@ -554,7 +557,7 @@ class TestSearchParentheses:
                     Criteria(
                         field="name",
                         operator="like",
-                        type="string",
+                        type=CriteriaType.STRING,
                         value="Mac",
                         and_or="OR",
                         left_parentheses=True,
@@ -563,7 +566,7 @@ class TestSearchParentheses:
                     Criteria(
                         field="os_version",
                         operator="like",
-                        type="string",
+                        type=CriteriaType.STRING,
                         value="iOS",
                         and_or="OR",
                         left_parentheses=True,
@@ -572,7 +575,7 @@ class TestSearchParentheses:
                     Criteria(
                         field="os_version",
                         operator="is",
-                        type="string",
+                        type=CriteriaType.STRING,
                         value="Android 14",
                         and_or="AND",
                         left_parentheses=True,
@@ -631,7 +634,7 @@ async def ext_devices(
 
     svc, by_serial = devices
     ea = await ExtensionAttributeRepository(db_session).create(
-        ExtensionAttributeCreate(name="field1", data_type="string", input_type="Text field"),
+        ExtensionAttributeCreate(name="field1", data_type=ExtensionDataType.STRING, input_type=ExtensionInputType.TEXT_FIELD),
         created_by=1,
     )
     repo = DeviceRepository(db_session)
@@ -645,11 +648,11 @@ async def ext_devices(
             by_serial[serial].id,
             DeviceUpdate(
                 extension_attribute_values=[
-                    {
-                        "extension_attribute_id": ea.id,
-                        "extension_attribute_name": "field1",
-                        "value": value,
-                    },
+                    ExtensionAttributeValueCreate(
+                        extension_attribute_id=ea.id,
+                        extension_attribute_name="field1",
+                        value=value,
+                    ),
                 ],
             ),
         )
@@ -669,7 +672,7 @@ async def _ext_search(
                 Criteria(
                     field=field,
                     operator=operator,
-                    type="string",
+                    type=CriteriaType.STRING,
                     value=value,
                     and_or="AND",
                     extension_attribute_id=extension_attribute_id,
@@ -727,14 +730,14 @@ class TestExtensionAttributeSearch:
                     Criteria(
                         field="name",
                         operator="like",
-                        type="string",
+                        type=CriteriaType.STRING,
                         value="Mac",
                         and_or="AND",
                     ),
                     Criteria(
                         field="name",
                         operator="is",
-                        type="string",
+                        type=CriteriaType.STRING,
                         value="high",
                         and_or="AND",
                         extension_attribute_id=ea_id,

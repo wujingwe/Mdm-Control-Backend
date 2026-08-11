@@ -28,10 +28,12 @@ class TestMobileAppService:
         m.recalculate_mobile_apps_for_group = AsyncMock()
         return m
 
-    def _scoped(self) -> Scope:
+    @staticmethod
+    def _scoped() -> Scope:
         return Scope(targets=[ScopeTarget(scope_type=ScopeType.ALL_DEVICES)])
 
-    def _create_data(self, *, scope: Scope | None = None) -> MobileAppCreate:
+    @staticmethod
+    def _create_data(*, scope: Scope | None = None) -> MobileAppCreate:
         return MobileAppCreate(
             name="App",
             enabled=True,

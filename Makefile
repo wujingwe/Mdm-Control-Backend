@@ -1,28 +1,28 @@
 .PHONY: install install-dev lint lint-fix format format-check test test-coverage typecheck run dev check archive
 
 install:
-	uv sync
+	pip install -r requirements.txt
 
 install-dev:
-	uv sync
+	pip install -r requirements.txt
 
 run:
-	uv run python -m app.main
+	python3 -m app.main
 
 dev:
-	uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+	uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
 lint:
-	uv run ruff check --fix . && uv run ruff format .
+	ruff check --fix . && ruff format .
 
 typecheck:
-	uv run mypy app/
+	mypy app/
 
 test:
-	uv run pytest -v
+	pytest -v
 
 test-coverage:
-	uv run pytest --cov=app --cov-report=term-missing
+	pytest --cov=app --cov-report=term-missing
 
 archive:
 	rm -f project.zip && git ls-files -z | grep -zvE '(^|/)\.' | xargs -0 zip project.zip

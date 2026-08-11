@@ -40,7 +40,9 @@ See [CONTEXT.md](CONTEXT.md) for the domain glossary. Key terms:
 ## Setup
 
 ```sh
-uv sync
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
 ```
 
 Copy `.env` (defaults are pre-configured) and adjust as needed.
@@ -195,8 +197,8 @@ Tests use an in-memory SQLite database with `aiosqlite`. RabbitMQ is not require
 ├── DATABASE.md
 ├── Models.md
 ├── Makefile
-├── pyproject.toml               # Project metadata + dependency groups
-├── uv.lock                      # Locked dependency graph
+├── pyproject.toml               # Tool config
+├── requirements.txt              # Dependencies (runtime + dev)
 ├── mypy.ini
 ├── ruff.toml
 └── skills-lock.json

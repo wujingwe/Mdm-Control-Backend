@@ -1,3 +1,6 @@
+from typing import cast
+
+from app.domains.users.enums import Permission
 from app.domains.users.repositories import UserRepository
 from app.domains.users.schemas import UserCreate, UserUpdate
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -10,7 +13,7 @@ class TestUserRepository:
             UserCreate(
                 email="j@example.com",
                 name="jdoe",
-                permissions=frozenset({"admin"}),
+                permissions=cast(frozenset[Permission], frozenset({"admin"})),
             )
         )
         assert created.id is not None
@@ -34,7 +37,7 @@ class TestUserRepository:
             UserCreate(
                 email="upd@example.com",
                 name="orig",
-                permissions=frozenset({"viewer"}),
+                permissions=cast(frozenset[Permission], frozenset({"viewer"})),
             )
         )
         assert await repo.update(created.id, UserUpdate(name="updated")) == 1
@@ -52,7 +55,7 @@ class TestUserRepository:
             UserCreate(
                 email="c@e.com",
                 name="c",
-                permissions=frozenset({"viewer"}),
+                permissions=cast(frozenset[Permission], frozenset({"viewer"})),
             )
         )
         assert await repo.count() == 1

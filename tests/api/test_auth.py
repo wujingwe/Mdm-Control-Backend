@@ -1,3 +1,4 @@
+from typing import cast
 from unittest.mock import patch
 
 import jwt
@@ -5,6 +6,7 @@ import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.domains.users.enums import Permission
 from app.domains.users.schemas import UserCreate
 from app.domains.users.repositories import UserRepository
 from app.infra.core.dev_auth import get_jwks
@@ -61,7 +63,7 @@ async def test_dev_token_mints_verifiable_jwt(client: AsyncClient, db_session: A
             UserCreate(
                 email="test@example.com",
                 name="Test User",
-                permissions=frozenset({"admin"}),
+                permissions=cast(frozenset[Permission], frozenset({"admin"})),
             )
         )
     with patch("app.api.v1.auth.settings") as mock_settings:

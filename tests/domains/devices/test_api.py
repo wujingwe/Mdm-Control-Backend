@@ -1132,7 +1132,8 @@ class TestDeviceRegisterReportAPI:
 
 
 class TestCommandsAPI:
-    async def _create_device(self, db_session: AsyncSession) -> Device:
+    @staticmethod
+    async def _create_device(db_session: AsyncSession) -> Device:
         repo = DeviceRepository(db_session)
         return await repo.create(
             DeviceCreate(

@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from unittest.mock import MagicMock
 
 
-async def _create_device(client: AsyncClient, db_session: AsyncSession) -> Device:
+async def _create_device(_: AsyncClient, db_session: AsyncSession) -> Device:
     device = Device(
         name="Test Device",
         serial_number="SER001",

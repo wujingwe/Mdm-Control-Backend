@@ -1,6 +1,6 @@
 import re
 from collections.abc import AsyncGenerator
-from typing import Any
+from typing import Any, cast
 
 import jwt
 import pytest_asyncio
@@ -8,6 +8,7 @@ from httpx import AsyncClient, ASGITransport
 from sqlalchemy import event
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 
+from app.domains.users.enums import Permission
 from app.main import app
 from app.dependencies import get_db, get_current_user
 from app.domains.users.models import User
@@ -65,7 +66,7 @@ async def client() -> AsyncGenerator[AsyncClient, None]:
                     UserCreate(
                         email="test@example.com",
                         name="Test User",
-                        permissions=frozenset({"admin"}),
+                        permissions=cast(frozenset[Permission], frozenset({"admin"})),
                     )
                 )
             return user
