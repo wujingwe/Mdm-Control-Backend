@@ -1,3 +1,4 @@
+from collections.abc import Mapping
 from datetime import datetime, timezone
 from sqlalchemy import select, func, update
 from sqlalchemy.exc import IntegrityError
@@ -103,3 +104,29 @@ class CommandRepository:
         await self._db.execute(stmt)
         await self._db.commit()
         return await self.get_by_id(command_id)
+
+    async def update_status_reports(
+        self,
+        device_id: int,
+        reports: Mapping[int, tuple[CommandStatus, str | None]],
+    ) -> None:
+        """Apply device-reported statuses only to commands owned by the device."""
+        if not reports:
+            return
+        stmt = select(Command.id).where(Command.device_id == device_id, Command.id.in_(reports))
+        result = await self._db.execute(stmt)
+        valid_ids = set(result.scalars().all())
+        if not valid_ids:
+            return
+        now = datetime.now(timezone.utc)
+        for command_id in valid_ids:
+            status, result_message = reports[command_id]
+            values: dict[str, CommandStatus | str | datetime] = {"status": status}
+            if result_message is not None:
+                values["result_message"] = result_message
+            if status == CommandStatus.COMPLETED:
+                values["completed_at"] = now
+            elif status == CommandStatus.ACKNOWLEDGED:
+                values["acknowledged_at"] = now
+            await self._db.execute(update(Command).where(Command.id == command_id).values(**values))
+        await self._db.commit()

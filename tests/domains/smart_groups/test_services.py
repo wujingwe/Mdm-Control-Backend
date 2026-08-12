@@ -43,14 +43,22 @@ class TestSmartGroupService:
         return m
 
     async def test_list_groups(
-        self, repo: MagicMock[SmartGroupService], profile_repo: MagicMock, mobile_app_repo: MagicMock, reconciliation_service: MagicMock
+        self,
+        repo: MagicMock[SmartGroupService],
+        profile_repo: MagicMock,
+        mobile_app_repo: MagicMock,
+        reconciliation_service: MagicMock,
     ) -> None:
         svc = SmartGroupService(repo, profile_repo, mobile_app_repo, reconciliation_service)
         await svc.list_groups()
         repo.list.assert_called_once_with(skip=0, limit=100)
 
     async def test_get_group(
-        self, repo: MagicMock[SmartGroupService], profile_repo: MagicMock, mobile_app_repo: MagicMock, reconciliation_service: MagicMock
+        self,
+        repo: MagicMock[SmartGroupService],
+        profile_repo: MagicMock,
+        mobile_app_repo: MagicMock,
+        reconciliation_service: MagicMock,
     ) -> None:
         fake = MagicMock()
         repo.get_by_id = AsyncMock(return_value=fake)
@@ -59,7 +67,11 @@ class TestSmartGroupService:
         assert result is fake
 
     async def test_create_group(
-        self, repo: MagicMock[SmartGroupService], profile_repo: MagicMock, mobile_app_repo: MagicMock, reconciliation_service: MagicMock
+        self,
+        repo: MagicMock[SmartGroupService],
+        profile_repo: MagicMock,
+        mobile_app_repo: MagicMock,
+        reconciliation_service: MagicMock,
     ) -> None:
         fake = MagicMock()
         fake.id = 7
@@ -83,7 +95,11 @@ class TestSmartGroupService:
         reconciliation_service.recalculate_profiles_for_group.assert_awaited_once_with(ScopeType.SMART_GROUP, 7)
 
     async def test_update_group(
-        self, repo: MagicMock[SmartGroupService], profile_repo: MagicMock, mobile_app_repo: MagicMock, reconciliation_service: MagicMock
+        self,
+        repo: MagicMock[SmartGroupService],
+        profile_repo: MagicMock,
+        mobile_app_repo: MagicMock,
+        reconciliation_service: MagicMock,
     ) -> None:
         fake = MagicMock()
         repo.update = AsyncMock(return_value=fake)
@@ -93,7 +109,11 @@ class TestSmartGroupService:
         reconciliation_service.recalculate_profiles_for_group.assert_awaited_once_with(ScopeType.SMART_GROUP, 1)
 
     async def test_update_group_not_found(
-        self, repo: MagicMock[SmartGroupService], profile_repo: MagicMock, mobile_app_repo: MagicMock, reconciliation_service: MagicMock
+        self,
+        repo: MagicMock[SmartGroupService],
+        profile_repo: MagicMock,
+        mobile_app_repo: MagicMock,
+        reconciliation_service: MagicMock,
     ) -> None:
         repo.update = AsyncMock(return_value=0)
         svc = SmartGroupService(repo, profile_repo, mobile_app_repo, reconciliation_service)
@@ -102,7 +122,11 @@ class TestSmartGroupService:
         reconciliation_service.recalculate_profiles_for_group.assert_not_called()
 
     async def test_delete_group(
-        self, repo: MagicMock[SmartGroupService], profile_repo: MagicMock, mobile_app_repo: MagicMock, reconciliation_service: MagicMock
+        self,
+        repo: MagicMock[SmartGroupService],
+        profile_repo: MagicMock,
+        mobile_app_repo: MagicMock,
+        reconciliation_service: MagicMock,
     ) -> None:
         fake = MagicMock()
         fake.name = "G"
@@ -113,14 +137,22 @@ class TestSmartGroupService:
         repo.delete.assert_awaited_once_with(1)
 
     async def test_delete_group_not_found(
-        self, repo: MagicMock[SmartGroupService], profile_repo: MagicMock, mobile_app_repo: MagicMock, reconciliation_service: MagicMock
+        self,
+        repo: MagicMock[SmartGroupService],
+        profile_repo: MagicMock,
+        mobile_app_repo: MagicMock,
+        reconciliation_service: MagicMock,
     ) -> None:
         svc = SmartGroupService(repo, profile_repo, mobile_app_repo, reconciliation_service)
         assert await svc.delete_group(1) == 0
         repo.delete.assert_not_awaited()
 
     async def test_delete_group_referenced_by_profile(
-        self, repo: MagicMock[SmartGroupService], profile_repo: MagicMock, mobile_app_repo: MagicMock, reconciliation_service: MagicMock
+        self,
+        repo: MagicMock[SmartGroupService],
+        profile_repo: MagicMock,
+        mobile_app_repo: MagicMock,
+        reconciliation_service: MagicMock,
     ) -> None:
         fake = MagicMock()
         fake.name = "G"
@@ -132,7 +164,11 @@ class TestSmartGroupService:
         repo.delete.assert_not_awaited()
 
     async def test_delete_group_referenced_by_mobile_app(
-        self, repo: MagicMock[SmartGroupService], profile_repo: MagicMock, mobile_app_repo: MagicMock, reconciliation_service: MagicMock
+        self,
+        repo: MagicMock[SmartGroupService],
+        profile_repo: MagicMock,
+        mobile_app_repo: MagicMock,
+        reconciliation_service: MagicMock,
     ) -> None:
         fake = MagicMock()
         fake.name = "G"

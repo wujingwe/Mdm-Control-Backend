@@ -634,7 +634,9 @@ async def ext_devices(
 
     svc, by_serial = devices
     ea = await ExtensionAttributeRepository(db_session).create(
-        ExtensionAttributeCreate(name="field1", data_type=ExtensionDataType.STRING, input_type=ExtensionInputType.TEXT_FIELD),
+        ExtensionAttributeCreate(
+            name="field1", data_type=ExtensionDataType.STRING, input_type=ExtensionInputType.TEXT_FIELD
+        ),
         created_by=1,
     )
     repo = DeviceRepository(db_session)

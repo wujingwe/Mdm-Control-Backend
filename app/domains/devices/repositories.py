@@ -5,6 +5,7 @@ from sqlalchemy.orm import selectinload
 
 from app.infra.core.base import utcnow
 from app.infra.core.exceptions import ConflictError
+from app.infra.core.types import JsonValue
 from app.domains.devices.enums import DeviceStatus
 from app.domains.devices.models import Device, DeviceExtensionAttributeValue
 from app.domains.devices.schemas import DeviceCreate, DevicePatch, DeviceUpdate
@@ -38,11 +39,8 @@ class DeviceRepository:
         result = await self._db.execute(stmt)
         return result.scalar_one_or_none()
 
-    async def update_by_serial(self, serial_number: str, data: DevicePatch) -> Device | None:
-        device = await self.get_by_serial(serial_number)
-        if device is None:
-            return None
-        for field_name, value in data.model_dump(exclude_unset=True).items():
+    async def _apply_values(self, device: Device, values: dict[str, JsonValue]) -> Device:
+        for field_name, value in values.items():
             setattr(device, field_name, value)
         device.updated_at = utcnow()
         try:
@@ -51,6 +49,31 @@ class DeviceRepository:
             await self._db.rollback()
             raise ConflictError("Resource update violates a constraint") from err
         return device
+
+    async def update_loaded(self, device: Device, data: DevicePatch) -> Device:
+        """Apply a patch to a device that has already been loaded in this session."""
+        return await self._apply_values(device, data.model_dump(exclude_unset=True))
+
+    async def upsert_by_serial(self, serial_number: str, data: DeviceCreate) -> tuple[Device, bool]:
+        """Insert the device, or apply the payload to the existing row keyed by serial.
+
+        Returns (device, created) where created is True on first enrollment.
+        The serial_number unique constraint arbitrates the create/update boundary,
+        making concurrent registrations of the same serial race-safe.
+        """
+        instance = Device(**data.model_dump(exclude_unset=True))
+        instance.serial_number = serial_number
+        self._db.add(instance)
+        try:
+            await self._db.commit()
+            await self._db.refresh(instance)
+            return instance, True
+        except IntegrityError as err:
+            await self._db.rollback()
+            device = await self.get_by_serial(serial_number)
+            if device is None:
+                raise ConflictError("Resource already exists") from err
+            return await self._apply_values(device, data.model_dump(exclude_unset=True)), False
 
     async def create(self, data: DeviceCreate) -> Device:
         instance = Device(**data.model_dump(exclude_unset=True))

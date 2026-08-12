@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import logging
-from typing import Any
 from uuid import uuid4
 
+from aio_pika.abc import HeadersType
+
 from app.domains.profiles.schemas.policy import Policy
+from app.infra.core.types import JsonValue
 from app.infra.messaging.broker import broker, exchange
 from app.infra.messaging.schemas import (
     DeviceCommandRequested,
@@ -22,12 +24,12 @@ class RabbitMQProducer:
 
     @staticmethod
     async def publish_json(
-        payload: dict[str, Any],
+        payload: dict[str, JsonValue],
         *,
         routing_key: str,
         message_id: str | None = None,
         correlation_id: str | None = None,
-        headers: dict[str, Any] | None = None,
+        headers: HeadersType | None = None,
     ) -> str:
         published_message_id = message_id or str(uuid4())
         await broker.publish(
@@ -151,7 +153,7 @@ class RabbitMQProducer:
         serial_number: str,
         command_id: int,
         command_type: str,
-        parameters: dict[str, Any],
+        parameters: dict[str, JsonValue],
     ) -> str:
         message = DeviceCommandRequested(
             serial_number=serial_number,

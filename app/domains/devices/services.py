@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 from fastapi import HTTPException, status
 
@@ -7,6 +7,7 @@ from app.domains.devices.enums import ConnectionStatus, DeviceStatus
 from app.domains.devices.models import Device
 from app.domains.devices.repositories import DeviceRepository
 from app.domains.devices.schemas import (
+    Certificate,
     DeviceAuthResponse,
     DeviceCreate,
     DevicePatch,
@@ -21,9 +22,6 @@ from app.infra.core.base import utcnow
 
 RECONCILIATION_TRIGGER_FIELDS = frozenset(
     {
-        "name",
-        "serial_number",
-        "os_version",
         "connection_status",
         "status",
         "battery_status",
@@ -34,6 +32,24 @@ RECONCILIATION_TRIGGER_FIELDS = frozenset(
         "extension_attribute_values",
     }
 )
+
+
+def _latest_certificate_expiry(certificates: list[Certificate] | None) -> datetime | None:
+    latest: datetime | None = None
+    for certificate in certificates or []:
+        if not certificate.expiry:
+            continue
+        try:
+            parsed = datetime.fromisoformat(certificate.expiry.replace("Z", "+00:00"))
+        except ValueError:
+            continue
+        if parsed.tzinfo is None:
+            parsed = parsed.replace(tzinfo=timezone.utc)
+        else:
+            parsed = parsed.astimezone(timezone.utc)
+        if latest is None or parsed > latest:
+            latest = parsed
+    return latest
 
 
 class DeviceService:
@@ -63,15 +79,7 @@ class DeviceService:
         device = await self.repo.get_by_serial(serial_number)
         if device is None:
             return None
-        cert_valid_until: datetime | None = None
-        for certificate in device.certificates or []:
-            if certificate.expiry:
-                try:
-                    parsed = datetime.fromisoformat(certificate.expiry.replace("Z", "+00:00"))
-                except ValueError:
-                    continue
-                if cert_valid_until is None or parsed > cert_valid_until:
-                    cert_valid_until = parsed
+        cert_valid_until = _latest_certificate_expiry(device.certificates)
         if cert_valid_until is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No valid certificate found")
         return DeviceAuthResponse(
@@ -83,40 +91,29 @@ class DeviceService:
     async def update_device(self, device_id: int, data: DeviceUpdate) -> int:
         updated = await self.repo.update(device_id, data)
         if updated and data.model_fields_set & RECONCILIATION_TRIGGER_FIELDS:
-            await self.reconciliation_service.recalculate_profiles_for_device(device_id)
-            await self.reconciliation_service.recalculate_mobile_apps_for_device(device_id)
+            await self._reconcile_device(device_id)
         return updated
+
+    async def _reconcile_device(self, device_id: int) -> None:
+        await self.reconciliation_service.recalculate_profiles_for_device(device_id)
+        await self.reconciliation_service.recalculate_mobile_apps_for_device(device_id)
 
     async def register(self, serial_number: str, data: DeviceRegisterRequest) -> Device:
         """Idempotently bind a device to the backend, keyed by serial."""
-        existing = await self.repo.get_by_serial(serial_number)
         now = utcnow()
-        if existing is None:
-            return await self.repo.create(
-                DeviceCreate(
-                    name=data.name,
-                    serial_number=serial_number,
-                    os_version=data.os_version,
-                    connection_status=ConnectionStatus.UNKNOWN,
-                    status=DeviceStatus.ENROLLED,
-                    last_enrolled_at=now,
-                    certificates=data.certificates,
-                )
-            )
-        device = await self.repo.update_by_serial(
+        device, _ = await self.repo.upsert_by_serial(
             serial_number,
-            DevicePatch(
+            DeviceCreate(
                 name=data.name,
+                serial_number=serial_number,
                 os_version=data.os_version,
+                connection_status=ConnectionStatus.UNKNOWN,
                 status=DeviceStatus.ENROLLED,
                 last_enrolled_at=now,
                 certificates=data.certificates,
             ),
         )
-        if device is None:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Device not found")
-        await self.reconciliation_service.recalculate_profiles_for_device(device.id)
-        await self.reconciliation_service.recalculate_mobile_apps_for_device(device.id)
+        await self._reconcile_device(device.id)
         return device
 
     async def report_in(self, serial_number: str, data: DeviceReportIn) -> Device | None:
@@ -124,31 +121,27 @@ class DeviceService:
         device = await self.repo.get_by_serial(serial_number)
         if device is None:
             return None
-        for command in data.commands or []:
-            record = await self.command_repo.get_by_id(command.command_id)
-            if record is not None and record.device_id == device.id:
-                await self.command_repo.update_status(command.command_id, command.status, command.result_message)
-        for assignment in data.profile_assignments or []:
-            assignment_record = await self.profile_repo.get_assignment_by_id(assignment.assignment_id)
-            if assignment_record is not None and assignment_record.device_id == device.id:
-                await self.profile_repo.update_assignment_report(
-                    assignment.assignment_id, assignment.status, assignment.result_message
-                )
-        for app_assignment in data.mobile_app_assignments or []:
-            mobile_assignment_record = await self.mobile_app_repo.get_assignment_by_id(app_assignment.assignment_id)
-            if mobile_assignment_record is not None and mobile_assignment_record.device_id == device.id:
-                await self.mobile_app_repo.update_assignment_report(
-                    app_assignment.assignment_id, app_assignment.status, app_assignment.result_message
-                )
+        if data.commands:
+            await self.command_repo.update_status_reports(
+                device.id,
+                {item.command_id: (item.status, item.result_message) for item in data.commands},
+            )
+        if data.profile_assignments:
+            await self.profile_repo.update_assignment_reports(
+                device.id,
+                {item.assignment_id: (item.status, item.result_message) for item in data.profile_assignments},
+            )
+        if data.mobile_app_assignments:
+            await self.mobile_app_repo.update_assignment_reports(
+                device.id,
+                {item.assignment_id: (item.status, item.result_message) for item in data.mobile_app_assignments},
+            )
         fields = data.model_dump(
             exclude_unset=True, exclude={"commands", "profile_assignments", "mobile_app_assignments"}
         )
         if not fields:
             return device
-        updated = await self.repo.update_by_serial(serial_number, DevicePatch(**fields))
-        if updated is None:
-            return device
+        updated = await self.repo.update_loaded(device, DevicePatch(**fields))
         if data.model_fields_set & RECONCILIATION_TRIGGER_FIELDS:
-            await self.reconciliation_service.recalculate_profiles_for_device(device.id)
-            await self.reconciliation_service.recalculate_mobile_apps_for_device(device.id)
+            await self._reconcile_device(device.id)
         return updated

@@ -1,10 +1,12 @@
 from abc import ABC, abstractmethod
-from typing import Any, Generic, TypeVar
+from typing import Generic, TypeVar
 
 from sqlalchemy import JSON, TypeDecorator
 from sqlalchemy.engine.interfaces import Dialect
 
 from app.domains.devices.schemas import Certificate, Network
+
+type JsonValue = str | int | float | bool | None | list[JsonValue] | dict[str, JsonValue]
 
 S = TypeVar("S")
 T = TypeVar("T")
@@ -30,25 +32,25 @@ class JsonType(TypeDecorator[T], ABC, Generic[S, T]):
     def _result(self, value: S) -> T: ...
 
 
-class NetworkInfoType(JsonType[dict[str, Any], Network]):
+class NetworkInfoType(JsonType[dict[str, JsonValue], Network]):
     cache_ok = True
 
-    def _bind(self, value: Network | dict[str, Any]) -> dict[str, Any]:
+    def _bind(self, value: Network | dict[str, JsonValue]) -> dict[str, JsonValue]:
         if isinstance(value, Network):
             return value.model_dump()
         return value
 
-    def _result(self, value: dict[str, Any]) -> Network:
+    def _result(self, value: dict[str, JsonValue]) -> Network:
         return Network.model_validate(value)
 
 
-class CertificateListType(JsonType[list[dict[str, Any]], list[Certificate]]):
+class CertificateListType(JsonType[list[dict[str, JsonValue]], list[Certificate]]):
     cache_ok = True
 
-    def _bind(self, value: list[Certificate] | list[dict[str, Any]]) -> list[dict[str, Any]]:
+    def _bind(self, value: list[Certificate] | list[dict[str, JsonValue]]) -> list[dict[str, JsonValue]]:
         return [c.model_dump() if isinstance(c, Certificate) else c for c in value]
 
-    def _result(self, value: list[dict[str, Any]]) -> list[Certificate]:
+    def _result(self, value: list[dict[str, JsonValue]]) -> list[Certificate]:
         return [Certificate.model_validate(c) for c in value]
 
 

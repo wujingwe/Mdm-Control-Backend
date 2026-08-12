@@ -1,4 +1,8 @@
-from pydantic_settings import BaseSettings
+# The pydantic mypy plugin reports an internal generated ``Any`` on this model.
+# The fields below are explicitly typed; keep the exception scoped to this module.
+# mypy: disable-error-code=explicit-any
+
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -20,7 +24,7 @@ class Settings(BaseSettings):
 
     mock_db: bool = False
 
-    model_config = {"env_file": ".env", "extra": "ignore"}
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
 
 settings = Settings()

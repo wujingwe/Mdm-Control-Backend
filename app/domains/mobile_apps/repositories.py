@@ -1,3 +1,4 @@
+from collections.abc import Mapping
 from datetime import datetime, timezone
 
 from sqlalchemy import select, func, update, delete
@@ -140,6 +141,37 @@ class MobileAppRepository:
         await self._db.execute(stmt)
         await self._db.commit()
 
+    async def update_assignment_reports(
+        self,
+        device_id: int,
+        reports: Mapping[int, tuple[AssignmentStatus, str | None]],
+    ) -> None:
+        """Apply device-reported statuses only to assignments owned by the device."""
+        if not reports:
+            return
+        stmt = select(MobileAppAssignment.id).where(
+            MobileAppAssignment.device_id == device_id,
+            MobileAppAssignment.id.in_(reports),
+        )
+        result = await self._db.execute(stmt)
+        valid_ids = set(result.scalars().all())
+        if not valid_ids:
+            return
+        now = datetime.now(timezone.utc)
+        for assignment_id in valid_ids:
+            status, result_message = reports[assignment_id]
+            values: dict[str, AssignmentStatus | str | datetime | None] = {"status": status}
+            if status == AssignmentStatus.SENT:
+                values["acknowledged_at"] = now
+            elif status == AssignmentStatus.APPLIED:
+                values["completed_at"] = now
+                values["applied_at"] = now
+            values["last_error"] = result_message if status == AssignmentStatus.FAILED else None
+            await self._db.execute(
+                update(MobileAppAssignment).where(MobileAppAssignment.id == assignment_id).values(**values)
+            )
+        await self._db.commit()
+
     async def upsert_assignment(self, data: MobileAppAssignmentUpsert) -> MobileAppAssignment:
         latest = await self.get_assignment(data.mobile_app_id, data.device_id)
         if data.version is None:
@@ -247,27 +279,45 @@ class MobileAppRepository:
         return version
 
     async def mark_assignment_sent(self, assignment_id: int, message_id: str) -> None:
-        assignment = await self._db.get(MobileAppAssignment, assignment_id)
-        if assignment:
+        await self.mark_assignments_sent({assignment_id: message_id})
+
+    async def mark_assignments_sent(self, message_ids: dict[int, str]) -> None:
+        if not message_ids:
+            return
+        assignments = await self._load_assignments(message_ids)
+        now = datetime.now(timezone.utc)
+        for assignment in assignments:
             assignment.status = (
                 AssignmentStatus.REVOKE_PENDING
                 if assignment.desired_state == AssignmentDesiredState.ABSENT
                 else AssignmentStatus.SENT
             )
-            assignment.message_id = message_id
+            assignment.message_id = message_ids[assignment.id]
             assignment.attempt_count += 1
-            assignment.last_attempt_at = datetime.now(timezone.utc)
+            assignment.last_attempt_at = now
             assignment.last_error = None
+        if assignments:
             await self._db.commit()
 
     async def mark_assignment_failed(self, assignment_id: int, error: str) -> None:
-        assignment = await self._db.get(MobileAppAssignment, assignment_id)
-        if assignment:
+        await self.mark_assignments_failed({assignment_id: error})
+
+    async def mark_assignments_failed(self, errors: dict[int, str]) -> None:
+        if not errors:
+            return
+        assignments = await self._load_assignments(errors)
+        now = datetime.now(timezone.utc)
+        for assignment in assignments:
             assignment.status = AssignmentStatus.FAILED
             assignment.attempt_count += 1
-            assignment.last_attempt_at = datetime.now(timezone.utc)
-            assignment.last_error = error[:2000]
+            assignment.last_attempt_at = now
+            assignment.last_error = errors[assignment.id][:2000]
+        if assignments:
             await self._db.commit()
+
+    async def _load_assignments(self, assignment_ids: Mapping[int, object]) -> list[MobileAppAssignment]:
+        result = await self._db.execute(select(MobileAppAssignment).where(MobileAppAssignment.id.in_(assignment_ids)))
+        return list(result.scalars().all())
 
     async def list_mobile_apps_referencing(self, scope_type: ScopeType, target_id: int) -> list[MobileApp]:
         """Return mobile apps whose scope references the given entity as a target or exclusion."""

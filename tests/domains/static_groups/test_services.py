@@ -41,7 +41,11 @@ class TestStaticGroupService:
         return m
 
     async def test_list_groups(
-        self, repo: MagicMock[StaticGroupRepository], profile_repo: MagicMock, mobile_app_repo: MagicMock, reconciliation_service: MagicMock
+        self,
+        repo: MagicMock[StaticGroupRepository],
+        profile_repo: MagicMock,
+        mobile_app_repo: MagicMock,
+        reconciliation_service: MagicMock,
     ) -> None:
         svc = StaticGroupService(repo, profile_repo, mobile_app_repo, reconciliation_service)
         result = await svc.list_groups()
@@ -50,14 +54,22 @@ class TestStaticGroupService:
         repo.count.assert_awaited_once()
 
     async def test_list_groups_paginated(
-        self, repo: MagicMock[StaticGroupRepository], profile_repo: MagicMock, mobile_app_repo: MagicMock, reconciliation_service: MagicMock
+        self,
+        repo: MagicMock[StaticGroupRepository],
+        profile_repo: MagicMock,
+        mobile_app_repo: MagicMock,
+        reconciliation_service: MagicMock,
     ) -> None:
         svc = StaticGroupService(repo, profile_repo, mobile_app_repo, reconciliation_service)
         await svc.list_groups(skip=5, limit=15)
         repo.list.assert_called_once_with(skip=5, limit=15)
 
     async def test_get_group_found(
-        self, repo: MagicMock[StaticGroupRepository], profile_repo: MagicMock, mobile_app_repo: MagicMock, reconciliation_service: MagicMock
+        self,
+        repo: MagicMock[StaticGroupRepository],
+        profile_repo: MagicMock,
+        mobile_app_repo: MagicMock,
+        reconciliation_service: MagicMock,
     ) -> None:
         fake = MagicMock()
         repo.get_by_id = AsyncMock(return_value=fake)
@@ -66,14 +78,22 @@ class TestStaticGroupService:
         assert result is fake
 
     async def test_get_group_not_found(
-        self, repo: MagicMock[StaticGroupRepository], profile_repo: MagicMock, mobile_app_repo: MagicMock, reconciliation_service: MagicMock
+        self,
+        repo: MagicMock[StaticGroupRepository],
+        profile_repo: MagicMock,
+        mobile_app_repo: MagicMock,
+        reconciliation_service: MagicMock,
     ) -> None:
         svc = StaticGroupService(repo, profile_repo, mobile_app_repo, reconciliation_service)
         result = await svc.get_group(999)
         assert result is None
 
     async def test_create_group(
-        self, repo: MagicMock[StaticGroupRepository], profile_repo: MagicMock, mobile_app_repo: MagicMock, reconciliation_service: MagicMock
+        self,
+        repo: MagicMock[StaticGroupRepository],
+        profile_repo: MagicMock,
+        mobile_app_repo: MagicMock,
+        reconciliation_service: MagicMock,
     ) -> None:
         fake = MagicMock()
         fake.id = 7
@@ -86,7 +106,11 @@ class TestStaticGroupService:
         reconciliation_service.recalculate_profiles_for_group.assert_awaited_once_with(ScopeType.STATIC_GROUP, 7)
 
     async def test_update_group(
-        self, repo: MagicMock[StaticGroupRepository], profile_repo: MagicMock, mobile_app_repo: MagicMock, reconciliation_service: MagicMock
+        self,
+        repo: MagicMock[StaticGroupRepository],
+        profile_repo: MagicMock,
+        mobile_app_repo: MagicMock,
+        reconciliation_service: MagicMock,
     ) -> None:
         fake = MagicMock()
         repo.update = AsyncMock(return_value=fake)
@@ -96,7 +120,11 @@ class TestStaticGroupService:
         reconciliation_service.recalculate_profiles_for_group.assert_awaited_once_with(ScopeType.STATIC_GROUP, 1)
 
     async def test_update_group_not_found(
-        self, repo: MagicMock[StaticGroupRepository], profile_repo: MagicMock, mobile_app_repo: MagicMock, reconciliation_service: MagicMock
+        self,
+        repo: MagicMock[StaticGroupRepository],
+        profile_repo: MagicMock,
+        mobile_app_repo: MagicMock,
+        reconciliation_service: MagicMock,
     ) -> None:
         repo.update = AsyncMock(return_value=0)
         svc = StaticGroupService(repo, profile_repo, mobile_app_repo, reconciliation_service)
@@ -105,7 +133,11 @@ class TestStaticGroupService:
         reconciliation_service.recalculate_profiles_for_group.assert_not_called()
 
     async def test_delete_group(
-        self, repo: MagicMock[StaticGroupRepository], profile_repo: MagicMock, mobile_app_repo: MagicMock, reconciliation_service: MagicMock
+        self,
+        repo: MagicMock[StaticGroupRepository],
+        profile_repo: MagicMock,
+        mobile_app_repo: MagicMock,
+        reconciliation_service: MagicMock,
     ) -> None:
         fake = MagicMock()
         fake.name = "G"
@@ -116,14 +148,22 @@ class TestStaticGroupService:
         repo.delete.assert_awaited_once_with(1)
 
     async def test_delete_group_not_found(
-        self, repo: MagicMock[StaticGroupRepository], profile_repo: MagicMock, mobile_app_repo: MagicMock, reconciliation_service: MagicMock
+        self,
+        repo: MagicMock[StaticGroupRepository],
+        profile_repo: MagicMock,
+        mobile_app_repo: MagicMock,
+        reconciliation_service: MagicMock,
     ) -> None:
         svc = StaticGroupService(repo, profile_repo, mobile_app_repo, reconciliation_service)
         assert await svc.delete_group(1) == 0
         repo.delete.assert_not_awaited()
 
     async def test_delete_group_referenced_by_profile(
-        self, repo: MagicMock[StaticGroupRepository], profile_repo: MagicMock, mobile_app_repo: MagicMock, reconciliation_service: MagicMock
+        self,
+        repo: MagicMock[StaticGroupRepository],
+        profile_repo: MagicMock,
+        mobile_app_repo: MagicMock,
+        reconciliation_service: MagicMock,
     ) -> None:
         fake = MagicMock()
         fake.name = "G"
@@ -135,7 +175,11 @@ class TestStaticGroupService:
         repo.delete.assert_not_awaited()
 
     async def test_delete_group_referenced_by_mobile_app(
-        self, repo: MagicMock[StaticGroupRepository], profile_repo: MagicMock, mobile_app_repo: MagicMock, reconciliation_service: MagicMock
+        self,
+        repo: MagicMock[StaticGroupRepository],
+        profile_repo: MagicMock,
+        mobile_app_repo: MagicMock,
+        reconciliation_service: MagicMock,
     ) -> None:
         fake = MagicMock()
         fake.name = "G"

@@ -163,7 +163,7 @@ class TestProfileRepository:
                 profile_id=profile.id,
                 device_id=100,
                 status=AssignmentStatus.APPLIED,
-                profile_version=1,
+                profile_version=2,
             )
         )
         await repo.upsert_assignment(
@@ -187,7 +187,7 @@ class TestProfileRepository:
                 profile_id=profile.id,
                 device_id=100,
                 status=AssignmentStatus.PENDING,
-                profile_version=1,
+                profile_version=3,
             )
         )
         await repo.upsert_assignment(
@@ -551,6 +551,70 @@ class TestProfileRepository:
         assert updated.applied_at is not None
         assert updated.acknowledged_at is None
         assert updated.last_error is None
+
+    async def test_update_assignment_reports_filters_by_device_and_handles_statuses(
+        self, db_session: AsyncSession
+    ) -> None:
+        repo = ProfileRepository(db_session)
+        profile = await repo.create(ProfileCreate(name="BatchReports", policy=Policy(), scope=Scope()), created_by=1)
+        applied = await repo.upsert_assignment(
+            AssignmentUpsert(
+                profile_id=profile.id,
+                device_id=1,
+                status=AssignmentStatus.SENT,
+                desired_state=AssignmentDesiredState.PRESENT,
+                profile_version=1,
+            )
+        )
+        sent = await repo.upsert_assignment(
+            AssignmentUpsert(
+                profile_id=profile.id,
+                device_id=1,
+                status=AssignmentStatus.PENDING,
+                desired_state=AssignmentDesiredState.PRESENT,
+                profile_version=2,
+            )
+        )
+        failed = await repo.upsert_assignment(
+            AssignmentUpsert(
+                profile_id=profile.id,
+                device_id=1,
+                status=AssignmentStatus.PENDING,
+                desired_state=AssignmentDesiredState.PRESENT,
+                profile_version=3,
+            )
+        )
+        foreign = await repo.upsert_assignment(
+            AssignmentUpsert(
+                profile_id=profile.id,
+                device_id=2,
+                status=AssignmentStatus.PENDING,
+                desired_state=AssignmentDesiredState.PRESENT,
+                profile_version=1,
+            )
+        )
+
+        await repo.update_assignment_reports(
+            1,
+            {
+                applied.id: (AssignmentStatus.APPLIED, None),
+                sent.id: (AssignmentStatus.SENT, None),
+                failed.id: (AssignmentStatus.FAILED, "failed"),
+                foreign.id: (AssignmentStatus.APPLIED, "must remain pending"),
+            },
+        )
+        updated_applied = await repo.get_assignment_by_id(applied.id)
+        updated_sent = await repo.get_assignment_by_id(sent.id)
+        updated_failed = await repo.get_assignment_by_id(failed.id)
+        untouched_foreign = await repo.get_assignment_by_id(foreign.id)
+        assert updated_applied is not None and updated_applied.applied_at is not None
+        assert updated_applied.completed_at is not None
+        assert updated_sent is not None and updated_sent.acknowledged_at is not None
+        assert updated_failed is not None and updated_failed.last_error == "failed"
+        assert untouched_foreign is not None and untouched_foreign.status == AssignmentStatus.PENDING
+
+        await repo.update_assignment_reports(1, {})
+        await repo.update_assignment_reports(1, {999: (AssignmentStatus.APPLIED, "unknown")})
 
     async def test_update_assignment_report_acknowledged(self, db_session: AsyncSession) -> None:
         repo = ProfileRepository(db_session)

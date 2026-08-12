@@ -54,7 +54,7 @@ async def get_current_user(
 
 def require_permission(
     permission: str,
-) -> Callable[..., Awaitable[User]]:
+) -> Callable[[User], Awaitable[User]]:
     async def _check(current_user: User = Depends(get_current_user)) -> User:
         allowed = "admin" in current_user.permissions or permission in current_user.permissions
         logger.info(

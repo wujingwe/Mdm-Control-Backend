@@ -664,6 +664,51 @@ class TestMobileAppRepository:
         assert updated.acknowledged_at is None
         assert updated.last_error is None
 
+    async def test_update_assignment_reports_filters_by_device_and_handles_statuses(
+        self, db_session: AsyncSession
+    ) -> None:
+        repo = MobileAppRepository(db_session)
+        app = await repo.create(
+            MobileAppCreate(
+                name="BatchReports", enabled=True, package_version="1.0", package_name="com.batch", scope=Scope()
+            ),
+            created_by=1,
+        )
+        applied = await repo.upsert_assignment(
+            MobileAppAssignmentUpsert(mobile_app_id=app.id, device_id=1, status=AssignmentStatus.SENT, version=1)
+        )
+        sent = await repo.upsert_assignment(
+            MobileAppAssignmentUpsert(mobile_app_id=app.id, device_id=1, status=AssignmentStatus.PENDING, version=2)
+        )
+        failed = await repo.upsert_assignment(
+            MobileAppAssignmentUpsert(mobile_app_id=app.id, device_id=1, status=AssignmentStatus.PENDING, version=3)
+        )
+        foreign = await repo.upsert_assignment(
+            MobileAppAssignmentUpsert(mobile_app_id=app.id, device_id=2, status=AssignmentStatus.PENDING, version=1)
+        )
+
+        await repo.update_assignment_reports(
+            1,
+            {
+                applied.id: (AssignmentStatus.APPLIED, None),
+                sent.id: (AssignmentStatus.SENT, None),
+                failed.id: (AssignmentStatus.FAILED, "failed"),
+                foreign.id: (AssignmentStatus.APPLIED, "must remain pending"),
+            },
+        )
+        updated_applied = await repo.get_assignment_by_id(applied.id)
+        updated_sent = await repo.get_assignment_by_id(sent.id)
+        updated_failed = await repo.get_assignment_by_id(failed.id)
+        untouched_foreign = await repo.get_assignment_by_id(foreign.id)
+        assert updated_applied is not None and updated_applied.applied_at is not None
+        assert updated_applied.completed_at is not None
+        assert updated_sent is not None and updated_sent.acknowledged_at is not None
+        assert updated_failed is not None and updated_failed.last_error == "failed"
+        assert untouched_foreign is not None and untouched_foreign.status == AssignmentStatus.PENDING
+
+        await repo.update_assignment_reports(1, {})
+        await repo.update_assignment_reports(1, {999: (AssignmentStatus.APPLIED, "unknown")})
+
     async def test_update_assignment_report_acknowledged(self, db_session: AsyncSession) -> None:
         repo = MobileAppRepository(db_session)
         app = await repo.create(

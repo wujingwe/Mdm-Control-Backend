@@ -1,4 +1,4 @@
-from typing import Any, Generic, Protocol, TypeVar
+from typing import Generic, Protocol, TypeVar
 
 from pydantic import BaseModel
 
@@ -7,17 +7,11 @@ from app.domains.profiles.repositories import ProfileRepository
 from app.domains.shared.reconciliation_service import ReconciliationService
 from app.domains.shared.scope import ScopeType
 from app.infra.core.exceptions import ConflictError
+from app.infra.core.base import Base
 
-T = TypeVar("T", bound="NamedEntity")
+T = TypeVar("T", bound=Base)
 C = TypeVar("C", bound=BaseModel, contravariant=True)
 U = TypeVar("U", bound=BaseModel, contravariant=True)
-
-
-class NamedEntity(Protocol):
-    # `id`/`name` come from SQLAlchemy models (declared as Mapped), so keep them
-    # structural Any rather than int/str.
-    id: Any
-    name: Any
 
 
 class GroupRepositoryProtocol(Protocol[T, C, U]):
@@ -56,7 +50,7 @@ class GroupScopeService(Generic[T, C, U]):
     async def create_group(self, data: C, created_by: int) -> T:
         group = await self.repo.create(data, created_by)
         if group:
-            await self.reconciliation_service.recalculate_profiles_for_group(self.scope_type, group.id)
+            await self.reconciliation_service.recalculate_profiles_for_group(self.scope_type, getattr(group, "id"))
         return group
 
     async def update_group(self, group_id: int, data: U) -> int:
@@ -72,7 +66,7 @@ class GroupScopeService(Generic[T, C, U]):
         references = await self._list_scope_reference_labels(self.scope_type, group_id)
         if references:
             raise ConflictError(
-                f"Cannot delete {self.entity_label} '{group.name}' "
+                f"Cannot delete {self.entity_label} '{getattr(group, 'name', group_id)}' "
                 f"while it is still referenced by: {', '.join(references)}."
             )
         return await self.repo.delete(group_id)

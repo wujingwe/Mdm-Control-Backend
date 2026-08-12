@@ -1,5 +1,4 @@
 from datetime import datetime
-from typing import Any
 
 from sqlalchemy import (
     ForeignKey,
@@ -17,6 +16,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.infra.core.base import Base, utcnow
+from app.infra.core.types import JsonValue
 from app.domains.profiles.enums import AssignmentDesiredState, AssignmentStatus
 from app.domains.profiles.schemas.policy import Policy
 from app.domains.shared.scope import Scope
@@ -27,14 +27,16 @@ class ScopeColumnType(TypeDecorator[Scope]):
     impl = JSON
     cache_ok = True
 
-    def process_bind_param(self, value: Scope | dict[str, Any] | None, dialect: Dialect) -> dict[str, Any] | None:
+    def process_bind_param(
+        self, value: Scope | dict[str, JsonValue] | None, dialect: Dialect
+    ) -> dict[str, JsonValue] | None:
         if value is None:
             return None
         if isinstance(value, dict):
             return value
         return value.model_dump()
 
-    def process_result_value(self, value: dict[str, Any] | None, dialect: Dialect) -> Scope | None:
+    def process_result_value(self, value: dict[str, JsonValue] | None, dialect: Dialect) -> Scope | None:
         if value is None:
             return None
         return Scope.model_validate(value)
@@ -44,14 +46,16 @@ class PolicyColumnType(TypeDecorator[Policy]):
     impl = JSON
     cache_ok = True
 
-    def process_bind_param(self, value: Policy | dict[str, Any] | None, dialect: Dialect) -> dict[str, Any] | None:
+    def process_bind_param(
+        self, value: Policy | dict[str, JsonValue] | None, dialect: Dialect
+    ) -> dict[str, JsonValue] | None:
         if value is None:
             return None
         if isinstance(value, dict):
             return value
         return value.model_dump()
 
-    def process_result_value(self, value: dict[str, Any] | None, dialect: Dialect) -> Policy | None:
+    def process_result_value(self, value: dict[str, JsonValue] | None, dialect: Dialect) -> Policy | None:
         if value is None:
             return None
         return Policy.model_validate(value)

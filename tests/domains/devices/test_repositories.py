@@ -11,7 +11,8 @@ from app.domains.devices.schemas import (
     DeviceResponse,
     DeviceUpdate,
     Network,
-    Wifi, ExtensionAttributeValueCreate,
+    Wifi,
+    ExtensionAttributeValueCreate,
 )
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -73,7 +74,9 @@ class TestDeviceRepository:
 
         ea_repo = ExtensionAttributeRepository(db_session)
         ea = await ea_repo.create(
-            ExtensionAttributeCreate(name="field1", data_type=ExtensionDataType.STRING, input_type=ExtensionInputType.TEXT_FIELD),
+            ExtensionAttributeCreate(
+                name="field1", data_type=ExtensionDataType.STRING, input_type=ExtensionInputType.TEXT_FIELD
+            ),
             created_by=1,
         )
 
@@ -363,7 +366,9 @@ class TestDeviceRepository:
 
         ea_repo = ExtensionAttributeRepository(db_session)
         ea1 = await ea_repo.create(
-            ExtensionAttributeCreate(name="field1", data_type=ExtensionDataType.STRING, input_type=ExtensionInputType.TEXT_FIELD),
+            ExtensionAttributeCreate(
+                name="field1", data_type=ExtensionDataType.STRING, input_type=ExtensionInputType.TEXT_FIELD
+            ),
             created_by=1,
         )
 
@@ -396,7 +401,9 @@ class TestDeviceRepository:
 
         ea_repo = ExtensionAttributeRepository(db_session)
         ea1 = await ea_repo.create(
-            ExtensionAttributeCreate(name="field1", data_type=ExtensionDataType.STRING, input_type=ExtensionInputType.TEXT_FIELD),
+            ExtensionAttributeCreate(
+                name="field1", data_type=ExtensionDataType.STRING, input_type=ExtensionInputType.TEXT_FIELD
+            ),
             created_by=1,
         )
 
@@ -432,7 +439,9 @@ class TestDeviceRepository:
 
         ea_repo = ExtensionAttributeRepository(db_session)
         ea = await ea_repo.create(
-            ExtensionAttributeCreate(name="field1", data_type=ExtensionDataType.STRING, input_type=ExtensionInputType.TEXT_FIELD),
+            ExtensionAttributeCreate(
+                name="field1", data_type=ExtensionDataType.STRING, input_type=ExtensionInputType.TEXT_FIELD
+            ),
             created_by=1,
         )
 
@@ -467,7 +476,9 @@ class TestDeviceRepository:
 
         ea_repo = ExtensionAttributeRepository(db_session)
         ea1 = await ea_repo.create(
-            ExtensionAttributeCreate(name="field1", data_type=ExtensionDataType.STRING, input_type=ExtensionInputType.TEXT_FIELD),
+            ExtensionAttributeCreate(
+                name="field1", data_type=ExtensionDataType.STRING, input_type=ExtensionInputType.TEXT_FIELD
+            ),
             created_by=1,
         )
         ea2 = await ea_repo.create(
@@ -541,7 +552,9 @@ class TestDeviceRepository:
 
         ea_repo = ExtensionAttributeRepository(db_session)
         ea = await ea_repo.create(
-            ExtensionAttributeCreate(name="field1", data_type=ExtensionDataType.STRING, input_type=ExtensionInputType.TEXT_FIELD),
+            ExtensionAttributeCreate(
+                name="field1", data_type=ExtensionDataType.STRING, input_type=ExtensionInputType.TEXT_FIELD
+            ),
             created_by=1,
         )
 
@@ -583,6 +596,42 @@ class TestDeviceRepository:
         await repo.create(_make_device_data())
         with pytest.raises(ConflictError):
             await repo.create(_make_device_data())
+
+    async def test_upsert_by_serial_creates(self, db_session: AsyncSession) -> None:
+        repo = DeviceRepository(db_session)
+        device, created = await repo.upsert_by_serial("SN-UP-001", _make_device_data(serial="SN-UP-001"))
+        assert created is True
+        assert device.id is not None
+        assert device.serial_number == "SN-UP-001"
+        assert await repo.count() == 1
+
+    async def test_upsert_by_serial_updates_existing(self, db_session: AsyncSession) -> None:
+        repo = DeviceRepository(db_session)
+        original = await repo.create(
+            _make_device_data(serial="SN-UP-002", name="Original").model_copy(
+                update={"connection_status": ConnectionStatus.CONNECTED}
+            )
+        )
+        device, created = await repo.upsert_by_serial(
+            "SN-UP-002",
+            _make_device_data(serial="SN-UP-002", name="Renamed").model_copy(
+                update={"connection_status": ConnectionStatus.DISCONNECTED}
+            ),
+        )
+        assert created is False
+        assert device.id == original.id
+        assert device.name == "Renamed"
+        assert device.connection_status == "Disconnected"
+        assert device.updated_at >= original.updated_at
+        assert await repo.count() == 1
+
+    async def test_upsert_by_serial_is_idempotent(self, db_session: AsyncSession) -> None:
+        repo = DeviceRepository(db_session)
+        _, created_first = await repo.upsert_by_serial("SN-UP-003", _make_device_data(serial="SN-UP-003"))
+        _, created_second = await repo.upsert_by_serial("SN-UP-003", _make_device_data(serial="SN-UP-003"))
+        assert created_first is True
+        assert created_second is False
+        assert await repo.count() == 1
 
     async def test_create_with_network_and_certificates(self, db_session: AsyncSession) -> None:
         repo = DeviceRepository(db_session)

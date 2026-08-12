@@ -9,7 +9,10 @@ from app.domains.devices.schemas import (
     DeviceResponse,
     DeviceUpdate,
     Network,
-    Wifi, ExtensionAttributeValueCreate, CommandReportIn, ProfileAssignmentReportIn,
+    Wifi,
+    ExtensionAttributeValueCreate,
+    CommandReportIn,
+    ProfileAssignmentReportIn,
 )
 from app.domains.mobile_apps.schemas import MobileAppAssignmentReportIn
 from app.domains.profiles.enums import AssignmentStatus
@@ -267,9 +270,7 @@ class TestDeviceReportInSchema:
             status=DeviceStatus.ENROLLED,
             mobile_app_assignments=[
                 MobileAppAssignmentReportIn(
-                    assignment_id=9,
-                    status=AssignmentStatus.FAILED,
-                    result_message="install error"
+                    assignment_id=9, status=AssignmentStatus.FAILED, result_message="install error"
                 ),
             ],
         )

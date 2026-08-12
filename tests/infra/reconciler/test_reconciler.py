@@ -628,6 +628,41 @@ class TestRecalculateMobileAppsForStaticGroup:
 
 
 class TestResolveScope:
+    async def test_duplicate_scope_entries_are_resolved_once(self) -> None:
+        producer = _make_producer()
+        device_repo = MagicMock(spec=DeviceRepository)
+        device_repo.list_enrolled_ids = AsyncMock(return_value={1})
+        device_repo.resolve_device_ids = AsyncMock(return_value={2})
+        smart_group_repo = MagicMock(spec=SmartGroupRepository)
+        smart_group_repo.resolve_device_ids = AsyncMock(return_value={3})
+        reconciler = AssignmentReconciler(
+            MagicMock(spec=ProfileRepository),
+            MagicMock(spec=MobileAppRepository),
+            device_repo,
+            smart_group_repo,
+            producer,
+        )
+        scope = Scope(
+            targets=[
+                ScopeTarget(scope_type=ScopeType.ALL_DEVICES),
+                ScopeTarget(scope_type=ScopeType.ALL_DEVICES),
+                ScopeTarget(scope_type=ScopeType.SMART_GROUP, target_id=4),
+                ScopeTarget(scope_type=ScopeType.SMART_GROUP, target_id=4),
+            ],
+            exclusions=[
+                ScopeExclusion(scope_type=ScopeType.DEVICE, exclude_id=9),
+                ScopeExclusion(scope_type=ScopeType.DEVICE, exclude_id=9),
+            ],
+        )
+
+        resolved = await reconciler._resolve_scope(scope)
+
+        assert resolved[(ScopeType.ALL_DEVICES, None)] == {1}
+        assert resolved[(ScopeType.SMART_GROUP, 4)] == {3}
+        assert resolved[(ScopeType.DEVICE, 9)] == {9}
+        device_repo.list_enrolled_ids.assert_awaited_once()
+        smart_group_repo.resolve_device_ids.assert_awaited_once_with(4)
+
     async def test_exclusion_with_no_device_ids(self, db_session: AsyncSession) -> None:
         producer = _make_producer()
         profile_repo = ProfileRepository(db_session)
@@ -839,7 +874,7 @@ class TestSendPushMessages:
         )
 
         device_ids_without_assignment = {device.id}
-        empty_assignments: dict[int, ProfileAssignment] = {}
+        empty_assignments: dict[int, int] = {}
 
         await reconciler._send_push_messages(
             profile,
@@ -898,7 +933,7 @@ class TestSendRevokeMessages:
         assignments = await profile_repo.get_current_assignments(profile.id)
         assignment = assignments[0]
 
-        assignment_dict = {assignment.device_id: assignment}
+        assignment_dict = {assignment.device_id: assignment.id}
 
         await reconciler._send_revoke_messages(
             profile,
@@ -935,7 +970,7 @@ class TestSendMobileAppPushMessages:
         producer.publish_mobile_app_push.reset_mock()
 
         assignments = await app_repo.get_current_assignments(app.id)
-        assignment_dict = {a.device_id: a for a in assignments}
+        assignment_dict = {a.device_id: a.id for a in assignments}
 
         await reconciler._send_mobile_app_push_messages(
             app,
@@ -997,7 +1032,7 @@ class TestSendMobileAppPushMessages:
         await reconciler.recalculate_mobile_app(app.id)
 
         assignments = await app_repo.get_current_assignments(app.id)
-        assignment_dict = {a.device_id: a for a in assignments}
+        assignment_dict = {a.device_id: a.id for a in assignments}
 
         await reconciler._send_mobile_app_push_messages(
             app,
@@ -1032,7 +1067,7 @@ class TestSendMobileAppRevokeMessages:
         await reconciler.recalculate_mobile_app(app.id)
 
         assignments = await app_repo.get_current_assignments(app.id)
-        assignment_dict = {a.device_id: a for a in assignments}
+        assignment_dict = {a.device_id: a.id for a in assignments}
 
         await reconciler._send_mobile_app_revoke_messages(
             app,
@@ -1093,7 +1128,7 @@ class TestSendMobileAppRevokeMessages:
         await reconciler.recalculate_mobile_app(app.id)
 
         assignments = await app_repo.get_current_assignments(app.id)
-        assignment_dict = {a.device_id: a for a in assignments}
+        assignment_dict = {a.device_id: a.id for a in assignments}
 
         await reconciler._send_mobile_app_revoke_messages(
             app,
@@ -1333,7 +1368,7 @@ class TestSendPushMessagesExceptionWithAssignment:
         await reconciler.recalculate_profile(profile.id)
 
         assignments = await profile_repo.get_current_assignments(profile.id)
-        assignment_dict = {a.device_id: a for a in assignments}
+        assignment_dict = {a.device_id: a.id for a in assignments}
 
         await reconciler._send_push_messages(
             profile,
@@ -1372,7 +1407,7 @@ class TestSendRevokeMessagesExceptionWithAssignment:
         await reconciler.recalculate_profile(profile.id)
 
         assignments = await profile_repo.get_current_assignments(profile.id)
-        assignment_dict = {a.device_id: a for a in assignments}
+        assignment_dict = {a.device_id: a.id for a in assignments}
 
         await reconciler._send_revoke_messages(
             profile,

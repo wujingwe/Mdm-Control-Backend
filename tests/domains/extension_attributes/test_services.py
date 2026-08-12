@@ -51,7 +51,9 @@ class TestExtensionAttributeService:
         repo.create = AsyncMock(return_value=fake)
         svc = ExtensionAttributeService(repo)
         result = await svc.create_attribute(
-            ExtensionAttributeCreate(name="ext1", data_type=ExtensionDataType.STRING, input_type=ExtensionInputType.TEXT_FIELD),
+            ExtensionAttributeCreate(
+                name="ext1", data_type=ExtensionDataType.STRING, input_type=ExtensionInputType.TEXT_FIELD
+            ),
             created_by=1,
         )
         assert result is fake

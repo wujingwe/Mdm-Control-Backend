@@ -1,8 +1,9 @@
-from typing import Any, Literal
+from typing import Literal
 
 from pydantic import BaseModel
 
 from app.domains.profiles.schemas.policy import Policy
+from app.infra.core.types import JsonValue
 
 
 class ProfilePushRequested(BaseModel):
@@ -46,4 +47,4 @@ class DeviceCommandRequested(BaseModel):
     serial_number: str
     command_id: int
     command_type: str
-    parameters: dict[str, Any]
+    parameters: dict[str, JsonValue]

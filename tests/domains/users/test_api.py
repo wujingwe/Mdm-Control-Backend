@@ -41,7 +41,11 @@ class TestUsersAPI:
 
     async def test_update_user(self, client: AsyncClient, db_session: AsyncSession) -> None:
         repo = UserRepository(db_session)
-        user = await repo.create(UserCreate(email="update@me.com", name="Before", permissions=cast(frozenset[Permission], frozenset({"admin"}))))
+        user = await repo.create(
+            UserCreate(
+                email="update@me.com", name="Before", permissions=cast(frozenset[Permission], frozenset({"admin"}))
+            )
+        )
         resp = await client.put(f"/api/v1/users/{user.id}", json={"name": "After"})
         assert resp.status_code == 200
         assert resp.json()["name"] == "After"
@@ -52,7 +56,11 @@ class TestUsersAPI:
 
     async def test_delete_user(self, client: AsyncClient, db_session: AsyncSession) -> None:
         repo = UserRepository(db_session)
-        user = await repo.create(UserCreate(email="delete@me.com", name="Delete Me", permissions=cast(frozenset[Permission], frozenset({"admin"}))))
+        user = await repo.create(
+            UserCreate(
+                email="delete@me.com", name="Delete Me", permissions=cast(frozenset[Permission], frozenset({"admin"}))
+            )
+        )
         resp = await client.delete(f"/api/v1/users/{user.id}")
         assert resp.status_code == 204
 

@@ -2,14 +2,16 @@ from collections.abc import Callable
 from itertools import pairwise
 
 from sqlalchemy import select
-from sqlalchemy.sql.expression import ColumnElement
+from sqlalchemy.sql.expression import ColumnElement, SQLColumnExpression
 
 from app.infra.criteria.schemas import Criteria
 from app.domains.devices.models import Device, DeviceExtensionAttributeValue
 
 __all__ = ["Criteria", "FILTER_BUILDERS", "build_device_query"]
 
-FILTER_BUILDERS: dict[str, Callable[..., ColumnElement[bool]]] = {
+FilterBuilder = Callable[[SQLColumnExpression[str], str], ColumnElement[bool]]
+
+FILTER_BUILDERS: dict[str, FilterBuilder] = {
     "is": lambda col, v: col == v,
     "isNot": lambda col, v: col != v,
     "like": lambda col, v: col.like(f"%{v}%"),

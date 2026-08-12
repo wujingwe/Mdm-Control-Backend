@@ -546,6 +546,55 @@ class TestDeviceRegisterReportAPI:
             assert body["serialNumber"] == "SN-REG-002"
             assert body["status"] == "Enrolled"
 
+    async def test_register_first_enrollment_triggers_reconciler(self, client: AsyncClient) -> None:
+        reconciliation_service = MagicMock()
+        reconciliation_service.recalculate_profiles_for_device = AsyncMock()
+        reconciliation_service.recalculate_mobile_apps_for_device = AsyncMock()
+        app.dependency_overrides[get_reconciliation_service] = lambda: reconciliation_service
+        try:
+            resp = await client.post(
+                "/api/v1/devices/SN-REG-REC1/register",
+                json={"name": "Pixel 9", "osVersion": "15.0"},
+            )
+        finally:
+            app.dependency_overrides.pop(get_reconciliation_service, None)
+
+        assert resp.status_code == 200
+        device_id = resp.json()["id"]
+        reconciliation_service.recalculate_profiles_for_device.assert_awaited_once_with(device_id)
+        reconciliation_service.recalculate_mobile_apps_for_device.assert_awaited_once_with(device_id)
+
+    async def test_register_re_enrollment_triggers_reconciler(
+        self, client: AsyncClient, db_session: AsyncSession
+    ) -> None:
+        repo = DeviceRepository(db_session)
+        existing = await repo.create(
+            DeviceCreate(
+                name="Old",
+                serial_number="SN-REG-REC2",
+                os_version="14.0",
+                connection_status=ConnectionStatus.CONNECTED,
+                status=DeviceStatus.ENROLLED,
+            )
+        )
+
+        reconciliation_service = MagicMock()
+        reconciliation_service.recalculate_profiles_for_device = AsyncMock()
+        reconciliation_service.recalculate_mobile_apps_for_device = AsyncMock()
+        app.dependency_overrides[get_reconciliation_service] = lambda: reconciliation_service
+        try:
+            resp = await client.post(
+                "/api/v1/devices/SN-REG-REC2/register",
+                json={"name": "New Name", "osVersion": "15.0"},
+            )
+        finally:
+            app.dependency_overrides.pop(get_reconciliation_service, None)
+
+        assert resp.status_code == 200
+        assert resp.json()["id"] == existing.id
+        reconciliation_service.recalculate_profiles_for_device.assert_awaited_once_with(existing.id)
+        reconciliation_service.recalculate_mobile_apps_for_device.assert_awaited_once_with(existing.id)
+
     async def test_register_re_enroll_updates(self, client: AsyncClient, db_session: AsyncSession) -> None:
         repo = DeviceRepository(db_session)
         await repo.create(
