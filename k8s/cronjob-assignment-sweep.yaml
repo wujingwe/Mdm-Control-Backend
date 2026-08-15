@@ -1,0 +1,52 @@
+# Re-sends unacknowledged profile/app assignments on a schedule.
+#
+# The sweep is executed by the RUNNING backend: this CronJob only fires a
+# POST to the service, which lands on exactly one replica. The backend reads
+# SWEEP_SECRET from the shared Secret below (same one mounted into the app
+# Deployment via envFrom) and requires it via the X-SWEEP-SECRET header.
+#
+# Provision the Secret once (e.g. SealedSecrets / ExternalSecrets / helm
+# values). Both the app Deployment and this CronJob reference the SAME Secret,
+# so the value never needs to be duplicated or copied between workloads.
+
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mdm-backend-secrets
+type: Opaque
+stringData:
+  # MUST be set to the same value the app Deployment gets via envFrom.
+  # The backend exposes it as SWEEP_SECRET -> settings.sweep_secret.
+  SWEEP_SECRET: "replace-me-with-a-long-random-value"
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: assignment-sweep
+spec:
+  schedule: "*/5 * * * *"          # every 5 minutes
+  concurrencyPolicy: Forbid        # never run two sweeps at once
+  successfulJobsHistoryLimit: 2
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: sweep
+              image: curlimages/curl:latest
+              args:
+                - --silent
+                - --fail
+                - --show-error
+                - --request
+                - POST
+                # Adjust service hostname/namespace to your release.
+                - http://mdm-backend.default.svc.cluster.local/api/v1/assignments/sweep
+                - --header
+                - "X-SWEEP-SECRET: $(SWEEP_SECRET)"
+              envFrom:
+                - secretRef:
+                    # Same Secret the app Deployment mounts via envFrom.
+                    name: mdm-backend-secrets

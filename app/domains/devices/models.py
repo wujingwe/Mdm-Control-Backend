@@ -1,6 +1,7 @@
 from datetime import datetime
 
 from sqlalchemy import (
+    CheckConstraint,
     Enum,
     String,
     Integer,
@@ -39,6 +40,14 @@ class Device(Base):
         Index("ix_devices_connection_status", "connection_status"),
         Index("ix_devices_status", "status"),
         Index("ix_devices_os_version", "os_version"),
+        CheckConstraint(
+            "connection_status IN ('CONNECTED', 'DISCONNECTED', 'UNKNOWN')",
+            name="ck_devices_connection_status",
+        ),
+        CheckConstraint(
+            "status IN ('ENROLLED', 'UNENROLLED', 'PENDING', 'UNKNOWN')",
+            name="ck_devices_status",
+        ),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)

@@ -6,12 +6,15 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    db_url: str = "mysql+aiomysql://tmdm:tmdm@localhost:3306/tmdm"
-    rabbitmq_url: str = "amqp://guest:guest@localhost:5672/"
+    db_url: str = ""
+    integration_db_url: str = ""
+    rabbitmq_url: str = ""
     webhook_url: str = "http://localhost:3000/api/v1/revalidate"
     revalidation_secret: str = ""
 
     sse_secret: str = ""
+
+    sweep_secret: str = ""
 
     sso_jwks_url: str = ""
     sso_issuer: str = ""

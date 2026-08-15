@@ -21,6 +21,7 @@ from app.domains.mobile_apps.services import MobileAppService
 from app.domains.profiles.repositories import ProfileRepository
 from app.domains.profiles.services import ProfileService
 from app.domains.shared.reconciliation_service import ReconciliationService
+from app.domains.shared.sweep_service import SweepService
 from app.domains.smart_groups.repositories import SmartGroupRepository
 from app.domains.smart_groups.services import SmartGroupService
 from app.domains.static_groups.repositories import StaticGroupRepository
@@ -28,6 +29,8 @@ from app.domains.static_groups.services import StaticGroupService
 from app.domains.users.models import User
 from app.domains.users.repositories import UserRepository
 from app.domains.users.services import UserService
+from app.infra.messaging.producer import rabbitmq_producer
+from app.infra.reconciler.reconciler import AssignmentReconciler
 
 logger = logging.getLogger(__name__)
 
@@ -76,6 +79,29 @@ def require_sse_secret(x_sse_secret: str | None = Header(default=None, alias="X-
         return
     if x_sse_secret != settings.sse_secret:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid SSE secret")
+
+
+def require_sweep_secret(x_sweep_secret: str | None = Header(default=None, alias="X-SWEEP-SECRET")) -> None:
+    if not settings.sweep_secret:
+        return
+    if x_sweep_secret != settings.sweep_secret:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid sweep secret")
+
+
+def get_assignment_reconciler(db: AsyncSession = Depends(get_db)) -> AssignmentReconciler:
+    return AssignmentReconciler(
+        ProfileRepository(db),
+        MobileAppRepository(db),
+        DeviceRepository(db),
+        SmartGroupRepository(db),
+        rabbitmq_producer,
+    )
+
+
+def get_sweep_service(
+    reconciler: AssignmentReconciler = Depends(get_assignment_reconciler),
+) -> SweepService:
+    return SweepService(reconciler)
 
 
 def get_reconciliation_service(db: AsyncSession = Depends(get_db)) -> ReconciliationService:

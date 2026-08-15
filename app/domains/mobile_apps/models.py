@@ -1,6 +1,17 @@
 from datetime import datetime
 
-from sqlalchemy import String, Integer, DateTime, Boolean, ForeignKey, Text, Enum, UniqueConstraint, Index
+from sqlalchemy import (
+    String,
+    Integer,
+    DateTime,
+    Boolean,
+    ForeignKey,
+    Text,
+    Enum,
+    UniqueConstraint,
+    Index,
+    CheckConstraint,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.infra.core.base import Base, utcnow
@@ -33,6 +44,11 @@ class MobileAppAssignment(Base):
         UniqueConstraint("mobile_app_id", "version", "device_id"),
         Index("ix_mobile_app_assignments_mobile_app_id", "mobile_app_id"),
         Index("ix_mobile_app_assignments_device_id", "device_id"),
+        CheckConstraint(
+            "status IN ('PENDING', 'SENT', 'APPLIED', 'FAILED', 'REVOKE_PENDING', 'REVOKED')",
+            name="ck_mobile_app_assignments_status",
+        ),
+        CheckConstraint("desired_state IN ('PRESENT', 'ABSENT')", name="ck_mobile_app_assignments_desired_state"),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)

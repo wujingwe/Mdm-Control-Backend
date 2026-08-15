@@ -1,7 +1,7 @@
 from collections.abc import Mapping
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
-from sqlalchemy import select, func, update, delete
+from sqlalchemy import or_, select, func, update, delete
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -103,6 +103,54 @@ class MobileAppRepository:
             for assignment in assignments
             if assignment.desired_state == AssignmentDesiredState.PRESENT
         }
+
+    async def list_due_assignments(
+        self,
+        *,
+        min_retry_elapsed: timedelta,
+        limit: int,
+    ) -> list[MobileAppAssignment]:
+        """Return current-revision assignments that are candidates for re-send.
+
+        A row is a candidate when it is the highest version for its
+        (mobile_app_id, device_id) pair, has not reached a terminal state
+        (APPLIED/REVOKED), and its last attempt is older than
+        ``min_retry_elapsed`` (or never attempted). The retry budget and
+        per-attempt backoff are applied by the caller.
+        """
+        max_versions = (
+            select(
+                MobileAppAssignment.mobile_app_id,
+                MobileAppAssignment.device_id,
+                func.max(MobileAppAssignment.version).label("max_version"),
+            )
+            .group_by(MobileAppAssignment.mobile_app_id, MobileAppAssignment.device_id)
+            .subquery()
+        )
+        now = datetime.now(timezone.utc)
+        stmt = (
+            select(MobileAppAssignment)
+            .join(
+                max_versions,
+                (MobileAppAssignment.mobile_app_id == max_versions.c.mobile_app_id)
+                & (MobileAppAssignment.device_id == max_versions.c.device_id)
+                & (MobileAppAssignment.version == max_versions.c.max_version),
+            )
+            .where(
+                MobileAppAssignment.status.notin_([AssignmentStatus.APPLIED, AssignmentStatus.REVOKED]),
+                or_(
+                    MobileAppAssignment.last_attempt_at.is_(None),
+                    MobileAppAssignment.last_attempt_at < now - min_retry_elapsed,
+                ),
+            )
+            .order_by(
+                MobileAppAssignment.last_attempt_at.is_(None).desc(),
+                MobileAppAssignment.last_attempt_at.asc(),
+            )
+            .limit(limit)
+        )
+        result = await self._db.execute(stmt)
+        return list(result.scalars().all())
 
     async def get_assignment(self, mobile_app_id: int, device_id: int) -> MobileAppAssignment | None:
         stmt = (

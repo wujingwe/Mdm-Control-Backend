@@ -12,7 +12,7 @@
 | 5 | `profiles` | `Profile` | profiles |
 | 6 | `extension_attributes` | `ExtensionAttribute` | extension_attributes |
 | 7 | `inventory_searches` | `InventorySearch` | inventory_search |
-| 8 | `device_commands` | `DeviceCommand` | commands |
+| 8 | `commands` | `Command` | commands |
 
 ### Junction / Association Tables
 | # | Table | Model | Domain |
@@ -172,7 +172,7 @@ MariaDB backend with 12 tables across 8 domain modules. All tables extend `Base`
 
 ---
 
-### 8. `device_commands`
+### 8. `commands`
 
 | Column | Type | Constraints | Default |
 |---|---|---|---|
@@ -275,8 +275,8 @@ MariaDB backend with 12 tables across 8 domain modules. All tables extend `Base`
 
 ```
 ┌──────────────┐       ┌───────────────────────────────┐
-│ static_groups│──────<│     static_group_devices       │
-│              │       │  CASCADE, FK on serial_number   │
+│ static_groups│──────<│     static_group_devices      │
+│              │       │  CASCADE, FK on serial_number │
 └──────────────┘       └───────────────────────────────┘
        │                          │
        │                          v
@@ -286,12 +286,12 @@ MariaDB backend with 12 tables across 8 domain modules. All tables extend `Base`
        │                  ^  ^  ^     ^
        │                  │  │  │     │
        │  ┌───────────────┘  │  │     └──────────────────────────┐
-       │  │                  │  │                                 │
+       │  │                  │  │                                │
        │  │  ┌───────────────┘  │    ┌───────────────────────┐   │
-       │  │  │                  │    │  device_commands       │   │
-       │  │  │                  │    │  FK → devices.id       │   │
+       │  │  │                  │    │  commands             │   │
+       │  │  │                  │    │  FK → devices.id      │   │
        │  │  │                  │    └───────────────────────┘   │
-       │  │  │                  │                                 │
+       │  │  │                  │                                │
        │  │  │       ┌──────────────────────────┐    ┌───────────┴─────────────┐
        │  │  │       │   profile_assignments    │    │ device_ext_attr_values  │
        │  └──┼──────>│   CASCADE on both FKs    │<───│ CASCADE on both FKs     │
@@ -301,16 +301,16 @@ MariaDB backend with 12 tables across 8 domain modules. All tables extend `Base`
        │     │         ┌──────────┐   ┌──────────┐    ┌───────────────────────┐
        │     │         │ profiles │   │          │    │ extension_attributes  │
        │     │         └──────────┘   └──────────┘    │ FK → users.id         │
-       │     │                ^                        └───────────────────────┘
+       │     │                ^                       └───────────────────────┘
        │     │                │
        │     │       ┌────────────────────┐
        │     └──────>│    profile_scope   │
-       │             │    CASCADE, UNIQUE  │
+       │             │    CASCADE, UNIQUE │
        │             └────────────────────┘
        │
        │      ┌──────────────────┐  ┌─────────────────────┐
        └─────<│   smart_groups   │  │   inventory_searches│
-              │ FK → users.id   │  │   FK → users.id     │
+              │ FK → users.id    │  │   FK → users.id     │
               └──────────────────┘  └─────────────────────┘
 
               ┌──────────┐
@@ -325,7 +325,7 @@ static_groups         ──M2M──  devices                  (via static_grou
 profiles              ──1:N──  profile_scope            (profile_id, CASCADE)
 profiles              ──1:N──  profile_assignments      (profile_id, CASCADE)
 devices               ──1:N──  profile_assignments      (device_id, CASCADE)
-devices               ──1:N──  device_commands           (device_id, CASCADE)
+devices               ──1:N──  commands                 (device_id, CASCADE)
 devices               ──1:N──  device_extension_attribute_values (device_id, CASCADE)
 extension_attributes  ──1:N──  device_extension_attribute_values (extension_attribute_id, CASCADE)
 smart_groups          ──N:1──  users                     (created_by FK, SET NULL)
@@ -333,7 +333,7 @@ static_groups         ──N:1──  users                     (created_by FK,
 profiles              ──N:1──  users                     (created_by FK, SET NULL)
 extension_attributes  ──N:1──  users                     (created_by FK, SET NULL)
 inventory_searches    ──N:1──  users                     (created_by FK, SET NULL)
-device_commands       ──N:1──  users                     (created_by FK, SET NULL)
+commands              ──N:1──  users                     (created_by FK, SET NULL)
 ```
 
 **Polymorphic references (no DB-level FK):**
@@ -355,10 +355,10 @@ device_commands       ──N:1──  users                     (created_by FK,
 | profile_scope | profile_id | Join/filter scope by profile |
 | profile_assignments | profile_id | Join/filter assignments by profile |
 | profile_assignments | device_id | Join/filter assignments by device |
-| device_commands | device_id | Join/filter commands by device |
-| device_commands | status | Filter by command status |
-| device_commands | command_type | Filter by command type |
-| device_commands | created_at | Sort/filter by creation time |
+| commands | device_id | Join/filter commands by device |
+| commands | status | Filter by command status |
+| commands | command_type | Filter by command type |
+| commands | created_at | Sort/filter by creation time |
 | device_extension_attribute_values | device_id | Join/filter by device |
 
 ---

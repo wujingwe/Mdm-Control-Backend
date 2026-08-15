@@ -1,6 +1,7 @@
 from datetime import datetime
 
 from sqlalchemy import (
+    CheckConstraint,
     ForeignKey,
     Index,
     Integer,
@@ -84,6 +85,11 @@ class ProfileAssignment(Base):
         UniqueConstraint("profile_id", "profile_version", "device_id"),
         Index("ix_profile_assignments_profile_id", "profile_id"),
         Index("ix_profile_assignments_device_id", "device_id"),
+        CheckConstraint(
+            "status IN ('PENDING', 'SENT', 'APPLIED', 'FAILED', 'REVOKE_PENDING', 'REVOKED')",
+            name="ck_profile_assignments_status",
+        ),
+        CheckConstraint("desired_state IN ('PRESENT', 'ABSENT')", name="ck_profile_assignments_desired_state"),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)

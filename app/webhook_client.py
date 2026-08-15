@@ -41,5 +41,6 @@ async def revalidate(tags: list[str]) -> None:
             )
     except httpx.RequestError as exc:
         logger.warning("Revalidation webhook request failed: %s", exc)
-    except Exception as exc:  # noqa: BLE001 — webhook failure shouldn't crash the request
+    except Exception as exc:
+        # webhook failure shouldn't crash the request
         logger.warning("Revalidation webhook error: %s", exc)

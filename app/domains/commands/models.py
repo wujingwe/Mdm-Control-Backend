@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from sqlalchemy import Enum, Integer, ForeignKey, DateTime, Text, Index, String
+from sqlalchemy import CheckConstraint, Enum, Integer, ForeignKey, DateTime, Text, Index, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.infra.core.base import Base, utcnow
@@ -16,6 +16,14 @@ class Command(Base):
         Index("ix_commands_device_id", "device_id"),
         Index("ix_commands_status", "status"),
         Index("ix_commands_command_type", "command_type"),
+        CheckConstraint(
+            "command_type IN ('CHECK_IN', 'LOCK', 'UNLOCK', 'WIPE', 'RESTART', 'SHUTDOWN')",
+            name="ck_commands_command_type",
+        ),
+        CheckConstraint(
+            "status IN ('PENDING', 'SENT', 'ACKNOWLEDGED', 'IN_PROGRESS', 'COMPLETED', 'FAILED', 'CANCELLED')",
+            name="ck_commands_status",
+        ),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)

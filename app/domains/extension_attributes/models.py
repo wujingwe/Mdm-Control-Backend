@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import Enum, ForeignKey, Index, Integer, String, Text, DateTime, JSON
+from sqlalchemy import CheckConstraint, Enum, ForeignKey, Index, Integer, String, Text, DateTime, JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.infra.core.base import Base, utcnow
@@ -10,7 +10,17 @@ from app.domains.users.models import User
 
 class ExtensionAttribute(Base):
     __tablename__ = "extension_attributes"
-    __table_args__ = (Index("ix_extension_attributes_created_by", "created_by"),)
+    __table_args__ = (
+        Index("ix_extension_attributes_created_by", "created_by"),
+        CheckConstraint(
+            "data_type IN ('STRING', 'INTEGER', 'DATE')",
+            name="ck_extension_attributes_data_type",
+        ),
+        CheckConstraint(
+            "input_type IN ('TEXT_FIELD', 'POPUP_MENU')",
+            name="ck_extension_attributes_input_type",
+        ),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String(100), unique=True)

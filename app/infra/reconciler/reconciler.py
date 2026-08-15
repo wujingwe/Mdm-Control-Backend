@@ -1,15 +1,16 @@
 import logging
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
+from datetime import datetime, timedelta, timezone
 from functools import partial
-from typing import Protocol, TypeVar
+from typing import Protocol, Sequence, TypeVar
 
 from app.domains.devices.repositories import DeviceRepository
-from app.domains.mobile_apps.models import MobileApp
+from app.domains.mobile_apps.models import MobileApp, MobileAppAssignment
 from app.domains.mobile_apps.repositories import MobileAppRepository
 from app.domains.mobile_apps.schemas import MobileAppAssignmentUpsert
 from app.domains.profiles.enums import AssignmentDesiredState, AssignmentStatus
-from app.domains.profiles.models import Profile
+from app.domains.profiles.models import Profile, ProfileAssignment
 from app.domains.profiles.repositories import ProfileRepository
 from app.domains.profiles.schemas.profile import AssignmentUpsert
 from app.domains.shared.scope import Scope, ScopeExclusion, ScopeTarget, ScopeType
@@ -25,6 +26,10 @@ class _AssignmentUpsert(Protocol):
 
 class _Assignment(Protocol):
     id: int
+    device_id: int
+    desired_state: AssignmentDesiredState
+    attempt_count: int
+    last_attempt_at: datetime | None
 
 
 class _MessagePublisher(Protocol):
@@ -49,6 +54,23 @@ class _DispatchSpec:
 T = TypeVar("T", bound=_AssignmentUpsert)
 
 ScopeKey = tuple[ScopeType, int | None]
+
+DEFAULT_BACKOFF_SECONDS: tuple[int, ...] = (60, 300, 900, 1800, 3600)
+
+
+@dataclass
+class SweepResult:
+    """Counts from a stale-assignment sweep."""
+
+    profile_push_sent: int = 0
+    profile_push_failed: int = 0
+    profile_revoke_sent: int = 0
+    profile_revoke_failed: int = 0
+    mobile_app_push_sent: int = 0
+    mobile_app_push_failed: int = 0
+    mobile_app_revoke_sent: int = 0
+    mobile_app_revoke_failed: int = 0
+    gave_up: int = 0
 
 
 class AssignmentReconciler:
@@ -143,51 +165,12 @@ class AssignmentReconciler:
 
         push_ids = desired_ids if force_push else new_ids
         current_assignments = await self.profile_repo.get_current_assignments(profile_id)
-        present_assignment_ids = {
-            assignment.device_id: assignment.id
-            for assignment in current_assignments
-            if assignment.profile_version == version and assignment.desired_state == AssignmentDesiredState.PRESENT
-        }
-        absent_assignment_ids = {
-            assignment.device_id: assignment.id
-            for assignment in current_assignments
-            if assignment.profile_version == version and assignment.desired_state == AssignmentDesiredState.ABSENT
-        }
+        current_version_assignments = [a for a in current_assignments if a.profile_version == version]
+        present_assignment_ids, absent_assignment_ids = self._split_present_absent(current_version_assignments)
         if push_ids:
-            await self._dispatch_messages(
-                push_ids,
-                present_assignment_ids,
-                spec=_DispatchSpec(
-                    publish=partial(
-                        self.producer.publish_profile_push,
-                        profile_id=profile.id,
-                        profile_config=profile.policy,
-                        profile_version=version,
-                    ),
-                    mark_sent=self.profile_repo.mark_assignments_sent,
-                    mark_failed=self.profile_repo.mark_assignments_failed,
-                    action="push",
-                    entity="profile",
-                    entity_id=profile.id,
-                ),
-            )
+            await self._send_push_messages(profile, push_ids, present_assignment_ids, version)
         if revoked_ids:
-            await self._dispatch_messages(
-                revoked_ids,
-                absent_assignment_ids,
-                spec=_DispatchSpec(
-                    publish=partial(
-                        self.producer.publish_profile_revoke,
-                        profile_id=profile.id,
-                        profile_version=version,
-                    ),
-                    mark_sent=self.profile_repo.mark_assignments_sent,
-                    mark_failed=self.profile_repo.mark_assignments_failed,
-                    action="revoke",
-                    entity="profile",
-                    entity_id=profile.id,
-                ),
-            )
+            await self._send_revoke_messages(profile, revoked_ids, absent_assignment_ids, version)
 
     # ── Mobile App methods ──────────────────────────────────────────────
 
@@ -234,55 +217,29 @@ class AssignmentReconciler:
 
         push_ids = desired_ids if force_push else new_ids
         current_assignments = await self.mobile_app_repo.get_current_assignments(mobile_app_id)
-        present_assignment_ids = {
-            assignment.device_id: assignment.id
-            for assignment in current_assignments
-            if assignment.version == version and assignment.desired_state == AssignmentDesiredState.PRESENT
-        }
-        absent_assignment_ids = {
-            assignment.device_id: assignment.id
-            for assignment in current_assignments
-            if assignment.version == version and assignment.desired_state == AssignmentDesiredState.ABSENT
-        }
+        current_version_assignments = [a for a in current_assignments if a.version == version]
+        present_assignment_ids, absent_assignment_ids = self._split_present_absent(current_version_assignments)
         if push_ids:
-            await self._dispatch_messages(
-                push_ids,
-                present_assignment_ids,
-                spec=_DispatchSpec(
-                    publish=partial(
-                        self.producer.publish_mobile_app_push,
-                        mobile_app_id=app.id,
-                        package_name=app.package_name,
-                        package_version=app.package_version,
-                        app_version=version,
-                    ),
-                    mark_sent=self.mobile_app_repo.mark_assignments_sent,
-                    mark_failed=self.mobile_app_repo.mark_assignments_failed,
-                    action="push",
-                    entity="mobile app",
-                    entity_id=app.id,
-                ),
-            )
+            await self._send_mobile_app_push_messages(app, push_ids, present_assignment_ids, version)
         if revoked_ids:
-            await self._dispatch_messages(
-                revoked_ids,
-                absent_assignment_ids,
-                spec=_DispatchSpec(
-                    publish=partial(
-                        self.producer.publish_mobile_app_revoke,
-                        mobile_app_id=app.id,
-                        package_name=app.package_name,
-                        app_version=version,
-                    ),
-                    mark_sent=self.mobile_app_repo.mark_assignments_sent,
-                    mark_failed=self.mobile_app_repo.mark_assignments_failed,
-                    action="revoke",
-                    entity="mobile app",
-                    entity_id=app.id,
-                ),
-            )
+            await self._send_mobile_app_revoke_messages(app, revoked_ids, absent_assignment_ids, version)
 
     # ── Shared helpers ──────────────────────────────────────────────────
+
+    @staticmethod
+    def _split_present_absent(
+        assignments: Sequence[_Assignment],
+    ) -> tuple[dict[int, int], dict[int, int]]:
+        """Split current-revision assignment rows into PRESENT/ABSENT id maps.
+
+        Returns ``(present, absent)`` maps of ``device_id -> assignment_id``.
+        """
+        present: dict[int, int] = {}
+        absent: dict[int, int] = {}
+        for assignment in assignments:
+            target = present if assignment.desired_state == AssignmentDesiredState.PRESENT else absent
+            target[assignment.device_id] = assignment.id
+        return present, absent
 
     async def _resolve_scope(self, scope: Scope) -> dict[ScopeKey, set[int]]:
         result: dict[ScopeKey, set[int]] = {}
@@ -337,13 +294,124 @@ class AssignmentReconciler:
 
     # ── Message helpers ─────────────────────────────────────────────────
 
+    @staticmethod
+    def _is_due(
+        assignment: _Assignment,
+        now: datetime,
+        backoff_seconds: tuple[int, ...] = DEFAULT_BACKOFF_SECONDS,
+    ) -> bool:
+        """Whether a current-revision assignment is ready to be re-sent.
+
+        Never-attempted rows are immediately due. Otherwise the elapsed time
+        since ``last_attempt_at`` must exceed the backoff for the attempt
+        count, and there must be attempts left.
+        """
+        if assignment.attempt_count >= len(backoff_seconds):
+            return False
+        if assignment.last_attempt_at is None:
+            return True
+        last_attempt_at = assignment.last_attempt_at
+        if last_attempt_at.tzinfo is None:
+            last_attempt_at = last_attempt_at.replace(tzinfo=timezone.utc)
+        return last_attempt_at < now - timedelta(seconds=backoff_seconds[assignment.attempt_count])
+
+    async def sweep_stale_assignments(
+        self,
+        *,
+        limit: int = 500,
+        backoff_seconds: tuple[int, ...] = DEFAULT_BACKOFF_SECONDS,
+    ) -> SweepResult:
+        """Re-send assignments that were never acknowledged by devices.
+
+        Scans current-revision profile and mobile app assignments, and
+        re-publishes push/revoke messages for rows that are not in a
+        terminal state (APPLIED/REVOKED), have retries left per the backoff
+        schedule, and are due. Rows that are out of retries or not yet due
+        are counted as ``gave_up`` and left untouched.
+        """
+        now = datetime.now(timezone.utc)
+        result = SweepResult()
+        min_elapsed = timedelta(seconds=backoff_seconds[0]) if backoff_seconds else timedelta(seconds=0)
+
+        profile_groups: dict[int, list[ProfileAssignment]] = {}
+        for profile_assignment in await self.profile_repo.list_due_assignments(
+            min_retry_elapsed=min_elapsed,
+            limit=limit,
+        ):
+            if self._is_due(profile_assignment, now, backoff_seconds):
+                profile_groups.setdefault(profile_assignment.profile_id, []).append(profile_assignment)
+            else:
+                result.gave_up += 1
+
+        app_groups: dict[int, list[MobileAppAssignment]] = {}
+        for app_assignment in await self.mobile_app_repo.list_due_assignments(
+            min_retry_elapsed=min_elapsed,
+            limit=limit,
+        ):
+            if self._is_due(app_assignment, now, backoff_seconds):
+                app_groups.setdefault(app_assignment.mobile_app_id, []).append(app_assignment)
+            else:
+                result.gave_up += 1
+
+        for profile_id, profile_candidates in profile_groups.items():
+            profile = await self.profile_repo.get_by_id(profile_id)
+            if not profile:
+                continue
+            current = {a.device_id: a for a in await self.profile_repo.get_current_assignments(profile_id)}
+            device_ids = {
+                a.device_id
+                for a in profile_candidates
+                if a.device_id in current
+                and current[a.device_id].status not in (AssignmentStatus.APPLIED, AssignmentStatus.REVOKED)
+            }
+            if not device_ids:
+                continue
+            present, absent = self._split_present_absent([current[d] for d in device_ids])
+            if present:
+                sent, failed = await self._send_push_messages(profile, set(present), present, profile.version)
+                result.profile_push_sent += sent
+                result.profile_push_failed += failed
+            if absent:
+                sent, failed = await self._send_revoke_messages(profile, set(absent), absent, profile.version)
+                result.profile_revoke_sent += sent
+                result.profile_revoke_failed += failed
+
+        for app_id, app_candidates in app_groups.items():
+            app = await self.mobile_app_repo.get_by_id(app_id)
+            if not app:
+                continue
+            current_apps = {a.device_id: a for a in await self.mobile_app_repo.get_current_assignments(app_id)}
+            device_ids = {
+                a.device_id
+                for a in app_candidates
+                if a.device_id in current_apps
+                and current_apps[a.device_id].status not in (AssignmentStatus.APPLIED, AssignmentStatus.REVOKED)
+            }
+            if not device_ids:
+                continue
+            present, absent = self._split_present_absent([current_apps[d] for d in device_ids])
+            if present:
+                sent, failed = await self._send_mobile_app_push_messages(app, set(present), present, app.version)
+                result.mobile_app_push_sent += sent
+                result.mobile_app_push_failed += failed
+            if absent:
+                sent, failed = await self._send_mobile_app_revoke_messages(app, set(absent), absent, app.version)
+                result.mobile_app_revoke_sent += sent
+                result.mobile_app_revoke_failed += failed
+
+        return result
+
     async def _dispatch_messages(
         self,
         device_ids: set[int],
         assignments: dict[int, int],
         *,
         spec: _DispatchSpec,
-    ) -> None:
+    ) -> tuple[int, int]:
+        """Publish to each device and mark rows sent/failed.
+
+        Returns ``(sent_count, failed_count)``.
+        """
         serial_map = await self.device_repo.get_serial_map(device_ids)
         sent: dict[int, str] = {}
         failed: dict[int, str] = {}
@@ -380,11 +448,12 @@ class AssignmentReconciler:
             await spec.mark_sent(sent)
         if failed:
             await spec.mark_failed(failed)
+        return len(sent), len(failed)
 
     async def _send_push_messages(
         self, profile: Profile, device_ids: set[int], assignments: dict[int, int], version: int
-    ) -> None:
-        await self._dispatch_messages(
+    ) -> tuple[int, int]:
+        return await self._dispatch_messages(
             device_ids,
             assignments,
             spec=_DispatchSpec(
@@ -404,8 +473,8 @@ class AssignmentReconciler:
 
     async def _send_revoke_messages(
         self, profile: Profile, device_ids: set[int], assignments: dict[int, int], version: int
-    ) -> None:
-        await self._dispatch_messages(
+    ) -> tuple[int, int]:
+        return await self._dispatch_messages(
             device_ids,
             assignments,
             spec=_DispatchSpec(
@@ -424,8 +493,8 @@ class AssignmentReconciler:
 
     async def _send_mobile_app_push_messages(
         self, app: MobileApp, device_ids: set[int], assignments: dict[int, int], version: int
-    ) -> None:
-        await self._dispatch_messages(
+    ) -> tuple[int, int]:
+        return await self._dispatch_messages(
             device_ids,
             assignments,
             spec=_DispatchSpec(
@@ -446,8 +515,8 @@ class AssignmentReconciler:
 
     async def _send_mobile_app_revoke_messages(
         self, app: MobileApp, device_ids: set[int], assignments: dict[int, int], version: int
-    ) -> None:
-        await self._dispatch_messages(
+    ) -> tuple[int, int]:
+        return await self._dispatch_messages(
             device_ids,
             assignments,
             spec=_DispatchSpec(

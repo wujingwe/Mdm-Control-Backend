@@ -52,8 +52,12 @@ class UserRepository:
 
     async def delete(self, record_id: int) -> int:
         stmt = delete(User).where(User.id == record_id)
-        result = await self._db.execute(stmt)
-        await self._db.commit()
+        try:
+            result = await self._db.execute(stmt)
+            await self._db.commit()
+        except IntegrityError as err:
+            await self._db.rollback()
+            raise ConflictError("User cannot be deleted because it is referenced by other records") from err
         return result.rowcount  # type: ignore
 
     async def count(self) -> int:

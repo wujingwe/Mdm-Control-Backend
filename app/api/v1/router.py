@@ -1,5 +1,6 @@
 from fastapi import APIRouter
 
+from app.api.v1.assignments import router as assignments_router
 from app.api.v1.auth import router as auth_router
 from app.api.v1.devices import router as devices_router
 from app.api.v1.extension_attributes import router as extension_attributes_router
@@ -13,6 +14,7 @@ from app.api.v1.users import router as users_router
 router = APIRouter(prefix="/v1")
 router.include_router(auth_router)
 router.include_router(devices_router)
+router.include_router(assignments_router)
 router.include_router(profiles_router)
 router.include_router(smart_groups_router)
 router.include_router(static_groups_router)
