@@ -6,6 +6,13 @@ import pytest
 
 from app.infra.messaging.producer import RabbitMQProducer
 from app.domains.profiles.schemas.policy import Policy, CameraAccess
+from app.infra.messaging.schemas import (
+    ProfilePushRequested,
+    ProfileRevokeRequested,
+    MobileAppPushRequested,
+    MobileAppRevokeRequested,
+    DeviceCommandRequested,
+)
 
 
 class TestRabbitMQProducer:
@@ -26,7 +33,7 @@ class TestRabbitMQProducer:
         kwargs = mock_publish.call_args.kwargs
         assert kwargs["routing_key"] == "SER001"
         assert kwargs["correlation_id"] == "10"
-        body = mock_publish.call_args.args[0]
+        body = ProfilePushRequested.model_validate(mock_publish.call_args.args[0])
         assert body.kind == "profile.push"
         assert body.serial_number == "SER001"
         assert body.profile_id == 10
@@ -49,7 +56,7 @@ class TestRabbitMQProducer:
         kwargs = mock_publish.call_args.kwargs
         assert kwargs["routing_key"] == "SER001"
         assert kwargs["correlation_id"] == "10"
-        body = mock_publish.call_args.args[0]
+        body = ProfileRevokeRequested.model_validate(mock_publish.call_args.args[0])
         assert body.kind == "profile.revoke"
         assert body.serial_number == "SER001"
         assert body.profile_id == 10
@@ -129,7 +136,7 @@ class TestRabbitMQProducer:
 
         kwargs = mock_publish.call_args.kwargs
         assert kwargs["routing_key"] == "SER001"
-        body = mock_publish.call_args.args[0]
+        body = MobileAppPushRequested.model_validate(mock_publish.call_args.args[0])
         assert body.kind == "mobile_app.push"
         assert body.mobile_app_id == 1
         assert body.package_name == "com.example.app"
@@ -147,7 +154,7 @@ class TestRabbitMQProducer:
             assignment_id=100,
         )
 
-        body = mock_publish.call_args.args[0]
+        body = MobileAppRevokeRequested.model_validate(mock_publish.call_args.args[0])
         assert body.kind == "mobile_app.revoke"
 
     async def test_publish_device_command(self, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -164,7 +171,7 @@ class TestRabbitMQProducer:
 
         kwargs = mock_publish.call_args.kwargs
         assert kwargs["routing_key"] == "SER001"
-        body = mock_publish.call_args.args[0]
+        body = DeviceCommandRequested.model_validate(mock_publish.call_args.args[0])
         assert body.kind == "device.command"
         assert body.command_type == "LOCK"
 
