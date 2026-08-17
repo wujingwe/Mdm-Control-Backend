@@ -61,7 +61,7 @@ class RabbitMQProducer:
         )
         message_id = str(uuid4())
         await broker.publish(
-            message,
+            message.model_dump(mode="json"),
             routing_key=serial_number,
             exchange=exchange,
             message_id=message_id,
@@ -85,7 +85,7 @@ class RabbitMQProducer:
         )
         message_id = str(uuid4())
         await broker.publish(
-            message,
+            message.model_dump(mode="json"),message,
             routing_key=serial_number,
             exchange=exchange,
             message_id=message_id,
@@ -113,7 +113,7 @@ class RabbitMQProducer:
         )
         message_id = str(uuid4())
         await broker.publish(
-            message,
+            message.model_dump(mode="json"),
             routing_key=serial_number,
             exchange=exchange,
             message_id=message_id,
@@ -139,7 +139,7 @@ class RabbitMQProducer:
         )
         message_id = str(uuid4())
         await broker.publish(
-            message,
+            message.model_dump(mode="json"),
             routing_key=serial_number,
             exchange=exchange,
             message_id=message_id,
@@ -163,7 +163,7 @@ class RabbitMQProducer:
         )
         message_id = str(uuid4())
         await broker.publish(
-            message,
+            message.model_dump(mode="json"),
             routing_key=serial_number,
             exchange=exchange,
             message_id=message_id,
