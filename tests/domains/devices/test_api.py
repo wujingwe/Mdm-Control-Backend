@@ -1202,7 +1202,10 @@ class TestCommandsAPI:
         assert data["items"] == []
         assert data["total"] == 0
 
-    async def test_trigger_and_get(self, client: AsyncClient, db_session: AsyncSession) -> None:
+    async def test_trigger_and_get(
+        self, client: AsyncClient, db_session: AsyncSession, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setattr("app.infra.messaging.producer.broker.publish", AsyncMock())
         device = await self._create_device(db_session)
         create_resp = await client.post(
             f"/api/v1/devices/{device.id}/commands",
@@ -1232,7 +1235,10 @@ class TestCommandsAPI:
         assert resp.status_code == 404
         assert resp.json()["detail"] == "Command not found"
 
-    async def test_get_command_wrong_device(self, client: AsyncClient, db_session: AsyncSession) -> None:
+    async def test_get_command_wrong_device(
+        self, client: AsyncClient, db_session: AsyncSession, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setattr("app.infra.messaging.producer.broker.publish", AsyncMock())
         device = await self._create_device(db_session)
         create_resp = await client.post(
             f"/api/v1/devices/{device.id}/commands",
@@ -1242,7 +1248,10 @@ class TestCommandsAPI:
         resp = await client.get(f"/api/v1/devices/99999/commands/{command_id}")
         assert resp.status_code == 404
 
-    async def test_list_device_commands(self, client: AsyncClient, db_session: AsyncSession) -> None:
+    async def test_list_device_commands(
+        self, client: AsyncClient, db_session: AsyncSession, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setattr("app.infra.messaging.producer.broker.publish", AsyncMock())
         device = await self._create_device(db_session)
         await client.post(f"/api/v1/devices/{device.id}/commands", json={"commandType": "LOCK"})
         await client.post(f"/api/v1/devices/{device.id}/commands", json={"commandType": "UNLOCK"})
@@ -1250,7 +1259,10 @@ class TestCommandsAPI:
         data = resp.json()
         assert data["total"] == 2
 
-    async def test_list_device_commands_pagination(self, client: AsyncClient, db_session: AsyncSession) -> None:
+    async def test_list_device_commands_pagination(
+        self, client: AsyncClient, db_session: AsyncSession, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setattr("app.infra.messaging.producer.broker.publish", AsyncMock())
         device = await self._create_device(db_session)
         for _ in range(5):
             await client.post(f"/api/v1/devices/{device.id}/commands", json={"commandType": "LOCK"})
