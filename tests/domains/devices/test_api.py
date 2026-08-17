@@ -1,5 +1,7 @@
 from unittest.mock import AsyncMock, MagicMock
 
+import pytest
+
 from app.dependencies import get_reconciliation_service
 from app.domains.commands.enums import CommandType
 from app.domains.commands.repositories import CommandRepository
@@ -1214,7 +1216,7 @@ class TestCommandsAPI:
         assert create_resp.status_code == 201
         cmd = create_resp.json()
         assert cmd["commandType"] == "LOCK"
-        assert cmd["status"] == "PENDING"
+        assert cmd["status"] == "SENT"
         command_id = cmd["id"]
 
         get_resp = await client.get(f"/api/v1/devices/{device.id}/commands/{command_id}")

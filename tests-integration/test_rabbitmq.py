@@ -157,29 +157,6 @@ async def test_alternate_exchange_receives_unroutable_messages(
     await message.ack()
 
 
-async def test_publish_json_roundtrip(
-    started_broker: None,
-    rabbit_queue: tuple[str, aio_pika.abc.AbstractQueue],
-) -> None:
-    prefix, queue = rabbit_queue
-    routing_key = f"{prefix}.event"
-    message_id = await RabbitMQProducer.publish_json(
-        {"kind": "test", "n": 1},
-        routing_key=routing_key,
-        correlation_id="corr-1",
-        headers={"x-test": "yes"},
-    )
-
-    message = await _receive(queue, '"kind":"test"')
-    assert message.routing_key == routing_key
-    assert message.message_id == message_id
-    assert message.correlation_id == "corr-1"
-    assert message.headers.get("x-test") == "yes"
-    assert message.content_type == "application/json"
-    assert _body(message) == {"kind": "test", "n": 1}
-    await message.ack()
-
-
 async def test_profile_push_roundtrip(
     started_broker: None,
     rabbit_queue: tuple[str, aio_pika.abc.AbstractQueue],

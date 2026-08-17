@@ -6,7 +6,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    db_url: str = ""
+    db_url: str
     integration_db_url: str = ""
     rabbitmq_url: str = ""
     webhook_url: str = "http://localhost:3000/api/v1/revalidate"

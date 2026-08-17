@@ -63,63 +63,6 @@ class TestRabbitMQProducer:
         assert body.profile_version == 3
         assert body.assignment_id == 42
 
-    async def test_publish_json_sends_payload(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        mock_publish = AsyncMock()
-        monkeypatch.setattr("app.infra.messaging.producer.broker.publish", mock_publish)
-
-        producer = RabbitMQProducer()
-        message_id = await producer.publish_json(
-            {"profile_id": 1, "profile_name": "Base"},
-            routing_key="device.42",
-            correlation_id="1",
-        )
-
-        mock_publish.assert_awaited_once()
-        kwargs = mock_publish.call_args.kwargs
-        assert kwargs["routing_key"] == "device.42"
-        assert kwargs["correlation_id"] == "1"
-        assert kwargs["content_type"] == "application/json"
-        assert kwargs["message_id"] == message_id
-        body = mock_publish.call_args.args[0]
-        assert body == {"profile_id": 1, "profile_name": "Base"}
-
-    async def test_publish_json_generates_message_id(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        mock_publish = AsyncMock()
-        monkeypatch.setattr("app.infra.messaging.producer.broker.publish", mock_publish)
-
-        producer = RabbitMQProducer()
-        message_id = await producer.publish_json(
-            {"key": "val"},
-            routing_key="device.1",
-        )
-
-        assert isinstance(message_id, str)
-        assert len(message_id) == 36
-
-    async def test_publish_json_with_headers(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        mock_publish = AsyncMock()
-        monkeypatch.setattr("app.infra.messaging.producer.broker.publish", mock_publish)
-
-        producer = RabbitMQProducer()
-        await producer.publish_json(
-            {"key": "val"},
-            routing_key="device.1",
-            headers={"x-retry-count": 3},
-        )
-
-        kwargs = mock_publish.call_args.kwargs
-        assert kwargs["headers"] == {"x-retry-count": 3}
-
-    async def test_publish_json_without_correlation_id(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        mock_publish = AsyncMock()
-        monkeypatch.setattr("app.infra.messaging.producer.broker.publish", mock_publish)
-
-        producer = RabbitMQProducer()
-        await producer.publish_json({"key": "val"}, routing_key="device.1")
-
-        kwargs = mock_publish.call_args.kwargs
-        assert kwargs.get("correlation_id") is None
-
     async def test_publish_mobile_app_push(self, monkeypatch: pytest.MonkeyPatch) -> None:
         mock_publish = AsyncMock()
         monkeypatch.setattr("app.infra.messaging.producer.broker.publish", mock_publish)

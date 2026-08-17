@@ -3,8 +3,6 @@ from __future__ import annotations
 import logging
 from uuid import uuid4
 
-from aio_pika.abc import HeadersType
-
 from app.domains.profiles.schemas.policy import Policy
 from app.infra.core.types import JsonValue
 from app.infra.messaging.broker import broker, exchange
@@ -21,27 +19,6 @@ logger = logging.getLogger(__name__)
 
 class RabbitMQProducer:
     """Publishes messages to the SSE server exchange via the shared FastStream broker."""
-
-    @staticmethod
-    async def publish_json(
-        payload: dict[str, JsonValue],
-        *,
-        routing_key: str,
-        message_id: str | None = None,
-        correlation_id: str | None = None,
-        headers: HeadersType | None = None,
-    ) -> str:
-        published_message_id = message_id or str(uuid4())
-        await broker.publish(
-            payload,
-            routing_key=routing_key,
-            exchange=exchange,
-            message_id=published_message_id,
-            correlation_id=correlation_id,
-            headers=headers,
-            content_type="application/json",
-        )
-        return published_message_id
 
     @staticmethod
     async def publish_profile_push(
@@ -85,7 +62,7 @@ class RabbitMQProducer:
         )
         message_id = str(uuid4())
         await broker.publish(
-            message.model_dump(mode="json"),message,
+            message.model_dump(mode="json"),
             routing_key=serial_number,
             exchange=exchange,
             message_id=message_id,

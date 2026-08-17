@@ -1,7 +1,8 @@
 import logging
 
+from app.infra.core.database import create_session, engine
 from app.infra.messaging.broker import broker, exchange
-from app.infra.messaging import reconciliation_worker  # noqa: F401  (registers the reconciliation subscribers)
+from app.infra.messaging.reconciliation_worker import register_handlers
 
 logger = logging.getLogger(__name__)
 
@@ -11,6 +12,7 @@ class Lifecycle:
         try:
             await broker.start()
             await broker.declare_exchange(exchange)
+            register_handlers(create_session)
         except Exception:
             logger.warning("RabbitMQ unavailable, continuing without it")
 
@@ -19,3 +21,4 @@ class Lifecycle:
             await broker.stop()
         except Exception:
             pass
+        await engine.dispose()

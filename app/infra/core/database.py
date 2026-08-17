@@ -18,4 +18,4 @@ else:
         max_overflow=20,
         pool_recycle=3600,
     )
-async_session = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+create_session = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)

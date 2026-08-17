@@ -1,22 +1,14 @@
-from contextlib import asynccontextmanager
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from sqlalchemy.ext.asyncio import AsyncSession
-
-from app.infra.messaging import reconciliation, reconciliation_worker
+from app.infra.messaging import reconciliation
 from app.infra.messaging.reconciliation import (
     ReconciliationRequest,
     RecalculationKind,
     request_recalculation,
 )
-from app.infra.messaging.reconciliation_worker import (
-    _recalculate_mobile_app,
-    _recalculate_profile,
-    handle_mobile_app_recalculate,
-    handle_profile_recalculate,
-)
+from app.infra.messaging.reconciliation_worker import register_handlers
 
 
 class TestRequestRecalculation:
@@ -43,63 +35,65 @@ class TestRequestRecalculation:
         )
 
 
-class TestReconciliationSubscribers:
-    async def test_profile_subscriber_calls_profile_recalculate(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        mock_recalc = AsyncMock()
-        monkeypatch.setattr(reconciliation_worker, "_recalculate_profile", mock_recalc)
+def _register_with_fake(monkeypatch, *, reconciler_factory=None):
+    """Register handlers with a mock broker and fake session.
 
-        await handle_profile_recalculate(ReconciliationRequest(entity_id=42, force_push=True))
+    Returns (subscriber_mock, profile_handler, mobile_app_handler).
+    """
+    mock_broker_subscriber = MagicMock()
+    monkeypatch.setattr(
+        "app.infra.messaging.reconciliation_worker.broker.subscriber",
+        mock_broker_subscriber,
+    )
 
-        mock_recalc.assert_awaited_once_with(42, force_push=True)
-
-    async def test_mobile_app_subscriber_calls_mobile_app_recalculate(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        mock_recalc = AsyncMock()
-        monkeypatch.setattr(reconciliation_worker, "_recalculate_mobile_app", mock_recalc)
-
-        await handle_mobile_app_recalculate(ReconciliationRequest(entity_id=7))
-
-        mock_recalc.assert_awaited_once_with(7, force_push=False)
-
-
-class TestReconcileHandlers:
-    async def test_recalculate_profile_builds_reconciler(
-        self, monkeypatch: pytest.MonkeyPatch, db_session: AsyncSession
-    ) -> None:
-        mock_reconciler = MagicMock()
-        mock_reconciler.recalculate_profile = AsyncMock()
+    if reconciler_factory is not None:
         monkeypatch.setattr(
-            reconciliation_worker,
-            "AssignmentReconciler",
-            MagicMock(return_value=mock_reconciler),
+            "app.infra.messaging.reconciliation_worker.AssignmentReconciler",
+            reconciler_factory,
         )
 
-        @asynccontextmanager
-        async def _fake_session():
-            yield db_session
+    mock_session_factory = MagicMock()
+    register_handlers(mock_session_factory)
 
-        monkeypatch.setattr("app.infra.core.database.async_session", _fake_session)
+    # broker.subscriber(queue) returns a decorator, decorator(func) returns the handler.
+    # call_args_list[0] = broker.subscriber(_profile_queue)
+    # call_args_list[1] = decorator(profile_handler_func)
+    profile_handler = mock_broker_subscriber.return_value.call_args_list[0][0][0]
+    mobile_app_handler = mock_broker_subscriber.return_value.call_args_list[1][0][0]
+    return mock_broker_subscriber, profile_handler, mobile_app_handler
 
-        await _recalculate_profile(42, force_push=True)
+
+class TestReconciliationSubscribers:
+    async def test_profile_subscriber_calls_reconciler(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        mock_reconciler = MagicMock()
+        mock_reconciler.recalculate_profile = AsyncMock()
+        _, profile_handler, _ = _register_with_fake(
+            monkeypatch,
+            reconciler_factory=MagicMock(return_value=mock_reconciler),
+        )
+
+        await profile_handler(ReconciliationRequest(entity_id=42, force_push=True))
 
         mock_reconciler.recalculate_profile.assert_awaited_once_with(42, force_push=True)
 
-    async def test_recalculate_mobile_app_builds_reconciler(
-        self, monkeypatch: pytest.MonkeyPatch, db_session: AsyncSession
-    ) -> None:
+    async def test_mobile_app_subscriber_calls_reconciler(self, monkeypatch: pytest.MonkeyPatch) -> None:
         mock_reconciler = MagicMock()
         mock_reconciler.recalculate_mobile_app = AsyncMock()
-        monkeypatch.setattr(
-            reconciliation_worker,
-            "AssignmentReconciler",
-            MagicMock(return_value=mock_reconciler),
+        _, _, mobile_app_handler = _register_with_fake(
+            monkeypatch,
+            reconciler_factory=MagicMock(return_value=mock_reconciler),
         )
 
-        @asynccontextmanager
-        async def _fake_session():
-            yield db_session
-
-        monkeypatch.setattr("app.infra.core.database.async_session", _fake_session)
-
-        await _recalculate_mobile_app(7)
+        await mobile_app_handler(ReconciliationRequest(entity_id=7))
 
         mock_reconciler.recalculate_mobile_app.assert_awaited_once_with(7, force_push=False)
+
+    async def test_profile_handlerRegistersOnCorrectQueue(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        mock_broker_subscriber, _, _ = _register_with_fake(monkeypatch)
+
+        mock_broker_subscriber.assert_any_call(reconciliation._profile_queue)
+
+    async def test_mobile_app_handlerRegistersOnCorrectQueue(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        mock_broker_subscriber, _, _ = _register_with_fake(monkeypatch)
+
+        mock_broker_subscriber.assert_any_call(reconciliation._mobile_app_queue)

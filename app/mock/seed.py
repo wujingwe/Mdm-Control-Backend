@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.infra.core.base import Base
 from app.domains.shared.scope import Scope, ScopeTarget, ScopeType
-from app.infra.core.database import engine, async_session
+from app.infra.core.database import engine, create_session
 from app.domains.devices.models import Device, DeviceExtensionAttributeValue
 from app.domains.devices.schemas import Network, Wifi
 from app.domains.extension_attributes.models import ExtensionAttribute
@@ -565,7 +565,7 @@ async def seed_database() -> None:
 
     now = datetime.now(timezone.utc)
 
-    async with async_session() as session:
+    async with create_session() as session:
         await _seed_users(session, now)
         devices = await _seed_devices(session)
         smart_group_ids = await _seed_records(session, SmartGroup, SMART_GROUPS, "name")

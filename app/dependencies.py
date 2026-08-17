@@ -9,7 +9,7 @@ from app.domains.commands.repositories import CommandRepository
 from app.domains.commands.services import CommandService
 from app.infra.config.settings import settings
 from app.infra.core.security import TokenClaims, verify_token
-from app.infra.core.database import async_session
+from app.infra.core.database import create_session
 from app.domains.devices.repositories import DeviceRepository
 from app.domains.devices.services import DeviceService
 from app.domains.extension_attributes.repositories import ExtensionAttributeRepository
@@ -36,7 +36,7 @@ logger = logging.getLogger(__name__)
 
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
-    async with async_session() as session:
+    async with create_session() as session:
         yield session
 
 
