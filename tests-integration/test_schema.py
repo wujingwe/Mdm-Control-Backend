@@ -7,6 +7,7 @@ models and idempotent.
 
 import os
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -23,7 +24,7 @@ def _alembic_env():
 
 def _run_alembic(_alembic_env, *args: str) -> subprocess.CompletedProcess[str]:
     result = subprocess.run(
-        ["alembic", *args],
+        [sys.executable, "-m", "alembic", *args],
         capture_output=True,
         text=True,
         cwd=_alembic_env["cwd"],
