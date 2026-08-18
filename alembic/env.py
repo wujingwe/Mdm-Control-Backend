@@ -5,18 +5,29 @@ from alembic import context
 from sqlalchemy import pool
 from sqlalchemy.ext.asyncio import create_async_engine
 
+from app.domains.commands import models as command_models
+from app.domains.devices import models as device_models
+from app.domains.extension_attributes import models as extension_attribute_models
+from app.domains.inventory_search import models as inventory_search_models
+from app.domains.mobile_apps import models as mobile_app_models
+from app.domains.profiles import models as profile_models
+from app.domains.smart_groups import models as smart_group_models
+from app.domains.static_groups import models as static_group_models
+from app.domains.users import models as user_models
 from app.infra.config.settings import settings
 from app.infra.core.base import Base
 
-from app.domains.commands import models as commands_models  # noqa: F401
-from app.domains.devices import models as devices_models  # noqa: F401
-from app.domains.extension_attributes import models as extension_attributes_models  # noqa: F401
-from app.domains.inventory_search import models as inventory_search_models  # noqa: F401
-from app.domains.mobile_apps import models as mobile_apps_models  # noqa: F401
-from app.domains.profiles import models as profiles_models  # noqa: F401
-from app.domains.smart_groups import models as smart_groups_models  # noqa: F401
-from app.domains.static_groups import models as static_groups_models  # noqa: F401
-from app.domains.users import models as users_models  # noqa: F401
+_MODEL_MODULES = (
+    command_models,
+    device_models,
+    extension_attribute_models,
+    inventory_search_models,
+    mobile_app_models,
+    profile_models,
+    smart_group_models,
+    static_group_models,
+    user_models,
+)
 
 
 config = context.config
@@ -26,7 +37,11 @@ if config.config_file_name is not None:
 
 target_metadata = Base.metadata
 
-config.set_main_option("sqlalchemy.url", settings.db_url)
+if settings.mock_db:
+    db_url = "sqlite+aiosqlite:///tmdm.db"
+else:
+    db_url = settings.db_url
+config.set_main_option("sqlalchemy.url", db_url)
 
 
 def run_migrations_offline() -> None:
