@@ -10,6 +10,11 @@ logger = logging.getLogger(__name__)
 class Lifecycle:
     async def start(self) -> None:
         try:
+            async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+        except Exception:
+            logger.warning("Failed to create tables, continuing")
+        try:
             await broker.start()
             await broker.declare_exchange(exchange)
             register_handlers(create_session)
