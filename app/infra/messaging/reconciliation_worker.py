@@ -1,7 +1,7 @@
 import logging
 from typing import Awaitable, Callable
 
-from sqlalchemy.ext.asyncio import async_sessionmaker
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.domains.devices.repositories import DeviceRepository
 from app.domains.mobile_apps.repositories import MobileAppRepository
@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 HandleRecalculate = Callable[[ReconciliationRequest], Awaitable[None]]
 
 
-def register_handlers(session_factory: async_sessionmaker) -> None:
+def register_handlers(session_factory: async_sessionmaker[AsyncSession]) -> None:
     """Register reconciliation subscriber callbacks on the broker.
 
     Called once during startup with the application's session factory.
