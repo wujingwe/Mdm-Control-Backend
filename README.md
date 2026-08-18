@@ -34,7 +34,7 @@ See [CONTEXT.md](CONTEXT.md) for the domain glossary. Key terms:
 ## Prerequisites
 
 - Python 3.12+
-- MariaDB running on `localhost:3306` with database `mdm_control`
+- MariaDB running on `localhost:3306` with database `tmdm`
 - RabbitMQ on `localhost:5672` (optional for unit tests; required in production for profile/app/command dispatch)
 
 ## Setup
@@ -53,7 +53,7 @@ All settings via `.env` file or environment variables:
 
 | Variable | Default | Description |
 |---|---|---|
-| `DB_URL` | `mysql+aiomysql://user:password@localhost:3306/mdm_control` | Database connection string |
+| `DB_URL` | `mysql+aiomysql://user:password@localhost:3306/tmdm` | Database connection string |
 | `RABBITMQ_URL` | `amqp://guest:guest@localhost:5672/` | AMQP connection URL |
 | `WEBHOOK_URL` | `http://localhost:3000/api/v1/revalidate` | Next.js revalidation endpoint |
 | `REVALIDATION_SECRET` | — | Shared webhook secret |
@@ -146,6 +146,32 @@ python -m pytest tests/ -v
 ```
 
 Tests use an in-memory SQLite database with `aiosqlite`. RabbitMQ is not required — the FastStream broker is mocked and `AssignmentReconciler.request_recalculate_*` methods are patched to run synchronously.
+
+### Integration tests
+
+Integration tests use MariaDB, RabbitMQ, and the SSE gateway. Configure a dedicated MariaDB database so the test suite can safely truncate every table after each test:
+
+```sh
+# .env
+DB_URL=mysql+aiomysql://tmdm:tmdm@localhost:3306/tmdm
+INTEGRATION_DB_URL=mysql+aiomysql://tmdm:tmdm@localhost:3306/test_tmdm
+MOCK_DB=false
+RABBITMQ_URL=amqp://guest:guest@localhost:5672/
+```
+
+Create the database and confirm RabbitMQ and the SSE gateway are running locally:
+
+```sh
+mysql -u tmdm -ptmdm -e "CREATE DATABASE IF NOT EXISTS test_tmdm;"
+```
+
+With the virtual environment activated, run:
+
+```sh
+make test-integration
+```
+
+The suite applies Alembic migrations to `test_tmdm`, then truncates its tables between tests. Never point `INTEGRATION_DB_URL` at a development or production database.
 
 ## Project Structure
 
