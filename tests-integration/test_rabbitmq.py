@@ -298,7 +298,7 @@ async def test_request_recalculation_delivers_to_queue(
 ) -> None:
     queue_name = reconciliation._profile_queue.name
     channel = await amqp_connection.channel()
-    queue = await channel.declare_queue(queue_name, auto_delete=True)
+    queue = await channel.declare_queue(queue_name, exclusive=True, auto_delete=True)
 
     await reconciliation.request_recalculation(
         reconciliation.RecalculationKind.PROFILE,
