@@ -22,8 +22,8 @@ class ReconciliationRequest(BaseModel):
     force_push: bool = False
 
 
-_profile_queue = RabbitQueue(f"{_queue_name}.profile", auto_delete=True)
-_mobile_app_queue = RabbitQueue(f"{_queue_name}.mobile_app", auto_delete=True)
+_profile_queue = RabbitQueue(f"{_queue_name}.profile")
+_mobile_app_queue = RabbitQueue(f"{_queue_name}.mobile_app")
 
 _request_queues: dict[RecalculationKind, RabbitQueue] = {
     RecalculationKind.PROFILE: _profile_queue,
